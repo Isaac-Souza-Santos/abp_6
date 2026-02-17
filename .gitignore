@@ -1,0 +1,14 @@
+node_modules/
+dist/
+.env
+.env.local
+.wwebjs_auth/
+.wwebjs_cache/
+data/
+*.log
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+.cursor/
+*.tsbuildinfo

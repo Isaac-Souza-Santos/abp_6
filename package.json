@@ -1,0 +1,37 @@
+{
+  "name": "procon-jacarei-whatsapp-bot",
+  "version": "1.0.0",
+  "description": "Chat bot WhatsApp para Procon Jacareí/SP - atendimento e orientação ao consumidor",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
+    "lint": "eslint src --ext .ts"
+  },
+  "keywords": [
+    "whatsapp",
+    "bot",
+    "procon",
+    "jacarei",
+    "consumidor"
+  ],
+  "author": "Procon Jacareí SP",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "qrcode-terminal": "^0.12.0",
+    "whatsapp-web.js": "^1.23.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "@types/qrcode-terminal": "^0.12.2",
+    "@typescript-eslint/eslint-plugin": "^6.13.0",
+    "@typescript-eslint/parser": "^6.13.0",
+    "eslint": "^8.55.0",
+    "ts-node-dev": "^2.0.0",
+    "typescript": "^5.3.0"
+  }
+}
