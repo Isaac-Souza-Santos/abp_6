@@ -22,7 +22,7 @@ export class MessageHandler {
 
   async handle(client: Client, message: Message): Promise<void> {
     const from = message.from;
-    const body = (message.body || '').trim();
+    const body = (message.body || '').trim().replace(/\s+/g, ' ');
     const bodyLower = body.toLowerCase();
     const isGroup = (await message.getChat()).isGroup;
 
@@ -65,8 +65,25 @@ export class MessageHandler {
         return;
       }
 
-      // Comandos principais
-      if (bodyLower === 'oi' || bodyLower === 'olá' || bodyLower === 'ola' || bodyLower === 'menu' || bodyLower === 'inicio' || bodyLower === 'início') {
+      // Comandos principais: menu, saudações e variações
+      const ehSaudacaoOuMenu =
+        bodyLower === 'oi' ||
+        bodyLower === 'olá' ||
+        bodyLower === 'ola' ||
+        bodyLower === 'menu' ||
+        bodyLower === 'inicio' ||
+        bodyLower === 'início' ||
+        bodyLower === 'bom dia' ||
+        bodyLower === 'boa tarde' ||
+        bodyLower === 'boa noite' ||
+        bodyLower === 'e aí' ||
+        bodyLower === 'eai' ||
+        bodyLower === 'fala' ||
+        bodyLower === 'salve' ||
+        bodyLower === 'hey' ||
+        bodyLower === 'hi' ||
+        bodyLower === 'hello';
+      if (ehSaudacaoOuMenu) {
         await message.reply(this.menuService.getWelcome());
         return;
       }
