@@ -43,12 +43,6 @@ Como o sistema **deve se comportar** – qualidade, segurança, documentação e
 
 ---
 
-## Backlog completo (tarefas por sprint)
-
-ID no formato `Sprint.Tarefa` (ex.: 1.1, 2.4).
-
----
-
 ## Sprint 1 – Fundação e conexão
 
 **Objetivo:** Projeto rodando em TypeScript com WhatsApp conectado e menu inicial.
