@@ -40,17 +40,6 @@ npm start
 
 **Primeira conexão:** o terminal exibe um **QR Code**. No WhatsApp (celular): **Aparelhos conectados** → **Conectar um aparelho** → escanear o QR. A sessão fica em `.wwebjs_auth`.
 
-## Configuração (.env)
-
-Copie `.env.example` para `.env` e ajuste conforme necessário:
-
-**⚠️ O arquivo `.env` e qualquer token (ex.: GitHub, Outlook) NÃO devem ser commitados.** A pasta `data/` e `.wwebjs_auth` também estão no `.gitignore`.
-
-| Variável | Uso |
-|----------|-----|
-| `ADMIN_NUMBER` | Número do WhatsApp do atendente (ex.: `5512999999999`). Quem usa esse número pode enviar *atendente*, *historico*, *metricas* e marcar protocolos (*processo [ID]*, *gestao [ID]*). |
-| `OUTLOOK_CLIENT_ID`, `OUTLOOK_CLIENT_SECRET`, `OUTLOOK_REFRESH_TOKEN` | Opcional. Integração com Microsoft Graph para criar eventos no calendário ao confirmar agendamento. Ver [docs/OUTLOOK-AGENDAMENTO.md](docs/OUTLOOK-AGENDAMENTO.md). |
-
 ## Menu do bot (opções)
 
 | Opção | Conteúdo |
@@ -123,10 +112,6 @@ Dados persistidos em `data/agendamentos.json` (pasta `data/` no `.gitignore`).
 ## Configuração de textos (Procon)
 
 Contato, endereço e horário: edite `src/services/MenuService.ts` (métodos `getContato()` e `getHorario()`).
-
-## Aviso
-
-O uso de bots com WhatsApp pode violar os termos oficiais. Recomenda-se conta institucional e fins de atendimento público.
 
 ## Licença
 
