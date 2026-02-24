@@ -1,6 +1,6 @@
 # Backlog do produto – Bot Procon Jacareí WhatsApp
 
-Backlog único para uso com **GitHub Projects**. As tarefas estão divididas em **3 sprints**; você pode criar um projeto Kanban, milestones por sprint e issues a partir desta lista.
+Backlog do produto em **3 sprints**. Requisitos (RF/RNF) no topo; tarefas por sprint abaixo.
 
 ---
 
@@ -43,48 +43,9 @@ Como o sistema **deve se comportar** – qualidade, segurança, documentação e
 
 ---
 
-## Como usar no GitHub Projects
+## Backlog completo (tarefas por sprint)
 
-### 1. Criar o projeto
-
-- No repositório: **Projects** → **New project** → **Board** (Kanban).
-
-### 2. Colunas do quadro
-
-Crie as colunas na ordem:
-
-| Coluna       | Uso                          |
-|-------------|------------------------------|
-| **Backlog** | Itens futuros / não planejados |
-| **To Do**   | Próximas tarefas do sprint    |
-| **In Progress** | Em desenvolvimento        |
-| **Review**  | Em revisão                   |
-| **Done**    | Concluído                    |
-
-### 3. Milestones (sprints)
-
-Em **Issues** → **Milestones** → **New milestone**:
-
-- **Sprint 1** – Fundação e conexão  
-- **Sprint 2** – Atendimento, conteúdo e agendamento  
-- **Sprint 3** – Painel, métricas e entrega  
-
-### 4. Criar as tasks
-
-- Use o template **Tarefa Kanban** (`.github/ISSUE_TEMPLATE/tarefa_kanban.md`).
-- Crie uma **Issue** para cada tarefa abaixo.
-- Associe cada issue ao **milestone** do sprint correspondente.
-- Mova os cards entre as colunas conforme o andamento.
-
-### 5. Labels (opcional)
-
-Sugestão de labels: `Sprint 1`, `Sprint 2`, `Sprint 3`, `prioridade-alta`, `prioridade-media`, `prioridade-baixa`.
-
----
-
-## Backlog completo (todas as tarefas)
-
-Cada item pode virar uma **Issue**. O número no início (ex.: 1.1) é o **ID da tarefa**; use no título da issue, ex.: `[Sprint 1] 1.1 – Configurar projeto Node.js + TypeScript`.
+ID no formato `Sprint.Tarefa` (ex.: 1.1, 2.4).
 
 ---
 
