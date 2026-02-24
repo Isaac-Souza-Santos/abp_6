@@ -44,6 +44,8 @@ npm start
 
 Copie `.env.example` para `.env` e ajuste conforme necessário:
 
+**⚠️ O arquivo `.env` e qualquer token (ex.: GitHub, Outlook) NÃO devem ser commitados.** A pasta `data/` e `.wwebjs_auth` também estão no `.gitignore`.
+
 | Variável | Uso |
 |----------|-----|
 | `ADMIN_NUMBER` | Número do WhatsApp do atendente (ex.: `5512999999999`). Quem usa esse número pode enviar *atendente*, *historico*, *metricas* e marcar protocolos (*processo [ID]*, *gestao [ID]*). |
@@ -93,6 +95,7 @@ Ver [docs/METRICAS-PROTOCOLO.md](docs/METRICAS-PROTOCOLO.md).
 
 | Documento | Conteúdo |
 |-----------|----------|
+| [.github/BACKLOG.md](.github/BACKLOG.md) | Backlog do produto e tarefas em 3 sprints (uso com GitHub Projects). |
 | [docs/ARQUITETURA.md](docs/ARQUITETURA.md) | Visão geral, stack, fluxo, agendamento, Outlook, LGPD, métricas. |
 | [docs/PASSO-A-PASSO.md](docs/PASSO-A-PASSO.md) | Guia do zero até o bot funcionando. |
 | [docs/REQUISITOS-API-E-MAIS.md](docs/REQUISITOS-API-E-MAIS.md) | API, ambiente, segurança, Evolution API. |

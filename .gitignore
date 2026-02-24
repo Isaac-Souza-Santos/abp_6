@@ -12,3 +12,9 @@ Thumbs.db
 .vscode/
 .cursor/
 *.tsbuildinfo
+scripts/.github-created-issues.json
+# Scripts de criação de tarefas no GitHub (não versionar)
+scripts/create-github-issues.mjs
+scripts/create-github-project.mjs
+scripts/backlog-tasks.json
+scripts/README.md
