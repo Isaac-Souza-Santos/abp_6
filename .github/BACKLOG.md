@@ -4,6 +4,45 @@ Backlog único para uso com **GitHub Projects**. As tarefas estão divididas em 
 
 ---
 
+## Requisitos funcionais (RF)
+
+O que o sistema **deve fazer** – funcionalidades e fluxos para o usuário.
+
+| ID   | Requisito | Prioridade | Relação com tarefas |
+|------|-----------|------------|----------------------|
+| RF01 | Conectar ao WhatsApp e exibir QR Code para autenticação | Alta | 1.2 |
+| RF02 | Manter sessão após primeiro login (LocalAuth) | Alta | 1.3 |
+| RF03 | Responder a "oi", "menu" e opções 1 a 5 com fluxo de boas-vindas | Alta | 1.4 |
+| RF04 | Apresentar textos oficiais (orientações, direitos, reclamação) alinhados ao CDC e ao Procon | Alta | 2.1 |
+| RF05 | Exibir contato e endereço do Procon Jacareí (configuráveis) nas opções 3 e 4 | Alta | 2.2 |
+| RF06 | Tratar mensagens não reconhecidas com resposta amigável sugerindo "menu" ou "início" | Média | 2.3 |
+| RF07 | Oferecer agendamento com fluxo nome → motivo → data e confirmação; persistir em `data/agendamentos.json` | Alta | 2.4 |
+| RF08 | Obter consentimento LGPD antes de coletar dados no agendamento (SIM/NÃO; sem coleta se NÃO) | Alta | 2.5 |
+| RF09 | Listar horários livres (slots de 30 min) e reservar slot ao confirmar agendamento | Alta | 2.6 |
+| RF10 | Painel do atendente: comandos *atendente* / *historico* / *metricas* para ADMIN_NUMBER | Alta | 3.1 |
+| RF11 | Métricas do protocolo (vira dado, vira processo, gestão); comandos *processo [ID]* e *gestao [ID]* atualizam agendamento | Alta | 3.2 |
+| RF12 | (Opcional) Criar evento no calendário (Outlook) ao confirmar agendamento | Baixa | 3.7 |
+
+---
+
+## Requisitos não funcionais (RNF)
+
+Como o sistema **deve se comportar** – qualidade, segurança, documentação e operação.
+
+| ID   | Requisito | Prioridade | Relação com tarefas |
+|------|-----------|------------|----------------------|
+| RNF01 | Projeto em Node.js + TypeScript com `npm run build` e `npm run dev` funcionando | Alta | 1.1 |
+| RNF02 | Documentação no README com pré-requisitos e comandos para rodar e escanear QR | Média | 1.5 |
+| RNF03 | Textos curtos e objetivos (acessibilidade e clareza) | Média | 2.7 |
+| RNF04 | (Opcional) Persistir sessão em ambiente de produção com instruções ou código para deploy | Baixa | 2.8 |
+| RNF05 | Tratamento de erros e logs (falha de conexão, auth); mensagem amigável ao usuário quando aplicável | Alta | 3.3 |
+| RNF06 | Documentação: README completo, arquitetura e variáveis de ambiente (ex.: docs/ARQUITETURA.md) | Alta | 3.4 |
+| RNF07 | Guia de deploy (ex.: servidor/VPS ou Docker) em docs (ex.: docs/PASSO-A-PASSO.md) | Média | 3.5 |
+| RNF08 | Segurança: `.env` e `data/` no .gitignore; sessão não commitada; orientações no README | Alta | 3.6 |
+| RNF09 | Atualizar Projects/Kanban com status final das tarefas do sprint | Média | 3.8 |
+
+---
+
 ## Como usar no GitHub Projects
 
 ### 1. Criar o projeto
@@ -115,6 +154,7 @@ Cada item pode virar uma **Issue**. O número no início (ex.: 1.1) é o **ID da
 
 ## Referência rápida
 
+- **Requisitos:** Requisitos funcionais (RF) e não funcionais (RNF) no início deste arquivo.
 - **Template de issue:** `.github/ISSUE_TEMPLATE/tarefa_kanban.md`
 - **Kanban de referência:** `.github/PROJECT_KANBAN.md`
 - **Documentação:** `docs/ARQUITETURA.md`, `docs/AGENDA-LIVRE-OCUPADA.md`, `docs/METRICAS-PROTOCOLO.md`, `docs/OUTLOOK-AGENDAMENTO.md`
