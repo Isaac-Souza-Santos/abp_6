@@ -113,20 +113,6 @@ Cada item pode virar uma **Issue**. O número no início (ex.: 1.1) é o **ID da
 
 ---
 
-## Backlog futuro (melhorias)
-
-Itens para depois dos 3 sprints; podem virar novas issues quando quiser.
-
-| Tarefa | Prioridade |
-|--------|------------|
-| Migrar para Evolution API (REST + webhooks) para separar conexão do bot | Média |
-| Migrar agendamentos de JSON para banco (ex.: SQLite/PostgreSQL) | Média |
-| Painel admin (web) para atualizar textos e ver/editar agendamentos | Baixa |
-| Testes automatizados (unitários e/ou E2E) | Média |
-| Dockerfile para deploy em container | Baixa |
-
----
-
 ## Referência rápida
 
 - **Template de issue:** `.github/ISSUE_TEMPLATE/tarefa_kanban.md`
