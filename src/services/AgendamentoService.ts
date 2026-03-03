@@ -214,6 +214,9 @@ ${enderecoProcon}`;
     }
     msg += `
 
+📄 *Documentos para levar:* documento pessoal (RG/CPF), comprovantes do problema e CNPJ da matriz do fornecedor (quando aplicável). Outros documentos podem ser solicitados conforme o caso.`;
+    msg += `
+
 Digite *menu* para outras opções.`;
     return msg;
   }
@@ -343,7 +346,7 @@ Digite *menu* para outras opções.`;
     const key = normalizarTelefone(telefone);
     const e = fluxoPorTelefone.get(key);
     if (!e || e.step !== 'confirmar' || !e.nome || !e.motivo) {
-      return { ok: false, msg: 'Dados incompletos. Digite *menu* e escolha *6* para recomeçar.' };
+      return { ok: false, msg: 'Dados incompletos. Digite *menu* e escolha *4* para recomeçar.' };
     }
     const ag = this.agendamentoStore.add({
       telefone,

@@ -40,6 +40,8 @@ npm start
 
 **Primeira conexão:** o terminal exibe um **QR Code**. No WhatsApp (celular): **Aparelhos conectados** → **Conectar um aparelho** → escanear o QR. A sessão fica em `.wwebjs_auth`.
 
+**Erro "Execution context was destroyed" ao iniciar:** (1) O bot tenta de novo sozinho após 4 segundos. (2) No `.env` adicione `HEADLESS=false`, rode `npm run dev` e escaneie o QR na janela do Chrome que abrir — muitas vezes resolve sem apagar nada.
+
 ## Menu do bot (opções)
 
 | Opção | Conteúdo |
