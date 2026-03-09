@@ -2,6 +2,11 @@
  * Textos e menus do atendimento Procon Jacareí/SP
  */
 export class MenuService {
+  /** Mensagem quando o usuário só cumprimenta (oi, boa tarde...): pede a dúvida. */
+  getQualSuaDuvida(): string {
+    return `Olá! 👋 Qual é a sua dúvida? Digite sua pergunta ou *menu* para ver as opções.`;
+  }
+
   getWelcome(): string {
     return `*Procon Jacareí - Atendimento WhatsApp*
 
@@ -9,36 +14,82 @@ Olá! Sou o assistente virtual do *Procon de Jacareí/SP*.
 
 Escolha uma opção digitando o *número*:
 
-*1* - Orientações ao consumidor
-*2* - Como registrar reclamação
-*3* - Contato e endereço
-*4* - Horário de atendimento
-*5* - Seus direitos básicos
-*6* - Agendamento (solicitar ou tirar dúvidas)
+*1* - Orientações e direitos do consumidor
+*2* - Quais documentos levar para comparecer ao Procon
+*3* - Contato, endereço e horário
+*4* - Agendamento (solicitar ou tirar dúvidas)
 
 Digite *menu* a qualquer momento para ver as opções.`;
   }
 
-  getOrientacoes(): string {
-    return `*Orientações ao consumidor*
+  /** Mensagem quando a pessoa cancela ou desiste do agendamento, com opções abaixo. */
+  getMensagemDesistenciaAgendamento(): string {
+    return `Agendamento cancelado. Sem problemas!
 
+_Qualquer dúvida, digite *menu* ou faça agendamento (*4*)._`;
+  }
+
+  /** Opção 1: orientações + direitos (unificado). */
+  getOrientacoesEDireitos(): string {
+    return `*Orientações e direitos do consumidor*
+
+*Orientações:*
 • Antes de comprar: pesquise preços, leia o contrato e exija nota fiscal.
 • Produto com defeito: você pode exigir troca ou devolução em até 7 dias (produtos não perecíveis).
 • Serviço não prestado: exija reembolso ou a execução do serviço.
 • Cobrança indevida: proteste por escrito e guarde comprovantes.
 
-Para *registrar uma reclamação*, volte ao menu e escolha a opção *2*.`;
+*Direitos básicos (CDC - Lei 8.078/90):*
+1. Proteção da vida e saúde
+2. Educação e divulgação para o consumo
+3. Informação adequada sobre produtos e serviços
+4. Proteção contra publicidade enganosa
+5. Proteção contra práticas abusivas
+6. Indenização por danos
+7. Acesso à Justiça e facilitação da defesa
+8. Qualidade dos serviços públicos
+
+O Procon orienta e atua na mediação entre consumidor e fornecedor.
+
+_Agendamento: *4*. Menu: *menu*._`;
   }
 
+  /** Opção 2: quais documentos levar para comparecer ao Procon. */
   getReclamacao(): string {
-    return `*Como registrar uma reclamação*
+    return `*Quais documentos levar para comparecer ao Procon*
 
-1. Reúna documentos: nota fiscal, contrato, prints de conversas (se aplicável).
-2. Compareça ao Procon Jacareí ou acesse o site oficial para registro online (quando disponível).
-3. Descreva o problema de forma clara e objetiva.
-4. Guarde o protocolo de atendimento.
+Para registrar uma reclamação é necessário *comparecer presencialmente* ao Procon Jacareí. Documentos que costumam ser necessários:
 
-*Contato* para agendamento e dúvidas: opção *3* no menu.`;
+• *Documento pessoal* (RG e CPF)
+• *Comprovantes do problema* (nota fiscal, contrato, faturas, prints de conversas)
+• *CNPJ da matriz do fornecedor* (quando aplicável)
+
+Cada caso pode exigir outros documentos. Por isso, o comparecimento à sede do Procon permite uma análise detalhada.
+
+1. Reúna os documentos acima.
+2. Agende sua visita: digite *4* para agendamento.
+3. Compareça no dia e horário com os documentos.
+
+_Contato e endereço: opção *3* no menu._
+
+_Agendamento: *4*. Menu: *menu*._`;
+  }
+
+  /** Opção 3: contato + horário (unificado). */
+  getContatoEHorario(): string {
+    return `*Procon Jacareí - Contato, endereço e horário*
+
+${this.getEnderecoProcon()}
+
+📞 *Telefone/WhatsApp:* (12) 99207-4513
+
+🌐 *Site:* Prefeitura de Jacareí - Secretaria/Procon
+
+*Horário de atendimento:* Os horários podem ser consultados no site oficial da Prefeitura de Jacareí. O atendimento presencial segue o horário de funcionamento da Prefeitura. Consulte o canal oficial para confirmar.
+
+_As informações podem ser confirmadas no portal oficial da Prefeitura._
+
+_Agendamento: *4*. Menu: *menu*._`;
   }
 
   /** Retorna apenas o endereço do Procon (para uso na mensagem de agendamento confirmado). */
@@ -55,7 +106,9 @@ ${this.getEnderecoProcon()}
 
 🌐 *Site:* Prefeitura de Jacareí - Secretaria/Procon
 
-_As informações de endereço podem ser confirmadas no portal oficial da Prefeitura._`;
+_As informações de endereço podem ser confirmadas no portal oficial da Prefeitura._
+
+_Agendamento: *4*. Menu: *menu*._`;
   }
 
   getHorario(): string {
@@ -63,7 +116,9 @@ _As informações de endereço podem ser confirmadas no portal oficial da Prefei
 
 Os horários do Procon Jacareí podem ser consultados no site oficial da Prefeitura de Jacareí.
 
-Geralmente o atendimento presencial segue o horário de funcionamento da Prefeitura. Consulte sempre o canal oficial para confirmar.`;
+Geralmente o atendimento presencial segue o horário de funcionamento da Prefeitura. Consulte sempre o canal oficial para confirmar.
+
+_Agendamento: *4*. Menu: *menu*._`;
   }
 
   getDireitos(): string {
@@ -78,14 +133,16 @@ Geralmente o atendimento presencial segue o horário de funcionamento da Prefeit
 7. *Acesso à Justiça* e facilitação da defesa
 8. *Qualidade dos serviços* públicos
 
-O Procon orienta e atua na mediação entre consumidor e fornecedor.`;
+O Procon orienta e atua na mediação entre consumidor e fornecedor.
+
+_Agendamento: *4*. Menu: *menu*._`;
   }
 
   getAgendamento(): string {
-    return `Para solicitar *agendamento* ou tirar dúvidas sobre atendimento, escolha a opção *6* no menu.`;
+    return `Para solicitar *agendamento* ou tirar dúvidas sobre atendimento, escolha a opção *4* no menu.`;
   }
 
   getDefaultReply(): string {
-    return `Não entendi. Digite *menu* para ver as opções disponíveis ou escolha um número de *1* a *6*.`;
+    return `Não entendi. Digite *menu* para ver as opções disponíveis ou escolha um número de *1* a *4*.`;
   }
 }

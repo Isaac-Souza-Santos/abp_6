@@ -9,19 +9,13 @@
     "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
     "lint": "eslint src --ext .ts"
   },
-  "keywords": [
-    "whatsapp",
-    "bot",
-    "procon",
-    "jacarei",
-    "consumidor"
-  ],
+  "keywords": ["whatsapp", "bot", "procon", "jacarei", "consumidor"],
   "author": "Procon Jacareí SP",
   "license": "MIT",
-  "engines": {
-    "node": ">=18.0.0"
-  },
+  "engines": { "node": ">=18.0.0" },
   "dependencies": {
+    "dotenv": "^16.3.1",
+    "groq-sdk": "^0.5.0",
     "qrcode-terminal": "^0.12.0",
     "whatsapp-web.js": "^1.23.0"
   },

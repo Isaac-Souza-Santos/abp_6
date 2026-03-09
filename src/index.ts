@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import { ProconBot } from './bot/ProconBot';
 
 async function main(): Promise<void> {

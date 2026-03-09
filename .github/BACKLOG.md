@@ -22,6 +22,7 @@ O que o sistema **deve fazer** – funcionalidades e fluxos para o usuário.
 | RF10 | Painel do atendente: comandos *atendente* / *historico* / *metricas* para ADMIN_NUMBER | Alta | 3.1 |
 | RF11 | Métricas do protocolo (vira dado, vira processo, gestão); comandos *processo [ID]* e *gestao [ID]* atualizam agendamento | Alta | 3.2 |
 | RF12 | (Opcional) Criar evento no calendário (Outlook) ao confirmar agendamento | Baixa | 3.7 |
+| RF13 | Responder dúvidas em texto livre via IA (Groq) com contexto CDC/Procon e métricas satisfatória/não satisfatória | Alta | 3.9 |
 
 ---
 
@@ -92,8 +93,9 @@ Como o sistema **deve se comportar** – qualidade, segurança, documentação e
 | 3.6 | Checklist de segurança (.env, sessão não commitada) | Alta | .env e data/ no .gitignore; orientações no README |
 | 3.7 | (Opcional) Integração Outlook: criar evento no calendário ao confirmar agendamento | Baixa | Variáveis Microsoft Graph; evento criado conforme docs/OUTLOOK-AGENDAMENTO.md |
 | 3.8 | Atualizar Projects/Kanban com status final das tarefas | Média | Todas as issues do Sprint 3 em Done |
+| 3.9 | Integrar Groq para dúvidas em texto livre (contexto CDC/Procon); avaliar resposta (satisfatória/não) e exibir em *metricas* | Alta | API Groq (tier gratuito); resposta para mensagens não reconhecidas; data/groq-metricas.json; comando *metricas* inclui totais Groq |
 
-**Entrega Sprint 3:** Painel do atendente com métricas (vira dado, processo, gestão), documentação e guia de deploy; Outlook opcional.
+**Entrega Sprint 3:** Painel do atendente com métricas (vira dado, processo, gestão, Groq), documentação e guia de deploy; Outlook opcional.
 
 ---
 
@@ -103,7 +105,7 @@ Como o sistema **deve se comportar** – qualidade, segurança, documentação e
 |--------|--------------------|
 | **Sprint 1** | Bot conectado ao WhatsApp com menu inicial (TypeScript + whatsapp-web.js) |
 | **Sprint 2** | Conteúdo completo (1–5) + Agendamento (6) com LGPD e horários livres |
-| **Sprint 3** | Painel atendente, métricas do protocolo, documentação e guia de deploy |
+| **Sprint 3** | Painel atendente, métricas do protocolo, Groq (dúvidas em texto livre), documentação e guia de deploy |
 
 ---
 

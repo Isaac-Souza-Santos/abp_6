@@ -4,11 +4,13 @@ As métricas do painel do atendente acompanham o **ciclo do protocolo** em três
 
 ## Os três eixos
 
-| Eixo | Significado | Como é contado |
-|------|-------------|----------------|
-| **✅ Vira dado** | Protocolo registrado no sistema (entrou como dado) | Total de agendamentos salvos. Todo agendamento confirmado vira dado. |
-| **✅ Vira processo** | Protocolo que virou processo formal | Quantidade de protocolos marcados pelo atendente como “virou processo”. |
-| **✅ Gestão pública** | Protocolo utilizado na gestão / indicadores | Quantidade de protocolos marcados pelo atendente como “gestão pública”. |
+
+| Eixo                 | Significado                                        | Como é contado                                                          |
+| -------------------- | -------------------------------------------------- | ----------------------------------------------------------------------- |
+| **✅ Vira dado**      | Protocolo registrado no sistema (entrou como dado) | Total de agendamentos salvos. Todo agendamento confirmado vira dado.    |
+| **✅ Vira processo**  | Protocolo que virou processo formal                | Quantidade de protocolos marcados pelo atendente como “virou processo”. |
+| **✅ Gestão pública** | Protocolo utilizado na gestão / indicadores        | Quantidade de protocolos marcados pelo atendente como “gestão pública”. |
+
 
 Assim, o fluxo **protocolo → vira dado → vira processo → gestão pública** vira base para indicadores e tomada de decisão.
 
@@ -17,11 +19,11 @@ Assim, o fluxo **protocolo → vira dado → vira processo → gestão pública*
 Quem usa o número configurado em `ADMIN_NUMBER` pode:
 
 1. Enviar **atendente** (ou **historico** / **metricas**) para ver o painel com as métricas e a lista de protocolos (com ID).
-2. Marcar um protocolo como **virou processo**:  
-   `processo ag-1234567890-abc123`  
+2. Marcar um protocolo como **virou processo**:
+  `processo ag-1234567890-abc123`  
    (use o ID exatamente como aparece no histórico.)
-3. Marcar um protocolo como **gestão pública**:  
-   `gestao ag-1234567890-abc123`  
+3. Marcar um protocolo como **gestão pública**:
+  `gestao ag-1234567890-abc123`  
    (ou `gestão ag-...`.)
 
 O painel mostra, para cada protocolo, se já está marcado como processo e/ou gestão.
@@ -38,3 +40,34 @@ O painel mostra, para cada protocolo, se já está marcado como processo e/ou ge
 - **Gestão pública:** quantos protocolos foram considerados para relatórios, indicadores e planejamento (gestão pública).
 
 Isso permite acompanhar não só o volume de atendimentos, mas também o desdobramento em processos e o uso dos dados para gestão.
+
+---
+
+## Métricas de resposta Groq (dúvidas em texto livre)
+
+Quando o consumidor faz uma **dúvida em texto livre** e recebe resposta da **Groq** (IA com base no CDC e no arquivo de dúvidas), o bot pergunta:
+
+**“Isso ajudou? Responda *1* para sim ou *2* para não.”**
+
+
+| Resposta do usuário    | O que é registrado            | Mensagem ao consumidor                                                                   |
+| ---------------------- | ----------------------------- | ---------------------------------------------------------------------------------------- |
+| **1** (ou sim, s)      | Resposta **satisfatória**     | “Obrigado! Resposta registrada como satisfatória. Protocolo finalizado.”                 |
+| **2** (ou não, nao, n) | Resposta **não satisfatória** | “Sentimos por não ter ajudado. Digite *menu* para outras opções ou compareça ao Procon.” |
+
+
+### Onde aparece
+
+- No **painel do atendente** (comando *atendente* / *historico* / *metricas*), na linha de métricas:
+  - **Resposta Groq: satisfatória X | não satisfatória Y**
+
+### Onde os dados ficam
+
+- As contagens são persistidas em `**data/groq-metricas.json`** (pasta `data/` não é commitada).
+- O atendente vê o total acumulado de respostas satisfatórias e não satisfatórias no painel.
+
+### Uso para gestão
+
+- **Satisfatória:** atendimento por dúvida (IA) considerado resolvido pelo consumidor; protocolo finalizado.
+- **Não satisfatória:** indica que a resposta da IA não foi suficiente; útil para revisar conteúdo (DUVIDAS.TXT), melhorar orientações ou incentivar atendimento presencial.
+

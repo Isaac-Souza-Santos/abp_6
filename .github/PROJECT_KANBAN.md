@@ -64,9 +64,10 @@ Projeto gerenciado em **modo Kanban** com **3 Sprints**. Use este documento como
 | 3.2 | Documentação: README, arquitetura e variáveis de ambiente | Alta | README completo + doc de arquitetura |
 | 3.3 | Guia de deploy (ex.: servidor/VPS ou Docker) | Média | Passo a passo para colocar em produção |
 | 3.4 | Checklist de segurança (não expor sessão, uso de .env) | Alta | .env no .gitignore e orientações no README |
-| 3.5 | Atualizar KANBAN/Projects com status final das tarefas | Média | Todas as issues do Sprint 3 em Done |
+| 3.5 | Integrar Groq para dúvidas em texto livre (contexto CDC/Procon); métricas satisfatória/não satisfatória | Alta | API Groq (tier gratuito); resposta para texto livre; data/groq-metricas.json; *metricas* inclui totais Groq |
+| 3.6 | Atualizar KANBAN/Projects com status final das tarefas | Média | Todas as issues do Sprint 3 em Done |
 
-**Entrega Sprint 3:** Projeto documentado, com tratamento de erros e guia de deploy.
+**Entrega Sprint 3:** Projeto documentado, com tratamento de erros, Groq (dúvidas em texto livre) e guia de deploy.
 
 ---
 
@@ -76,13 +77,14 @@ Projeto gerenciado em **modo Kanban** com **3 Sprints**. Use este documento como
 |--------|--------------------|
 | **Sprint 1** | Bot conectado ao WhatsApp com menu inicial (TypeScript + whatsapp-web.js) |
 | **Sprint 2** | Conteúdo completo: orientações, reclamação, contato, horário, direitos |
-| **Sprint 3** | Estabilidade, documentação e guia de deploy |
+| **Sprint 3** | Estabilidade, Groq (dúvidas em texto livre), documentação e guia de deploy |
 
 ---
 
-## API utilizada (gratuita)
+## APIs utilizadas (gratuitas)
 
 - **whatsapp-web.js** – Biblioteca open source que utiliza o WhatsApp Web (multidevice), sem custo de API.  
+- **Groq** – API de IA (tier gratuito) para dúvidas em texto livre com contexto CDC/Procon.  
 - Alternativa futura: **Evolution API** (self-hosted, REST + webhooks), também gratuita.
 
 Este documento deve ser versionado no Git junto ao código e atualizado conforme as tarefas forem concluídas.
