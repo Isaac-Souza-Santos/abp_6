@@ -1,4 +1,8 @@
-import 'dotenv/config';
+import { config } from 'dotenv';
+import { getEnvPath } from './config/paths';
+
+config({ path: getEnvPath() });
+
 import { ProconBot } from './bot/ProconBot';
 
 async function main(): Promise<void> {

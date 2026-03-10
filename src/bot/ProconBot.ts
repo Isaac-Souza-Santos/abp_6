@@ -3,9 +3,9 @@ import * as fs from 'fs';
 import { Client, LocalAuth } from 'whatsapp-web.js';
 import qrcode from 'qrcode-terminal';
 import { MessageHandler } from '../handlers/MessageHandler';
+import { getAuthPath } from '../config/paths';
 
-// Pasta de sessão no diretório do projeto (sempre a mesma, onde você roda npm run dev / npm start)
-const AUTH_PATH = path.join(process.cwd(), '.wwebjs_auth');
+const AUTH_PATH = getAuthPath();
 
 export class ProconBot {
   private client: Client;

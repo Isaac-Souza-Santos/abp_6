@@ -2,6 +2,7 @@ node_modules/
 dist/
 .env
 .env.local
+security/
 .wwebjs_auth/
 .wwebjs_cache/
 data/
@@ -18,4 +19,4 @@ scripts/create-github-issues.mjs
 scripts/create-github-project.mjs
 scripts/backlog-tasks.json
 scripts/README.md
-docs/GROQ-COMO-FUNCIONA.md
+docs/
