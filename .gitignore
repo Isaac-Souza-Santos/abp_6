@@ -18,3 +18,4 @@ scripts/create-github-issues.mjs
 scripts/create-github-project.mjs
 scripts/backlog-tasks.json
 scripts/README.md
+docs/

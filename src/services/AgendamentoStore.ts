@@ -1,8 +1,9 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import type { Agendamento } from '../types/agendamento';
+import { getDataDir } from '../config/paths';
 
-const DATA_DIR = path.join(process.cwd(), 'data');
+const DATA_DIR = getDataDir();
 const FILE_PATH = path.join(DATA_DIR, 'agendamentos.json');
 
 function ensureDir(): void {

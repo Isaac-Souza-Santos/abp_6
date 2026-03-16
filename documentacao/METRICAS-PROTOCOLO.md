@@ -8,8 +8,8 @@ As métricas do painel do atendente acompanham o **ciclo do protocolo** em três
 | Eixo                 | Significado                                        | Como é contado                                                          |
 | -------------------- | -------------------------------------------------- | ----------------------------------------------------------------------- |
 | **✅ Vira dado**      | Protocolo registrado no sistema (entrou como dado) | Total de agendamentos salvos. Todo agendamento confirmado vira dado.    |
-| **✅ Vira processo**  | Protocolo que virou processo formal                | Quantidade de protocolos marcados pelo atendente como “virou processo”. |
-| **✅ Gestão pública** | Protocolo utilizado na gestão / indicadores        | Quantidade de protocolos marcados pelo atendente como “gestão pública”. |
+| **✅ Vira processo**  | Protocolo que virou processo formal                | Quantidade de protocolos marcados pelo atendente como "virou processo". |
+| **✅ Gestão pública** | Protocolo utilizado na gestão / indicadores        | Quantidade de protocolos marcados pelo atendente como "gestão pública". |
 
 
 Assim, o fluxo **protocolo → vira dado → vira processo → gestão pública** vira base para indicadores e tomada de decisão.
@@ -47,13 +47,13 @@ Isso permite acompanhar não só o volume de atendimentos, mas também o desdobr
 
 Quando o consumidor faz uma **dúvida em texto livre** e recebe resposta da **Groq** (IA com base no CDC e no arquivo de dúvidas), o bot pergunta:
 
-**“Isso ajudou? Responda *1* para sim ou *2* para não.”**
+**"Isso ajudou? Responda *1* para sim ou *2* para não."**
 
 
 | Resposta do usuário    | O que é registrado            | Mensagem ao consumidor                                                                   |
 | ---------------------- | ----------------------------- | ---------------------------------------------------------------------------------------- |
-| **1** (ou sim, s)      | Resposta **satisfatória**     | “Obrigado! Resposta registrada como satisfatória. Protocolo finalizado.”                 |
-| **2** (ou não, nao, n) | Resposta **não satisfatória** | “Sentimos por não ter ajudado. Digite *menu* para outras opções ou compareça ao Procon.” |
+| **1** (ou sim, s)      | Resposta **satisfatória**     | "Obrigado! Resposta registrada como satisfatória. Protocolo finalizado."                 |
+| **2** (ou não, nao, n) | Resposta **não satisfatória** | "Sentimos por não ter ajudado. Digite *menu* para outras opções ou compareça ao Procon." |
 
 
 ### Onde aparece
@@ -70,4 +70,3 @@ Quando o consumidor faz uma **dúvida em texto livre** e recebe resposta da **Gr
 
 - **Satisfatória:** atendimento por dúvida (IA) considerado resolvido pelo consumidor; protocolo finalizado.
 - **Não satisfatória:** indica que a resposta da IA não foi suficiente; útil para revisar conteúdo (DUVIDAS.TXT), melhorar orientações ou incentivar atendimento presencial.
-
