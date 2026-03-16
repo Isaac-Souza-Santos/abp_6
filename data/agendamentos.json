@@ -1,0 +1,89 @@
+[
+  {
+    "telefone": "278825032237080@lid",
+    "nome": "Isaac souza",
+    "motivo": "comprei   um  fone e ele  parou  de  funcionar",
+    "dataPreferida": "18/02/2026 às 10:00",
+    "slotInicio": "2026-02-18T13:00:00.000Z",
+    "status": "solicitado",
+    "id": "ag-1771362037113-j9krk0",
+    "criadoEm": "2026-02-17T21:00:37.113Z",
+    "atualizadoEm": "2026-02-17T21:00:37.113Z"
+  },
+  {
+    "telefone": "278825032237080@lid",
+    "nome": "bruna torres e souza santos",
+    "motivo": "comprei um micro-ondas e parou de funcionar, porém a loja não prestou nenhuma assistencia",
+    "dataPreferida": "2 - o mais cedo possível",
+    "status": "solicitado",
+    "id": "ag-1771362264924-zahl0q",
+    "criadoEm": "2026-02-17T21:04:24.924Z",
+    "atualizadoEm": "2026-02-17T21:04:24.924Z"
+  },
+  {
+    "telefone": "278825032237080@lid",
+    "nome": "Isaac Souza",
+    "motivo": "Carro  com motor  fundido",
+    "dataPreferida": "26/02/2026 às 15:30",
+    "slotInicio": "2026-02-26T18:30:00.000Z",
+    "status": "solicitado",
+    "id": "ag-1771363007725-4m6e67",
+    "criadoEm": "2026-02-17T21:16:47.725Z",
+    "atualizadoEm": "2026-02-17T21:16:47.725Z"
+  },
+  {
+    "telefone": "278825032237080@lid",
+    "nome": "Maria",
+    "motivo": "liquidificador   quebrado",
+    "dataPreferida": "25/02/2026 às 14:30",
+    "slotInicio": "2026-02-25T17:30:00.000Z",
+    "status": "solicitado",
+    "id": "ag-1771363166999-mzqotr",
+    "criadoEm": "2026-02-17T21:19:26.999Z",
+    "atualizadoEm": "2026-02-17T21:19:26.999Z"
+  },
+  {
+    "telefone": "278825032237080@lid",
+    "nome": "Lucia",
+    "motivo": "Passagem  aerea  cancelada",
+    "dataPreferida": "26/02/2026 às 16:30",
+    "slotInicio": "2026-02-26T19:30:00.000Z",
+    "status": "solicitado",
+    "id": "ag-1771363332145-v9szwd",
+    "criadoEm": "2026-02-17T21:22:12.145Z",
+    "atualizadoEm": "2026-02-17T21:22:12.145Z"
+  },
+  {
+    "telefone": "59571263516685@lid",
+    "nome": "Rnwn",
+    "motivo": "Duvia",
+    "dataPreferida": "24/02/2026 às 09:00",
+    "slotInicio": "2026-02-24T12:00:00.000Z",
+    "status": "solicitado",
+    "id": "ag-1771890181853-1v7yg4",
+    "criadoEm": "2026-02-23T23:43:01.853Z",
+    "atualizadoEm": "2026-02-23T23:43:01.853Z"
+  },
+  {
+    "telefone": "278825032237080@lid",
+    "nome": "Keila",
+    "motivo": "Quebrou",
+    "dataPreferida": "04/03/2026 às 11:00",
+    "slotInicio": "2026-03-04T14:00:00.000Z",
+    "status": "solicitado",
+    "id": "ag-1772579137050-fj125n",
+    "criadoEm": "2026-03-03T23:05:37.050Z",
+    "atualizadoEm": "2026-03-03T23:05:37.050Z"
+  },
+  {
+    "telefone": "278825032237080@lid",
+    "nome": "Jlu",
+    "motivo": "Resolva meu problema",
+    "dataPreferida": "04/03/2026 às 09:00",
+    "slotInicio": "2026-03-04T12:00:00.000Z",
+    "status": "solicitado",
+    "id": "ag-1772579446773-ns33ie",
+    "criadoEm": "2026-03-03T23:10:46.773Z",
+    "atualizadoEm": "2026-03-03T23:10:46.773Z"
+  }
+]

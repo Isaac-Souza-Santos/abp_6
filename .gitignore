@@ -4,7 +4,6 @@ dist/
 .env.local
 .wwebjs_auth/
 .wwebjs_cache/
-data/
 *.log
 .DS_Store
 Thumbs.db
