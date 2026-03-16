@@ -1,6 +1,17 @@
 import { ProconBot } from './ProconBot';
 import { Client } from 'whatsapp-web.js';
 
+// Mock dependencies
+jest.mock('../services/GroqService', () => ({
+  GroqService: jest.fn().mockImplementation(() => ({
+    estaDisponivel: jest.fn().mockReturnValue(false),
+  })),
+}));
+jest.mock('../config/paths', () => ({
+  getAuthPath: jest.fn().mockReturnValue('/tmp/test-auth'),
+  getDataDir: jest.fn().mockReturnValue('/tmp/test-data'),
+}));
+
 describe('ProconBot Integration', () => {
   let bot: ProconBot;
   let mockClient: Client;

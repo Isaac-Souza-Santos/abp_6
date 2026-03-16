@@ -6,19 +6,19 @@ describe('MenuService', () => {
   test('getWelcome returns menu text with options', () => {
     const result = service.getWelcome();
     expect(result).toContain('Procon Jacareí');
-    expect(result).toContain('*1* - Orientações ao consumidor');
+    expect(result).toContain('*1* - Orientações e direitos do consumidor');
     expect(result).toContain('Digite *menu*');
   });
 
-  test('getOrientacoes returns consumer guidance', () => {
-    const result = service.getOrientacoes();
-    expect(result).toContain('Orientações ao consumidor');
+  test('getOrientacoesEDireitos returns consumer guidance', () => {
+    const result = service.getOrientacoesEDireitos();
+    expect(result).toContain('Orientações e direitos do consumidor');
     expect(result).toContain('troca ou devolução');
   });
 
   test('getReclamacao returns complaint registration info', () => {
     const result = service.getReclamacao();
-    expect(result).toContain('Como registrar uma reclamação');
+    expect(result).toContain('Quais documentos levar para comparecer ao Procon');
     expect(result).toContain('nota fiscal');
   });
 

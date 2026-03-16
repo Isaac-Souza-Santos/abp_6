@@ -1,10 +1,21 @@
 import * as fs from 'fs';
 import * as path from 'path';
+import * as admin from 'firebase-admin';
 import type { Agendamento } from '../types/agendamento';
 import { getDataDir } from '../config/paths';
 
 const DATA_DIR = getDataDir();
 const FILE_PATH = path.join(DATA_DIR, 'agendamentos.json');
+
+// Initialize Firebase (optional, requires service account key)
+let firestore: admin.firestore.Firestore | null = null;
+if (process.env.FIREBASE_SERVICE_ACCOUNT_KEY) {
+  const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY);
+  admin.initializeApp({
+    credential: admin.credential.cert(serviceAccount),
+  });
+  firestore = admin.firestore();
+}
 
 function ensureDir(): void {
   if (!fs.existsSync(DATA_DIR)) {
@@ -26,6 +37,23 @@ function load(): Agendamento[] {
 function save(agendamentos: Agendamento[]): void {
   ensureDir();
   fs.writeFileSync(FILE_PATH, JSON.stringify(agendamentos, null, 2), 'utf-8');
+  // Backup to cloud if configured
+  backupToCloud(agendamentos);
+}
+
+async function backupToCloud(agendamentos: Agendamento[]): Promise<void> {
+  if (!firestore) return;
+  try {
+    const batch = firestore.batch();
+    agendamentos.forEach((ag) => {
+      const docRef = firestore!.collection('agendamentos').doc(ag.id);
+      batch.set(docRef, ag);
+    });
+    await batch.commit();
+    console.log('✅ Backup para nuvem realizado');
+  } catch (error) {
+    console.error('❌ Erro no backup para nuvem:', error);
+  }
 }
 
 export class AgendamentoStore {

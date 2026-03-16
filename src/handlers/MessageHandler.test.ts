@@ -1,6 +1,13 @@
 import { MessageHandler } from './MessageHandler';
 import { Client, Message } from 'whatsapp-web.js';
 
+// Mock GroqService to avoid dependency issues
+jest.mock('../services/GroqService', () => ({
+  GroqService: jest.fn().mockImplementation(() => ({
+    estaDisponivel: jest.fn().mockReturnValue(false),
+  })),
+}));
+
 describe('MessageHandler', () => {
   let handler: MessageHandler;
   let mockClient: Client;
@@ -32,7 +39,7 @@ describe('MessageHandler', () => {
 
   test('handles option 1', async () => {
     mockMessage.body = '1';
-    const spy = jest.spyOn(handler['menuService'], 'getOrientacoes');
+    const spy = jest.spyOn(handler['menuService'], 'getOrientacoesEDireitos');
     await handler.handle(mockClient, mockMessage);
     expect(spy).toHaveBeenCalled();
   });
