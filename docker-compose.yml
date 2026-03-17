@@ -1,0 +1,14 @@
+version: '3.8'
+
+services:
+  procon-bot:
+    build: .
+    container_name: procon-jacarei-bot
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      # Add other env vars as needed
+    volumes:
+      - ./data:/app/data  # For persistent data storage
+      - ./.wwebjs_auth:/app/.wwebjs_auth  # For WhatsApp session
+    # Optional: Add network or ports if needed

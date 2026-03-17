@@ -1,10 +1,33 @@
 import * as fs from 'fs';
 import { Client, LocalAuth } from 'whatsapp-web.js';
 import qrcode from 'qrcode-terminal';
+import winston from 'winston';
 import { MessageHandler } from '../handlers/MessageHandler';
 import { getAuthPath } from '../config/paths';
 
 const AUTH_PATH = getAuthPath();
+
+// Configure Winston logger
+const logger = winston.createLogger({
+  level: 'info',
+  format: winston.format.combine(
+    winston.format.timestamp(),
+    winston.format.errors({ stack: true }),
+    winston.format.json()
+  ),
+  defaultMeta: { service: 'procon-bot' },
+  transports: [
+    new winston.transports.File({ filename: 'logs/error.log', level: 'error' }),
+    new winston.transports.File({ filename: 'logs/combined.log' }),
+  ],
+});
+
+// If not in production, log to console too
+if (process.env.NODE_ENV !== 'production') {
+  logger.add(new winston.transports.Console({
+    format: winston.format.simple(),
+  }));
+}
 
 export class ProconBot {
   private client: Client;
@@ -29,6 +52,7 @@ export class ProconBot {
   }
 
   async start(): Promise<void> {
+    logger.info('Iniciando bot Procon Jacareí', { authPath: AUTH_PATH, exists: fs.existsSync(AUTH_PATH) });
     console.log('📂 Sessão em:', AUTH_PATH, fs.existsSync(AUTH_PATH) ? '(pasta existe)' : '(pasta não encontrada — será criada ao escanear QR)');
     let qrJaMostrado = false;
     this.client.on('qr', (qr) => {
@@ -46,14 +70,17 @@ export class ProconBot {
     });
 
     this.client.on('ready', () => {
+      logger.info('Bot conectado e pronto');
       console.log('✅ Bot Procon Jacareí conectado e pronto! (sessão salva — não precisou de QR)');
     });
 
     this.client.on('authenticated', () => {
+      logger.info('Autenticação bem-sucedida');
       console.log('🔐 Autenticado com sucesso.');
     });
 
     this.client.on('auth_failure', (msg) => {
+      logger.error('Falha na autenticação', { error: msg });
       console.error('❌ Falha na autenticação:', msg);
     });
 
@@ -63,7 +90,12 @@ export class ProconBot {
     });
 
     this.client.on('message', async (msg) => {
-      await this.messageHandler.handle(this.client, msg);
+      logger.debug('Mensagem recebida', { from: msg.from, body: msg.body?.substring(0, 100) });
+      try {
+        await this.messageHandler.handle(this.client, msg);
+      } catch (error) {
+        logger.error('Erro ao processar mensagem', { error, from: msg.from });
+      }
     });
 
     console.log('⏳ Inicializando cliente WhatsApp... (aguarde; se precisar de login, o QR Code aparecerá aqui em seguida)\n');
