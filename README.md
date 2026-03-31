@@ -116,6 +116,13 @@ Dados persistidos em `data/agendamentos.json` (pasta `data/` no `.gitignore`).
 ## Configuração de textos (Procon)
 
 Contato, endereço e horário: edite `src/services/MenuService.ts` (métodos `getContato()` e `getHorario()`).
+## Burndonw's 📉:
+
+<p align="center"><img src="docs/Burndown-sprint1-abp6.png" alt="Burndown Sprint 1"></p>
+
+## Apresentações 🎥:
+
+<a href="">Apresentação Sprint 1</a>
 
 ## Licença
 
