@@ -95,6 +95,7 @@ Ver [documentacao/METRICAS-PROTOCOLO.md](documentacao/METRICAS-PROTOCOLO.md).
 | [documentacao/OUTLOOK-AGENDAMENTO.md](documentacao/OUTLOOK-AGENDAMENTO.md) | Integração gratuita com Outlook (Microsoft Graph).                   |
 | [documentacao/AGENDA-LIVRE-OCUPADA.md](documentacao/AGENDA-LIVRE-OCUPADA.md) | Gerenciamento de horários livres x ocupados.                         |
 | [documentacao/METRICAS-PROTOCOLO.md](documentacao/METRICAS-PROTOCOLO.md)  | Métricas: vira dado, vira processo, gestão pública.                  |
+| [Apresentação Sprint 1 (YouTube)](https://www.youtube.com/watch?v=91aUjvrli_g) | Vídeo da apresentação / demo da Sprint 1.                           |
 
 ## Estrutura do projeto
 
@@ -120,9 +121,9 @@ Contato, endereço e horário: edite `src/services/MenuService.ts` (métodos `ge
 
 <p align="center"><img src="docs/Burndown-sprint1-abp6.png" alt="Burndown Sprint 1"></p>
 
-## Apresentações 🎥:
+## Apresentações
 
-<a href="https://www.youtube.com/watch?v=91aUjvrli_g">Apresentação Sprint 1</a>
+- [Apresentação Sprint 1 (YouTube)](https://www.youtube.com/watch?v=91aUjvrli_g)
 
 ## Licença
 

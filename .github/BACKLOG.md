@@ -58,6 +58,8 @@ Como o sistema **deve se comportar** – qualidade, segurança, documentação e
 
 **Entrega Sprint 1:** Bot responde no WhatsApp com menu do Procon Jacareí (opções 1–5).
 
+**Apresentação (vídeo):** [Sprint 1 no YouTube](https://www.youtube.com/watch?v=91aUjvrli_g)
+
 ---
 
 ## Sprint 2 – Atendimento, conteúdo e agendamento

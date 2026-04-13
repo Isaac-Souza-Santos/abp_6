@@ -36,6 +36,8 @@ Projeto gerenciado em **modo Kanban** com **3 Sprints**. Use este documento como
 
 **Entrega Sprint 1:** Bot responde no WhatsApp com menu do Procon Jacareí.
 
+**Apresentação (vídeo):** [Sprint 1 no YouTube](https://www.youtube.com/watch?v=91aUjvrli_g)
+
 ---
 
 ## Sprint 2 – Atendimento e conteúdo (Semana 3–4)
