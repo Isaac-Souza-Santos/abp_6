@@ -114,6 +114,9 @@ src/
 
 Dados persistidos em `data/agendamentos.json` (pasta `data/` no `.gitignore`).
 
+## Link das apresentações:
+<p>Link para o video de apresentação Sprint 1: <a>exemplo</a></p>
+
 ## Configuração de textos (Procon)
 
 Contato, endereço e horário: edite `src/services/MenuService.ts` (métodos `getContato()` e `getHorario()`).
