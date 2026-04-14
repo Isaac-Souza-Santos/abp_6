@@ -19,7 +19,7 @@ function isConfigOk(): boolean {
 function parseDataPreferida(dataPreferida: string): { start: Date; end: Date } {
   const now = new Date();
   // Tenta DD/MM/AAAA ou DD-MM-AAAA
-  const match = dataPreferida.match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})/);
+  const match = dataPreferida.match(/(\d{1,2})[/-](\d{1,2})[/-](\d{2,4})/);
   let start: Date;
   if (match) {
     const day = parseInt(match[1], 10);
