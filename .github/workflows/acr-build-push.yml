@@ -22,6 +22,7 @@ on:
       - "package-lock.json"
       - "tsconfig.json"
       - "Dockerfile"
+      - "docker-entrypoint.sh"
       - ".dockerignore"
       - "infra/azure/gha-deploy-containerapp.sh"
       - "infra/azure/apply-persist-volume.mjs"
