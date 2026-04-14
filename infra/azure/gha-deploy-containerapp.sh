@@ -84,4 +84,19 @@ az role assignment create \
   --assignee-object-id "$PRINCIPAL_ID" --assignee-principal-type ServicePrincipal \
   --role "Key Vault Secrets User" --scope "$KV_ID" 2>/dev/null || true
 
+# Duas revisões ativas no mesmo Azure Files = dois Chromes no mesmo userDataDir = "browser is already running".
+echo "Aguardando propagacao da nova revisao antes de desativar as antigas..."
+sleep 25
+LATEST="$(az containerapp show -n "$APP" -g "$RG" --query "properties.latestRevisionName" -o tsv)"
+if [[ -n "$LATEST" ]]; then
+  echo "Revisao mais recente: $LATEST"
+  while IFS= read -r rev; do
+    [[ -z "$rev" || "$rev" == "$LATEST" ]] && continue
+    echo "Desativando revisao antiga (libera locks no volume): $rev"
+    az containerapp revision deactivate -n "$APP" -g "$RG" --revision "$rev" 2>/dev/null || true
+  done < <(az containerapp revision list -n "$APP" -g "$RG" --query '[?properties.active==`true`].name' -o tsv)
+else
+  echo "::warning::Nao foi possivel ler latestRevisionName (desativação de revisoes antigas ignorada)."
+fi
+
 echo "Deploy concluido: $IMAGE (AUTH_PATH=$AUTH_PATH)"

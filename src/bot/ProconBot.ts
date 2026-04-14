@@ -133,11 +133,18 @@ export class ProconBot {
     const maxTentativas = wantsAggressiveChromeLockSweep() ? 6 : 3;
     const primeiraEsperaMs = wantsAggressiveChromeLockSweep() ? 2500 : 2000;
     const posSweepMs = Number(process.env.CHROME_POST_SWEEP_MS || (wantsAggressiveChromeLockSweep() ? 600 : 0));
+    const retryBackoffMs = (attempt: number): number => {
+      if (attempt < 2) return 0;
+      if (!wantsAggressiveChromeLockSweep()) return 4000;
+      const seq = [8000, 16000, 25000, 35000, 45000];
+      return seq[Math.min(attempt - 2, seq.length - 1)] ?? 45000;
+    };
+
     for (let t = 1; t <= maxTentativas; t++) {
       try {
         if (t > 1) {
           clearStaleChromiumProfileLocks(CHROME_USER_DATA_DIR);
-          await new Promise((r) => setTimeout(r, 4000));
+          await new Promise((r) => setTimeout(r, retryBackoffMs(t)));
         } else {
           await new Promise((r) => setTimeout(r, primeiraEsperaMs));
         }
@@ -158,10 +165,11 @@ export class ProconBot {
           msg.includes('Execution context was destroyed') || msg.includes('Target closed');
         const podeTentarDeNovo = (chromeSingleton || transientPuppeteer) && t < maxTentativas;
         if (podeTentarDeNovo) {
+          const proximaEspera = retryBackoffMs(t + 1);
           console.warn(
             `\n⚠️ Tentativa ${t} falhou (${msg.slice(0, 80)}...). ` +
               (chromeSingleton ? 'Limpando locks do Chrome e ' : '') +
-              'aguardando 4s para tentar de novo...\n'
+              `aguardando ${Math.round(proximaEspera / 1000)}s para tentar de novo...\n`
           );
         } else {
           throw err;

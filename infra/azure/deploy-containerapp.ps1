@@ -165,6 +165,24 @@ $kvId = az keyvault show --name $KeyVaultName --resource-group $ResourceGroup --
 az role assignment create --assignee-object-id $principalId --assignee-principal-type ServicePrincipal --role AcrPull --scope $acrId 2>$null
 az role assignment create --assignee-object-id $principalId --assignee-principal-type ServicePrincipal --role "Key Vault Secrets User" --scope $kvId 2>$null
 
+# Duas revisões ativas no mesmo Azure Files = dois Chromes no mesmo userDataDir.
+Write-Host "Aguardando propagacao da nova revisao (desativar antigas libera locks no volume)..."
+Start-Sleep -Seconds 25
+$latest = az containerapp show --name $ContainerAppName --resource-group $ResourceGroup --query "properties.latestRevisionName" -o tsv
+if ($latest) {
+  Write-Host "Revisao mais recente: $latest"
+  $revs = az containerapp revision list --name $ContainerAppName --resource-group $ResourceGroup --query '[?properties.active==`true`].name' -o tsv
+  foreach ($line in ($revs -split "`n")) {
+    $rev = $line.Trim()
+    if ($rev -and $rev -ne $latest) {
+      Write-Host "Desativando revisao antiga: $rev"
+      az containerapp revision deactivate --name $ContainerAppName --resource-group $ResourceGroup --revision $rev 2>$null | Out-Null
+    }
+  }
+} else {
+  Write-Host "Aviso: nao foi possivel ler latestRevisionName."
+}
+
 Write-Host "Deploy concluido com imagem: $image"
 Write-Host "AUTH_PATH=$AuthPath DATA_DIR=$DataDir"
 if ($wantsPersistVolume) {
