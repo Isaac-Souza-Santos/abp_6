@@ -4,6 +4,8 @@
 # ACR push, Microsoft.App/containerApps/write, storage account keys, role assignments AcrPull/Key Vault.
 # Em push para main/master: tag de imagem padrao v1 (igual deploy-containerapp.ps1 -ImageTag v1).
 name: acr-build-push
+# Titulo da execucao na aba Actions: imagem completa ao lado do fluxo
+run-name: acrproconbotprod.azurecr.io/procon-bot:${{ github.event.inputs.image_tag || 'v1' }}
 
 on:
   workflow_dispatch:
@@ -30,6 +32,7 @@ concurrency:
 
 jobs:
   build:
+    name: Push acrproconbotprod.azurecr.io/procon-bot:${{ github.event.inputs.image_tag || 'v1' }}
     runs-on: ubuntu-latest
     outputs:
       image_tag: ${{ steps.acr.outputs.image_tag }}
@@ -61,6 +64,7 @@ jobs:
 
   deploy:
     needs: build
+    name: Deploy procon-bot:${{ needs.build.outputs.image_tag }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
