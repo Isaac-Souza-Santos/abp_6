@@ -1,5 +1,8 @@
-# Build da imagem no GitHub Actions e push para o ACR (contorna bloqueio de ACR Tasks em algumas assinaturas de estudante).
-# Configure o segredo AZURE_CREDENTIALS (JSON de `az ad sp create-for-rbac --sdk-auth`) no repositório.
+# Build da imagem no GitHub Actions, push para o ACR e deploy no Container App (nova revisao).
+# Segredo: AZURE_CREDENTIALS (JSON de `az ad sp create-for-rbac --sdk-auth`).
+# O service principal precisa de permissoes no RG (ex.: Contributor) ou equivalentes para:
+# ACR push, Microsoft.App/containerApps/write, storage account keys, role assignments AcrPull/Key Vault.
+# Em push para main/master: tag de imagem padrao v1 (igual deploy-containerapp.ps1 -ImageTag v1).
 name: acr-build-push
 
 on:
@@ -9,10 +12,27 @@ on:
         description: "Tag da imagem no ACR (ex.: v1)"
         required: true
         default: "v1"
+  push:
+    branches: [main, master]
+    paths:
+      - "src/**"
+      - "package.json"
+      - "package-lock.json"
+      - "tsconfig.json"
+      - "Dockerfile"
+      - ".dockerignore"
+      - "infra/azure/gha-deploy-containerapp.sh"
+      - "infra/azure/apply-persist-volume.mjs"
+
+concurrency:
+  group: acr-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    outputs:
+      image_tag: ${{ steps.acr.outputs.image_tag }}
     permissions:
       contents: read
       id-token: write
@@ -25,14 +45,42 @@ jobs:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
       - name: ACR login, build e push
+        id: acr
         env:
           ACR_NAME: acrproconbotprod
-          IMAGE_TAG: ${{ github.event.inputs.image_tag }}
+          IMAGE_TAG: ${{ github.event.inputs.image_tag || 'v1' }}
         run: |
           set -e
+          echo "image_tag=$IMAGE_TAG" >> "$GITHUB_OUTPUT"
           az acr login --name "$ACR_NAME"
           ACR_SERVER=$(az acr show -n "$ACR_NAME" -g rg-procon-bot-prod --query loginServer -o tsv)
           IMAGE="$ACR_SERVER/procon-bot:$IMAGE_TAG"
           docker build -t "$IMAGE" -f Dockerfile .
           docker push "$IMAGE"
           echo "Pushed: $IMAGE"
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Azure login
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Deploy Container App (nova revisao com imagem + volume)
+        env:
+          IMAGE_TAG: ${{ needs.build.outputs.image_tag }}
+        run: |
+          set -e
+          chmod +x infra/azure/gha-deploy-containerapp.sh
+          ./infra/azure/gha-deploy-containerapp.sh

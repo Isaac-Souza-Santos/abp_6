@@ -1,11 +1,15 @@
 import * as fs from 'fs';
+import * as path from 'path';
 import { Client, LocalAuth } from 'whatsapp-web.js';
 import qrcode from 'qrcode-terminal';
 import winston from 'winston';
 import { MessageHandler } from '../handlers/MessageHandler';
 import { getAuthPath } from '../config/paths';
+import { clearStaleChromiumProfileLocks } from './chromiumProfileLocks';
 
 const AUTH_PATH = getAuthPath();
+/** LocalAuth usa esta pasta como userDataDir do Puppeteer/Chromium. */
+const CHROME_USER_DATA_DIR = path.join(AUTH_PATH, 'session');
 
 // Configure Winston logger
 const logger = winston.createLogger({
@@ -59,6 +63,10 @@ export class ProconBot {
   async start(): Promise<void> {
     logger.info('Iniciando bot Procon Jacareí', { authPath: AUTH_PATH, exists: fs.existsSync(AUTH_PATH) });
     console.log('📂 Sessão em:', AUTH_PATH, fs.existsSync(AUTH_PATH) ? '(pasta existe)' : '(pasta não encontrada — será criada ao escanear QR)');
+    const n = clearStaleChromiumProfileLocks(CHROME_USER_DATA_DIR);
+    if (n > 0) {
+      console.log(`🧹 Removidos ${n} arquivo(s) de lock órfão do Chrome (perfil em volume — normal após reinício do container).`);
+    }
     let qrJaMostrado = false;
     this.client.on('qr', (qr) => {
       if (qrJaMostrado) {
@@ -107,10 +115,11 @@ export class ProconBot {
     });
 
     console.log('⏳ Inicializando cliente WhatsApp... (aguarde; se precisar de login, o QR Code aparecerá aqui em seguida)\n');
-    const maxTentativas = 2;
+    const maxTentativas = 3;
     for (let t = 1; t <= maxTentativas; t++) {
       try {
         if (t > 1) {
+          clearStaleChromiumProfileLocks(CHROME_USER_DATA_DIR);
           await new Promise((r) => setTimeout(r, 4000));
         } else {
           await new Promise((r) => setTimeout(r, 2000));
@@ -119,11 +128,17 @@ export class ProconBot {
         return;
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
-        const podeTentarDeNovo =
-          (msg.includes('Execution context was destroyed') || msg.includes('Target closed')) &&
-          t < maxTentativas;
+        const chromeSingleton =
+          msg.includes('browser is already running') || msg.includes('Use a different `userDataDir`');
+        const transientPuppeteer =
+          msg.includes('Execution context was destroyed') || msg.includes('Target closed');
+        const podeTentarDeNovo = (chromeSingleton || transientPuppeteer) && t < maxTentativas;
         if (podeTentarDeNovo) {
-          console.warn(`\n⚠️ Tentativa ${t} falhou (${msg.slice(0, 50)}...). Aguardando 4s para tentar de novo...\n`);
+          console.warn(
+            `\n⚠️ Tentativa ${t} falhou (${msg.slice(0, 80)}...). ` +
+              (chromeSingleton ? 'Limpando locks do Chrome e ' : '') +
+              'aguardando 4s para tentar de novo...\n'
+          );
         } else {
           throw err;
         }
