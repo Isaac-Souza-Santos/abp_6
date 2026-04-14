@@ -66,13 +66,14 @@ function removeLockFilesRecursive(dir: string, depth: number): number {
   }
   for (const ent of entries) {
     const full = path.join(dir, ent.name);
-    if (ent.isFile() || ent.isSymbolicLink()) {
-      if (isLockFileName(ent.name) && tryRemove(full)) {
-        removed += 1;
-      }
-    } else if (ent.isDirectory()) {
+    if (ent.isDirectory()) {
       if (SKIP_DIRS.has(ent.name)) continue;
       removed += removeLockFilesRecursive(full, depth + 1);
+    } else if (isLockFileName(ent.name)) {
+      // Inclui socket Unix (SingletonSocket), FIFO, etc. — em Azure Files isso costuma ficar órfão e o Chrome recusa o launch.
+      if (tryRemove(full)) {
+        removed += 1;
+      }
     }
   }
   return removed;

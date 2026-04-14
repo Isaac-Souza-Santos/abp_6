@@ -11,6 +11,16 @@ const AUTH_PATH = getAuthPath();
 /** LocalAuth usa esta pasta como userDataDir do Puppeteer/Chromium. */
 const CHROME_USER_DATA_DIR = path.join(AUTH_PATH, 'session');
 
+/** Volume partilhado / K8s: locks órfãos ou sockets são frequentes; exige limpeza extra e pausa curta antes do launch. */
+function wantsAggressiveChromeLockSweep(): boolean {
+  return (
+    AUTH_PATH.includes('persist') ||
+    process.env.FORCE_CHROME_LOCK_SWEEP === '1' ||
+    Boolean(process.env.CONTAINER_APP_NAME?.trim()) ||
+    Boolean(process.env.KUBERNETES_SERVICE_HOST)
+  );
+}
+
 // Configure Winston logger
 const logger = winston.createLogger({
   level: 'info',
@@ -64,7 +74,7 @@ export class ProconBot {
     logger.info('Iniciando bot Procon Jacareí', { authPath: AUTH_PATH, exists: fs.existsSync(AUTH_PATH) });
     console.log('📂 Sessão em:', AUTH_PATH, fs.existsSync(AUTH_PATH) ? '(pasta existe)' : '(pasta não encontrada — será criada ao escanear QR)');
     let n = clearStaleChromiumProfileLocks(CHROME_USER_DATA_DIR);
-    if (AUTH_PATH.includes('persist') || process.env.FORCE_CHROME_LOCK_SWEEP === '1') {
+    if (wantsAggressiveChromeLockSweep()) {
       await new Promise((r) => setTimeout(r, 400));
       n += clearStaleChromiumProfileLocks(CHROME_USER_DATA_DIR);
     }
@@ -120,14 +130,23 @@ export class ProconBot {
     });
 
     console.log('⏳ Inicializando cliente WhatsApp... (aguarde; se precisar de login, o QR Code aparecerá aqui em seguida)\n');
-    const maxTentativas = 3;
+    const maxTentativas = wantsAggressiveChromeLockSweep() ? 6 : 3;
+    const primeiraEsperaMs = wantsAggressiveChromeLockSweep() ? 2500 : 2000;
+    const posSweepMs = Number(process.env.CHROME_POST_SWEEP_MS || (wantsAggressiveChromeLockSweep() ? 600 : 0));
     for (let t = 1; t <= maxTentativas; t++) {
       try {
         if (t > 1) {
           clearStaleChromiumProfileLocks(CHROME_USER_DATA_DIR);
           await new Promise((r) => setTimeout(r, 4000));
         } else {
-          await new Promise((r) => setTimeout(r, 2000));
+          await new Promise((r) => setTimeout(r, primeiraEsperaMs));
+        }
+        const preLaunch = clearStaleChromiumProfileLocks(CHROME_USER_DATA_DIR);
+        if (preLaunch > 0) {
+          console.log(`🧹 Locks removidos imediatamente antes do launch: ${preLaunch}`);
+        }
+        if (posSweepMs > 0) {
+          await new Promise((r) => setTimeout(r, posSweepMs));
         }
         await this.client.initialize();
         return;

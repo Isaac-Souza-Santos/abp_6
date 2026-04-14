@@ -10,9 +10,10 @@ clean_locks() {
   if [ ! -d "$dir" ]; then
     return 0
   fi
-  find "$dir" -maxdepth 10 \( \
+  # ! -type d: remove ficheiros, symlinks e sockets (SingletonSocket); -type f -o -type l falhava em sockets Unix.
+  find "$dir" -maxdepth 15 \( \
     -name SingletonLock -o -name SingletonCookie -o -name SingletonSocket -o -name DevToolsActivePort \
-  \) \( -type f -o -type l \) -delete 2>/dev/null || true
+  \) ! -type d -exec rm -f {} + 2>/dev/null || true
 }
 
 clean_locks "$SESSION"
