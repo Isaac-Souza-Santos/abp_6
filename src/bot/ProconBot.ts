@@ -65,6 +65,18 @@ function killChromiumProcessesInContainer(): void {
   }
 }
 
+function trySyncFilesystem(): void {
+  if (process.platform !== 'linux') return;
+  for (const bin of ['/bin/sync', '/usr/bin/sync']) {
+    try {
+      execFileSync(bin, { stdio: 'ignore', timeout: 15_000 });
+      return;
+    } catch {
+      /* try next */
+    }
+  }
+}
+
 /**
  * No Azure Files, locks/SingletonLock podem ficar “presos” sem processo real; apagar o userDataDir
  * força um perfil novo no próximo launch. Credenciais LocalAuth ficam em `dataPath` (AUTH_PATH), não
@@ -75,6 +87,7 @@ function forceRemoveChromeSessionDir(sessionDir: string, reason: string): void {
   if (!fs.existsSync(sessionDir)) return;
   try {
     fs.rmSync(sessionDir, { recursive: true, force: true });
+    trySyncFilesystem();
     console.warn(`🧨 Pasta session removida (${reason}).`);
   } catch (e) {
     logger.warn('Falha ao remover diretório session', { reason, error: e instanceof Error ? e.message : String(e) });
@@ -211,7 +224,7 @@ export class ProconBot {
       JSON.stringify({
         aggressive: wantsAggressiveChromeLockSweep(),
         sessionRmOnSingletonRetry: process.env.SKIP_CHROME_SESSION_RM_ON_SINGLETON !== '1',
-        bootMarker: 'procon-chrome-2026-04-session-preempt',
+        bootMarker: 'procon-chrome-2026-04-postkill-sync',
       })
     );
     const maxTentativas = wantsAggressiveChromeLockSweep() ? 6 : 3;
@@ -253,9 +266,22 @@ export class ProconBot {
         if (podeTentarDeNovo) {
           await closePuppeteerBrowserIfAny(this.client);
           killChromiumProcessesInContainer();
+          const postKillMs = wantsAggressiveChromeLockSweep()
+            ? Number(process.env.CHROME_POST_KILL_MS || 4000)
+            : 600;
+          if (postKillMs > 0) {
+            await new Promise((r) => setTimeout(r, postKillMs));
+          }
+          killChromiumProcessesInContainer();
           clearStaleChromiumProfileLocks(CHROME_USER_DATA_DIR);
           if (chromeSingleton) {
             removeChromeSessionDirAfterSingletonLock(CHROME_USER_DATA_DIR);
+            const postRmMs = wantsAggressiveChromeLockSweep()
+              ? Number(process.env.CHROME_POST_SESSION_RM_MS || 7000)
+              : 0;
+            if (postRmMs > 0) {
+              await new Promise((r) => setTimeout(r, postRmMs));
+            }
           }
           const proximaEspera = retryBackoffMs(t + 1);
           console.warn(
