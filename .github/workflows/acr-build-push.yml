@@ -1,0 +1,38 @@
+# Build da imagem no GitHub Actions e push para o ACR (contorna bloqueio de ACR Tasks em algumas assinaturas de estudante).
+# Configure o segredo AZURE_CREDENTIALS (JSON de `az ad sp create-for-rbac --sdk-auth`) no repositório.
+name: acr-build-push
+
+on:
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: "Tag da imagem no ACR (ex.: v1)"
+        required: true
+        default: "v1"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Azure login
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: ACR login, build e push
+        env:
+          ACR_NAME: acrproconbotprod
+          IMAGE_TAG: ${{ github.event.inputs.image_tag }}
+        run: |
+          set -e
+          az acr login --name "$ACR_NAME"
+          ACR_SERVER=$(az acr show -n "$ACR_NAME" -g rg-procon-bot-prod --query loginServer -o tsv)
+          IMAGE="$ACR_SERVER/procon-bot:$IMAGE_TAG"
+          docker build -t "$IMAGE" -f Dockerfile .
+          docker push "$IMAGE"
+          echo "Pushed: $IMAGE"

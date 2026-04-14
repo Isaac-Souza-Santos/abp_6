@@ -32,13 +32,18 @@ if (process.env.NODE_ENV !== 'production') {
 export class ProconBot {
   private client: Client;
   private messageHandler: MessageHandler;
+  private ready = false;
 
   constructor() {
     const headless = process.env.HEADLESS !== 'false';
+    const executablePath =
+      process.env.PUPPETEER_EXECUTABLE_PATH?.trim() ||
+      process.env.CHROME_PATH?.trim();
     this.client = new Client({
       authStrategy: new LocalAuth({ dataPath: AUTH_PATH }),
       puppeteer: {
         headless,
+        ...(executablePath ? { executablePath } : {}),
         args: [
           '--no-sandbox',
           '--disable-setuid-sandbox',
@@ -70,6 +75,7 @@ export class ProconBot {
     });
 
     this.client.on('ready', () => {
+      this.ready = true;
       logger.info('Bot conectado e pronto');
       console.log('✅ Bot Procon Jacareí conectado e pronto! (sessão salva — não precisou de QR)');
     });
@@ -80,11 +86,13 @@ export class ProconBot {
     });
 
     this.client.on('auth_failure', (msg) => {
+      this.ready = false;
       logger.error('Falha na autenticação', { error: msg });
       console.error('❌ Falha na autenticação:', msg);
     });
 
     this.client.on('disconnected', (reason) => {
+      this.ready = false;
       console.warn('⚠️ Conexão perdida:', reason || 'desconhecido');
       console.warn('   Se um novo QR aparecer, escaneie-o para reconectar.\n');
     });
@@ -121,5 +129,9 @@ export class ProconBot {
         }
       }
     }
+  }
+
+  isReady(): boolean {
+    return this.ready;
   }
 }

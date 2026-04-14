@@ -95,6 +95,7 @@ Ver [documentacao/METRICAS-PROTOCOLO.md](documentacao/METRICAS-PROTOCOLO.md).
 | [documentacao/OUTLOOK-AGENDAMENTO.md](documentacao/OUTLOOK-AGENDAMENTO.md) | Integração gratuita com Outlook (Microsoft Graph).                   |
 | [documentacao/AGENDA-LIVRE-OCUPADA.md](documentacao/AGENDA-LIVRE-OCUPADA.md) | Gerenciamento de horários livres x ocupados.                         |
 | [documentacao/METRICAS-PROTOCOLO.md](documentacao/METRICAS-PROTOCOLO.md)  | Métricas: vira dado, vira processo, gestão pública.                  |
+| [infra/azure/README.md](infra/azure/README.md) | Plano e scripts de deploy no Azure Container Apps. |
 | [Apresentação Sprint 1 (YouTube)](https://www.youtube.com/watch?v=91aUjvrli_g) | Vídeo da apresentação / demo da Sprint 1.                           |
 
 ## Estrutura do projeto
