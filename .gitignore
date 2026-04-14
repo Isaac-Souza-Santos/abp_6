@@ -22,3 +22,6 @@ scripts/create-github-project.mjs
 scripts/backlog-tasks.json
 scripts/README.md
 docs/
+
+# Script de ops local (não versionar se não quiseres commitar)
+infra/azure/clear-chromium-session-on-share.ps1

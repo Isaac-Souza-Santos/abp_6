@@ -20,6 +20,16 @@ cd "$ROOT"
 
 ACR_SERVER=$(az acr show -n "$ACR" -g "$RG" --query loginServer -o tsv)
 IMAGE="${ACR_SERVER}/${APP}:${IMAGE_TAG}"
+# Mesma tag pode manter digest antigo na revisao; pinnar @sha256 forca pull da imagem nova no ACR.
+if command -v jq >/dev/null 2>&1; then
+  DIGEST=$(az acr repository show-manifests -n "$ACR" --repository "$APP" -o json 2>/dev/null | jq -r --arg t "$IMAGE_TAG" '.[] | select((.tags // [])[] == $t) | .digest' | head -n1)
+  if [[ -n "$DIGEST" ]]; then
+    IMAGE="${ACR_SERVER}/${APP}@${DIGEST}"
+    echo "Imagem pinnada por digest: $IMAGE"
+  fi
+else
+  echo "::warning::jq nao encontrado; deploy usa tag sem digest (pode nao forcar pull)."
+fi
 AUTH_PATH="${PERSIST_MOUNT}/.wwebjs_auth"
 DATA_DIR="${PERSIST_MOUNT}/data"
 

@@ -48,7 +48,11 @@ function killChromiumProcessesInContainer(): void {
   try {
     execFileSync(
       '/bin/sh',
-      ['-c', 'pkill -9 chromium 2>/dev/null || pkill -9 chromium-browser 2>/dev/null || true'],
+      [
+        '-c',
+        'pkill -9 chromium 2>/dev/null || true; pkill -9 chromium-browser 2>/dev/null || true; ' +
+          'pkill -9 chrome 2>/dev/null || true; pkill -9 google-chrome 2>/dev/null || true',
+      ],
       { stdio: 'ignore', timeout: 8000 }
     );
   } catch {
@@ -59,6 +63,38 @@ function killChromiumProcessesInContainer(): void {
   } catch {
     /* ignore */
   }
+}
+
+/**
+ * No Azure Files, locks/SingletonLock podem ficar “presos” sem processo real; apagar o userDataDir
+ * força um perfil novo no próximo launch. Credenciais LocalAuth ficam em `dataPath` (AUTH_PATH), não
+ * necessariamente só em `session/` — em caso de sessão WhatsApp inválida, pode ser preciso escanear
+ * o QR de novo. Desative com `SKIP_CHROME_SESSION_RM_ON_SINGLETON=1`.
+ */
+function forceRemoveChromeSessionDir(sessionDir: string, reason: string): void {
+  if (!fs.existsSync(sessionDir)) return;
+  try {
+    fs.rmSync(sessionDir, { recursive: true, force: true });
+    console.warn(`🧨 Pasta session removida (${reason}).`);
+  } catch (e) {
+    logger.warn('Falha ao remover diretório session', { reason, error: e instanceof Error ? e.message : String(e) });
+  }
+}
+
+function removeChromeSessionDirAfterSingletonLock(sessionDir: string): void {
+  if (!wantsAggressiveChromeLockSweep()) return;
+  if (process.env.SKIP_CHROME_SESSION_RM_ON_SINGLETON === '1') return;
+  forceRemoveChromeSessionDir(sessionDir, 'apos erro singleton / Azure Files');
+}
+
+/** Antes de cada launch: se existirem marcas Singleton* (crash/restart), apaga session inteira. */
+function preemptRemoveChromeSessionDirIfSingletonArtifacts(sessionDir: string): void {
+  if (!wantsAggressiveChromeLockSweep()) return;
+  if (process.env.SKIP_CHROME_SESSION_RM_ON_SINGLETON === '1') return;
+  if (!fs.existsSync(sessionDir)) return;
+  const markers = ['SingletonLock', 'SingletonSocket', 'SingletonCookie'].map((name) => path.join(sessionDir, name));
+  if (!markers.some((p) => fs.existsSync(p))) return;
+  forceRemoveChromeSessionDir(sessionDir, 'antes do launch (Singleton* no volume)');
 }
 
 // Configure Winston logger
@@ -120,7 +156,7 @@ export class ProconBot {
     }
     console.log(
       `🧹 Locks Chrome removidos: ${n} (perfil: ${CHROME_USER_DATA_DIR}). ` +
-        'Se o erro "browser is already running" continuar, publique uma imagem nova do código atual.'
+        'Nos logs deve aparecer a linha "Chrome:" com bootMarker; se nao aparecer, a imagem no ACA ainda e antiga.'
     );
     let qrJaMostrado = false;
     this.client.on('qr', (qr) => {
@@ -170,6 +206,14 @@ export class ProconBot {
     });
 
     console.log('⏳ Inicializando cliente WhatsApp... (aguarde; se precisar de login, o QR Code aparecerá aqui em seguida)\n');
+    console.log(
+      '🔧 Chrome:',
+      JSON.stringify({
+        aggressive: wantsAggressiveChromeLockSweep(),
+        sessionRmOnSingletonRetry: process.env.SKIP_CHROME_SESSION_RM_ON_SINGLETON !== '1',
+        bootMarker: 'procon-chrome-2026-04-session-preempt',
+      })
+    );
     const maxTentativas = wantsAggressiveChromeLockSweep() ? 6 : 3;
     const primeiraEsperaMs = wantsAggressiveChromeLockSweep() ? 2500 : 2000;
     const posSweepMs = Number(process.env.CHROME_POST_SWEEP_MS || (wantsAggressiveChromeLockSweep() ? 600 : 0));
@@ -195,6 +239,7 @@ export class ProconBot {
         if (posSweepMs > 0) {
           await new Promise((r) => setTimeout(r, posSweepMs));
         }
+        preemptRemoveChromeSessionDirIfSingletonArtifacts(CHROME_USER_DATA_DIR);
         killChromiumProcessesInContainer();
         await this.client.initialize();
         return;
@@ -209,10 +254,15 @@ export class ProconBot {
           await closePuppeteerBrowserIfAny(this.client);
           killChromiumProcessesInContainer();
           clearStaleChromiumProfileLocks(CHROME_USER_DATA_DIR);
+          if (chromeSingleton) {
+            removeChromeSessionDirAfterSingletonLock(CHROME_USER_DATA_DIR);
+          }
           const proximaEspera = retryBackoffMs(t + 1);
           console.warn(
             `\n⚠️ Tentativa ${t} falhou (${msg.slice(0, 80)}...). ` +
-              (chromeSingleton ? 'Fechando/pkill Chromium, limpando locks e ' : 'Fechando/pkill Chromium e ') +
+              (chromeSingleton
+                ? 'Fechando/pkill Chromium, limpando locks e apagando pasta session no volume (Azure Files) se aplicável; '
+                : 'Fechando/pkill Chromium; ') +
               `aguardando ${Math.round(proximaEspera / 1000)}s para tentar de novo...\n`
           );
         } else {

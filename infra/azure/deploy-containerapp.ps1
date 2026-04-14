@@ -32,6 +32,30 @@ az account set --subscription $SubscriptionId
 
 $acrServer = az acr show --name $AcrName --resource-group $ResourceGroup --query loginServer -o tsv
 $image = "$acrServer/$ContainerAppName`:$ImageTag"
+
+# Mesma tag (ex.: v1) pode manter digest antigo na revisao; pinnar @sha256 forca pull da imagem recem-publicada.
+Write-Host "A resolver digest no ACR para a tag '$ImageTag'..."
+$digestPin = $null
+$manifestJson = az acr repository show-manifests --name $AcrName --repository $ContainerAppName -o json 2>$null
+if ($LASTEXITCODE -eq 0 -and $manifestJson) {
+  try {
+    $manifests = $manifestJson | ConvertFrom-Json
+    foreach ($m in $manifests) {
+      if ($null -eq $m.tags) { continue }
+      if ($m.tags -contains $ImageTag) {
+        $digestPin = $m.digest
+        break
+      }
+    }
+  } catch { }
+}
+if ($digestPin) {
+  $image = "$acrServer/${ContainerAppName}@$digestPin"
+  Write-Host "Imagem pinnada por digest (forca pull no Container App): $image" -ForegroundColor Green
+} else {
+  Write-Host "Aviso: nao foi possivel obter digest da tag; deploy usa :$ImageTag (o ACA pode nao atualizar o contentor)." -ForegroundColor Yellow
+}
+
 $storageKey = az storage account keys list --resource-group $ResourceGroup --account-name $StorageName --query "[0].value" -o tsv
 $kvHost = "$KeyVaultName.vault.azure.net"
 
