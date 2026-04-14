@@ -63,10 +63,15 @@ export class ProconBot {
   async start(): Promise<void> {
     logger.info('Iniciando bot Procon Jacareí', { authPath: AUTH_PATH, exists: fs.existsSync(AUTH_PATH) });
     console.log('📂 Sessão em:', AUTH_PATH, fs.existsSync(AUTH_PATH) ? '(pasta existe)' : '(pasta não encontrada — será criada ao escanear QR)');
-    const n = clearStaleChromiumProfileLocks(CHROME_USER_DATA_DIR);
-    if (n > 0) {
-      console.log(`🧹 Removidos ${n} arquivo(s) de lock órfão do Chrome (perfil em volume — normal após reinício do container).`);
+    let n = clearStaleChromiumProfileLocks(CHROME_USER_DATA_DIR);
+    if (AUTH_PATH.includes('persist') || process.env.FORCE_CHROME_LOCK_SWEEP === '1') {
+      await new Promise((r) => setTimeout(r, 400));
+      n += clearStaleChromiumProfileLocks(CHROME_USER_DATA_DIR);
     }
+    console.log(
+      `🧹 Locks Chrome removidos: ${n} (perfil: ${CHROME_USER_DATA_DIR}). ` +
+        'Se o erro "browser is already running" continuar, publique uma imagem nova do código atual.'
+    );
     let qrJaMostrado = false;
     this.client.on('qr', (qr) => {
       if (qrJaMostrado) {

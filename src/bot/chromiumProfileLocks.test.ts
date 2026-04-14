@@ -33,4 +33,12 @@ describe('clearStaleChromiumProfileLocks', () => {
   it('retorna 0 se diretório não existe', () => {
     expect(clearStaleChromiumProfileLocks(path.join(dir, 'missing'))).toBe(0);
   });
+
+  it('remove SingletonLock em subpasta (não listada em SKIP_DIRS)', () => {
+    const sub = path.join(dir, 'SomeSub');
+    fs.mkdirSync(sub, { recursive: true });
+    fs.writeFileSync(path.join(sub, 'SingletonLock'), 'x');
+    expect(clearStaleChromiumProfileLocks(dir)).toBeGreaterThanOrEqual(1);
+    expect(fs.existsSync(path.join(sub, 'SingletonLock'))).toBe(false);
+  });
 });
