@@ -1,3 +1,4 @@
+import { execFileSync } from 'child_process';
 import * as fs from 'fs';
 import * as path from 'path';
 import { Client, LocalAuth } from 'whatsapp-web.js';
@@ -19,6 +20,45 @@ function wantsAggressiveChromeLockSweep(): boolean {
     Boolean(process.env.CONTAINER_APP_NAME?.trim()) ||
     Boolean(process.env.KUBERNETES_SERVICE_HOST)
   );
+}
+
+/** Após initialize() falhar, o whatsapp-web.js pode deixar o Chromium aberto; o retry sem fechar dispara "browser is already running". */
+async function closePuppeteerBrowserIfAny(client: Client): Promise<void> {
+  const pup = (client as unknown as { pupBrowser?: { isConnected?: () => boolean; close: () => Promise<unknown> } })
+    .pupBrowser;
+  if (!pup) return;
+  try {
+    if (typeof pup.isConnected === 'function' && !pup.isConnected()) return;
+  } catch {
+    /* ignore */
+  }
+  try {
+    await Promise.race([
+      pup.close(),
+      new Promise<never>((_, reject) => setTimeout(() => reject(new Error('timeout')), 12_000)),
+    ]);
+  } catch {
+    /* ignore */
+  }
+}
+
+/** No contentor Linux só existe o nosso Chromium; mata órfãos que seguram userDataDir no Azure Files. */
+function killChromiumProcessesInContainer(): void {
+  if (process.platform !== 'linux' || !wantsAggressiveChromeLockSweep()) return;
+  try {
+    execFileSync(
+      '/bin/sh',
+      ['-c', 'pkill -9 chromium 2>/dev/null || pkill -9 chromium-browser 2>/dev/null || true'],
+      { stdio: 'ignore', timeout: 8000 }
+    );
+  } catch {
+    /* ignore */
+  }
+  try {
+    execFileSync('/bin/sh', ['-c', 'sleep 0.5'], { stdio: 'ignore', timeout: 2000 });
+  } catch {
+    /* ignore */
+  }
 }
 
 // Configure Winston logger
@@ -155,6 +195,7 @@ export class ProconBot {
         if (posSweepMs > 0) {
           await new Promise((r) => setTimeout(r, posSweepMs));
         }
+        killChromiumProcessesInContainer();
         await this.client.initialize();
         return;
       } catch (err) {
@@ -165,10 +206,13 @@ export class ProconBot {
           msg.includes('Execution context was destroyed') || msg.includes('Target closed');
         const podeTentarDeNovo = (chromeSingleton || transientPuppeteer) && t < maxTentativas;
         if (podeTentarDeNovo) {
+          await closePuppeteerBrowserIfAny(this.client);
+          killChromiumProcessesInContainer();
+          clearStaleChromiumProfileLocks(CHROME_USER_DATA_DIR);
           const proximaEspera = retryBackoffMs(t + 1);
           console.warn(
             `\n⚠️ Tentativa ${t} falhou (${msg.slice(0, 80)}...). ` +
-              (chromeSingleton ? 'Limpando locks do Chrome e ' : '') +
+              (chromeSingleton ? 'Fechando/pkill Chromium, limpando locks e ' : 'Fechando/pkill Chromium e ') +
               `aguardando ${Math.round(proximaEspera / 1000)}s para tentar de novo...\n`
           );
         } else {
