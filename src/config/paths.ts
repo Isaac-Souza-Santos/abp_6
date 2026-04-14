@@ -26,8 +26,9 @@ export function getAuthPath(): string {
   return atRoot;
 }
 
+/** Dados de runtime (agendamentos, métricas): sempre na raiz `data/`, fora de `security/`. */
 export function getDataDir(): string {
-  return useSecurity ? path.join(SECURITY_DIR, 'data') : path.join(CWD, 'data');
+  return path.join(CWD, 'data');
 }
 
 export function isUsingSecurityFolder(): boolean {

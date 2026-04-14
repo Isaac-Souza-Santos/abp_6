@@ -1,5 +1,9 @@
 node_modules/
 dist/
+# Dados de runtime (agendamentos, métricas Groq) — pasta `data/` na raiz; ver getDataDir() em src/config/paths.ts
+/data/
+# Legado: antes getDataDir() usava security/data; manter ignorado se a pasta ainda existir localmente
+/security/data/
 .env
 .env.local
 .wwebjs_auth/
