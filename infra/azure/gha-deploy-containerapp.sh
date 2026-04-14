@@ -60,6 +60,7 @@ az containerapp update -n "$APP" -g "$RG" \
   HEALTH_PORT=3000 \
   "AUTH_PATH=${AUTH_PATH}" \
   "DATA_DIR=${DATA_DIR}" \
+  CHROME_SESSION_EMPTYDIR=1 \
   GROQ_API_KEY=secretref:groq-api-key \
   ADMIN_NUMBER=secretref:admin-number
 

@@ -162,6 +162,11 @@ export class ProconBot {
   async start(): Promise<void> {
     logger.info('Iniciando bot Procon Jacareí', { authPath: AUTH_PATH, exists: fs.existsSync(AUTH_PATH) });
     console.log('📂 Sessão em:', AUTH_PATH, fs.existsSync(AUTH_PATH) ? '(pasta existe)' : '(pasta não encontrada — será criada ao escanear QR)');
+    if (process.env.CHROME_SESSION_EMPTYDIR === '1') {
+      console.log(
+        '🔗 CHROME_SESSION_EMPTYDIR: a pasta `session` do Chromium esta num volume EmptyDir (disco local da replica). A sessao WhatsApp Web pode exigir novo QR apos cada novo pod.'
+      );
+    }
     let n = clearStaleChromiumProfileLocks(CHROME_USER_DATA_DIR);
     if (wantsAggressiveChromeLockSweep()) {
       await new Promise((r) => setTimeout(r, 400));

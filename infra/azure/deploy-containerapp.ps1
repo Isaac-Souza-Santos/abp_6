@@ -101,6 +101,10 @@ $envVars = @(
   "GROQ_API_KEY=secretref:groq-api-key",
   "ADMIN_NUMBER=secretref:admin-number"
 )
+# Pasta session do Chromium em EmptyDir (apply-persist-volume.mjs); Azure Files nao suporta symlink em session/.
+if ($MountAzureFilesShare -or ($AuthPath -like "$PersistMountPath*")) {
+  $envVars += "CHROME_SESSION_EMPTYDIR=1"
+}
 
 # `az containerapp create` aceita ingress/registry/secrets; `update` NAO (CLI atual).
 $createCore = @(
@@ -210,7 +214,7 @@ if ($latest) {
 Write-Host "Deploy concluido com imagem: $image"
 Write-Host "AUTH_PATH=$AuthPath DATA_DIR=$DataDir"
 if ($wantsPersistVolume) {
-  Write-Host "Volume Azure Files: storage env '$FileShareName' montado em $PersistMountPath (volume $PersistVolumeName). Envie a sessao com .\infra\azure\upload-session-to-fileshare.ps1 se precisar."
+  Write-Host "Volume Azure Files: '$FileShareName' em $PersistMountPath + EmptyDir em .../session (locks fora do SMB). CHROME_SESSION_EMPTYDIR=1. Envie sessao com upload-session-to-fileshare.ps1 se precisar."
 } else {
   Write-Host "Sem volume persistente: para Azure Files use -MountAzureFilesShare ou -AuthPath/-DataDir sob $PersistMountPath (e upload-session-to-fileshare.ps1)."
 }

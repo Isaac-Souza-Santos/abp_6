@@ -43,13 +43,58 @@ try {
     --name ".wwebjs_auth" `
     2>$null
 
-  Write-Host "Enviando sessao de: $LocalAuthDir"
-  az storage file upload-batch `
-    --account-name $StorageName `
-    --account-key $key `
-    --destination "$ShareName/.wwebjs_auth" `
-    --source $LocalAuthDir `
-    --pattern "*"
+  Write-Host "Enviando ficheiros de sessao (exceto pasta session) de: $LocalAuthDir"
+  Get-ChildItem -LiteralPath $LocalAuthDir -Force | Where-Object { $_.Name -ine "session" } | ForEach-Object {
+    if ($_.PSIsContainer) {
+      az storage file upload-batch `
+        --account-name $StorageName `
+        --account-key $key `
+        --destination "$ShareName/.wwebjs_auth/$($_.Name)" `
+        --source $_.FullName `
+        --pattern "*"
+    }
+    else {
+      az storage file upload `
+        --account-name $StorageName `
+        --account-key $key `
+        --share-name $ShareName `
+        --source $_.FullName `
+        --path ".wwebjs_auth/$($_.Name)" `
+        --overwrite
+    }
+  }
+
+  $localSession = Join-Path $LocalAuthDir "session"
+  if (Test-Path $localSession) {
+    Write-Host "Enviando perfil Chromium (pasta session) para .wwebjs_auth/_seed_session (o pod copia para EmptyDir no arranque)."
+    az storage directory create `
+      --account-name $StorageName `
+      --account-key $key `
+      --share-name $ShareName `
+      --name ".wwebjs_auth/_seed_session" `
+      2>$null
+    az storage file upload-batch `
+      --account-name $StorageName `
+      --account-key $key `
+      --destination "$ShareName/.wwebjs_auth/_seed_session" `
+      --source $localSession `
+      --pattern "*"
+    $bump = (Get-Date).ToUniversalTime().ToString("yyyyMMddHHmmss") + "-" + ([Guid]::NewGuid().ToString("N").Substring(0, 12))
+    $bumpTmp = Join-Path $env:TEMP "seed-bump-$bump.txt"
+    Set-Content -LiteralPath $bumpTmp -Value $bump -NoNewline -Encoding ascii
+    az storage file upload `
+      --account-name $StorageName `
+      --account-key $key `
+      --share-name $ShareName `
+      --source $bumpTmp `
+      --path ".wwebjs_auth/_seed_session/.seed-bump" `
+      --overwrite
+    Remove-Item -LiteralPath $bumpTmp -ErrorAction SilentlyContinue
+    Write-Host "Marcador .seed-bump escrito; apos restart o pod reaplica o seed mesmo se session/ EmptyDir nao estava vazio."
+  }
+  else {
+    Write-Host "Aviso: nao existe $localSession - escaneie o QR no Azure ou crie sessao local primeiro."
+  }
 
   if (-not $SkipData) {
     if (-not $LocalDataDir) {
@@ -81,6 +126,7 @@ finally {
 
 Write-Host ""
 Write-Host "Upload concluido."
+Write-Host "EmptyDir: copia _seed_session se session/ vazio OU se .seed-bump no share for diferente do do pod (apos cada upload)."
 Write-Host "Rode o deploy com volume + paths (sem Portal):"
-Write-Host "   .\infra\azure\deploy-containerapp.ps1 -SubscriptionId `"$SubscriptionId`" -ImageTag `"v1`" -SkipBuild -MountAzureFilesShare"
-Write-Host "Ou equivalente: -AuthPath `"/mnt/persist/.wwebjs_auth`" -DataDir `"/mnt/persist/data`" (o deploy aplica o mount automaticamente quando o path esta sob /mnt/persist)."
+Write-Host ('   .\infra\azure\deploy-containerapp.ps1 -SubscriptionId "' + $SubscriptionId + '" -ImageTag "v1" -SkipBuild -MountAzureFilesShare')
+Write-Host 'Ou equivalente: -AuthPath "/mnt/persist/.wwebjs_auth" -DataDir "/mnt/persist/data" (deploy aplica mount quando o path esta sob /mnt/persist).'

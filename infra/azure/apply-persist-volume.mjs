@@ -40,8 +40,11 @@ if (!opts.input || !opts.output) {
 const envStorageName = opts.envStorageName || "botpersistshare";
 const volumeName = opts.volumeName || "persist-vol";
 const mountPath = opts.mountPath || "/mnt/persist";
-const authPath = opts.authPath || `${mountPath}/.wwebjs_auth`;
+const authPath = (opts.authPath || `${mountPath}/.wwebjs_auth`).replace(/\/$/, "");
 const dataDir = opts.dataDir || `${mountPath}/data`;
+const sessionMountPath = `${authPath}/session`;
+/** EmptyDir sobrepõe só `session/`: locks do Chromium ficam no disco local da réplica (Azure Files não suporta symlink aqui). */
+const sessionEmptyVolName = "chrome-session-empty";
 
 let raw = readFileSync(opts.input, "utf8");
 raw = raw.replace(/^\uFEFF/, "").trim();
@@ -56,7 +59,10 @@ const orig = app.properties.template;
 const c = JSON.parse(JSON.stringify(orig.containers[0]));
 delete c.imageType;
 if (opts.image) c.image = opts.image;
-c.volumeMounts = [{ volumeName, mountPath }];
+c.volumeMounts = [
+  { volumeName, mountPath },
+  { volumeName: sessionEmptyVolName, mountPath: sessionMountPath },
+];
 for (const e of c.env) {
   if (e.name === "AUTH_PATH" && e.value !== undefined) e.value = authPath;
   if (e.name === "DATA_DIR" && e.value !== undefined) e.value = dataDir;
@@ -65,7 +71,10 @@ for (const e of c.env) {
 const sc = orig.scale;
 const template = {
   containers: [c],
-  volumes: [{ name: volumeName, storageType: "AzureFile", storageName: envStorageName }],
+  volumes: [
+    { name: volumeName, storageType: "AzureFile", storageName: envStorageName },
+    { name: sessionEmptyVolName, storageType: "EmptyDir" },
+  ],
   scale: { minReplicas: sc.minReplicas, maxReplicas: sc.maxReplicas },
 };
 
