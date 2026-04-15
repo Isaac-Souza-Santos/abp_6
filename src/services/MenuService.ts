@@ -93,11 +93,13 @@ _Agendamento: *4*. Menu: *menu*._`;
 
 ${this.getEnderecoProcon()}
 
-📞 *Telefone/WhatsApp:* (12) 99207-4513
+💬 *WhatsApp:* (12) 3955-9130
+✉️ *E-mail:* procon@jacarei.sp.gov.br
 
 🌐 *Site:* Prefeitura de Jacareí - Secretaria/Procon
 
-*Horário de atendimento:* Os horários podem ser consultados no site oficial da Prefeitura de Jacareí. O atendimento presencial segue o horário de funcionamento da Prefeitura. Consulte o canal oficial para confirmar.
+*Horário de atendimento:* de segunda a sexta-feira, das 08h às 16h.
+_Distribuição de senhas até às 15h15._
 
 _As informações podem ser confirmadas no portal oficial da Prefeitura._
 
@@ -106,7 +108,8 @@ _Agendamento: *4*. Menu: *menu*._`;
 
   /** Retorna apenas o endereço do Procon (para uso na mensagem de agendamento confirmado). */
   getEnderecoProcon(): string {
-    return `📍 *Endereço:* Consulte o site oficial da Prefeitura de Jacareí - Procon`;
+    return `📍 *Endereço:* Avenida Capitão Joaquim Pinheiro do Prado, 222 - Centro, Jacareí/SP
+📮 *CEP:* 12.327-160`;
   }
 
   getContato(): string {
@@ -114,7 +117,8 @@ _Agendamento: *4*. Menu: *menu*._`;
 
 ${this.getEnderecoProcon()}
 
-📞 *Telefone/WhatsApp:* (12) 99207-4513
+💬 *WhatsApp:* (12) 3955-9130
+✉️ *E-mail:* procon@jacarei.sp.gov.br
 
 🌐 *Site:* Prefeitura de Jacareí - Secretaria/Procon
 
@@ -126,9 +130,8 @@ _Agendamento: *4*. Menu: *menu*._`;
   getHorario(): string {
     return `*Horário de atendimento*
 
-Os horários do Procon Jacareí podem ser consultados no site oficial da Prefeitura de Jacareí.
-
-Geralmente o atendimento presencial segue o horário de funcionamento da Prefeitura. Consulte sempre o canal oficial para confirmar.
+De segunda a sexta-feira, das 08h às 16h.
+Distribuição de senhas até às 15h15.
 
 _Agendamento: *4*. Menu: *menu*._`;
   }

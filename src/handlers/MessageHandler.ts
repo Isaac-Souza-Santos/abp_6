@@ -13,6 +13,25 @@ function isAtendente(from: string): boolean {
   return num === ADMIN_NUMBER || num.endsWith(ADMIN_NUMBER);
 }
 
+function normalizaTextoParaComparacao(texto: string): string {
+  return texto
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^\w\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function isSaudacao(texto: string): boolean {
+  const normalizado = normalizaTextoParaComparacao(texto);
+  if (!normalizado) return false;
+
+  // Aceita variações comuns de saudação na primeira mensagem:
+  // "oi", "oi!", "oiii", "olá", "olaaa", "bom dia", "oi tudo bem", etc.
+  return /^(oi+|ola+|bom dia|boa tarde|boa noite|e ai|eae|fala|salve|hey|hi|hello)\b/.test(normalizado);
+}
+
 export class MessageHandler {
   private menuService: MenuService;
   private agendamentoService: AgendamentoService;
@@ -103,20 +122,7 @@ export class MessageHandler {
       }
 
       // Saudações (oi, boa tarde...): pergunta qual a dúvida
-      const ehSaudacao =
-        bodyLower === 'oi' ||
-        bodyLower === 'olá' ||
-        bodyLower === 'ola' ||
-        bodyLower === 'bom dia' ||
-        bodyLower === 'boa tarde' ||
-        bodyLower === 'boa noite' ||
-        bodyLower === 'e aí' ||
-        bodyLower === 'eai' ||
-        bodyLower === 'fala' ||
-        bodyLower === 'salve' ||
-        bodyLower === 'hey' ||
-        bodyLower === 'hi' ||
-        bodyLower === 'hello';
+      const ehSaudacao = isSaudacao(body);
       if (ehSaudacao) {
         await message.reply(this.menuService.getQualSuaDuvida());
         return;

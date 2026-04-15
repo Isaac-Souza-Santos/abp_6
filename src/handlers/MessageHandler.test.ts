@@ -44,5 +44,19 @@ describe('MessageHandler', () => {
     expect(spy).toHaveBeenCalled();
   });
 
+  test('handles greeting as first message', async () => {
+    mockMessage.body = 'oi!';
+    const spy = jest.spyOn(handler['menuService'], 'getQualSuaDuvida');
+    await handler.handle(mockClient, mockMessage);
+    expect(spy).toHaveBeenCalled();
+  });
+
+  test('handles extended greeting text', async () => {
+    mockMessage.body = 'oláaa tudo bem?';
+    const spy = jest.spyOn(handler['menuService'], 'getQualSuaDuvida');
+    await handler.handle(mockClient, mockMessage);
+    expect(spy).toHaveBeenCalled();
+  });
+
   // Adicione testes para outras opções, admin commands, agendamento, etc.
 });
