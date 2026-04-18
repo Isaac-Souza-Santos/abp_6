@@ -9,17 +9,11 @@ export class MenuService {
 *4* - Agendamento (solicitar ou tirar dúvidas)`;
   }
 
-  /** Saudações (oi, bom dia...): boas-vindas, menu resumido e convite à dúvida. */
+  /** Saudações (oi, bom dia, eai...): boas-vindas curtas e convite ao menu ou dúvida. */
   getQualSuaDuvida(): string {
-    return `*Seja bem-vindo(a) ao chatbot do Procon Jacareí/SP*
+    return `Seja bem-vindo(a)!
 
-Sou o assistente virtual deste atendimento. Veja as opções abaixo: você pode enviar o *número* da opção ou escrever sua dúvida em texto livre.
-
-${this.getBlocoOpcoesMenu()}
-
-*Qual opção você prefere ou qual é a sua dúvida?*
-
-_Digite *menu* quando quiser ver este resumo de novo._`;
+Digite *menu* para ver as opções ou envie sua dúvida em texto livre.`;
   }
 
   getWelcome(): string {

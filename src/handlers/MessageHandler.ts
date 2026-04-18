@@ -29,7 +29,9 @@ function isSaudacao(texto: string): boolean {
 
   // Aceita variações comuns de saudação na primeira mensagem:
   // "oi", "oi!", "oiii", "olá", "olaaa", "bom dia", "oi tudo bem", etc.
-  return /^(oi+|ola+|bom dia|boa tarde|boa noite|e ai|eae|fala|salve|hey|hi|hello)\b/.test(normalizado);
+  return /^(oi+|ola+|bom dia|boa tarde|boa noite|e ai|eai|eae|fala|salve|hey|hi|hello)\b/.test(
+    normalizado
+  );
 }
 
 export class MessageHandler {

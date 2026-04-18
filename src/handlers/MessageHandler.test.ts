@@ -58,5 +58,12 @@ describe('MessageHandler', () => {
     expect(spy).toHaveBeenCalled();
   });
 
+  test('handles eai as greeting (not LLM)', async () => {
+    mockMessage.body = 'eai';
+    const spy = jest.spyOn(handler['menuService'], 'getQualSuaDuvida');
+    await handler.handle(mockClient, mockMessage);
+    expect(spy).toHaveBeenCalled();
+  });
+
   // Adicione testes para outras opções, admin commands, agendamento, etc.
 });
