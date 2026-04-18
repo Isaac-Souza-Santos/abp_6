@@ -6,8 +6,12 @@ describe('MenuService', () => {
   test('getWelcome returns menu text with options', () => {
     const result = service.getWelcome();
     expect(result).toContain('Procon Jacareí');
-    expect(result).toContain('*1* - Orientações e direitos do consumidor');
-    expect(result).toContain('Digite *menu*');
+    expect(result).toContain('1 - Orientações e direitos do consumidor');
+    expect(result).toContain('Digite menu quando quiser ver este resumo de novo.');
+  });
+
+  test('getQualSuaDuvida matches initial welcome text', () => {
+    expect(service.getQualSuaDuvida()).toBe(service.getWelcome());
   });
 
   test('getOrientacoesEDireitos returns consumer guidance', () => {

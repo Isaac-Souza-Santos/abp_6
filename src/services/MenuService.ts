@@ -2,30 +2,29 @@
  * Textos e menus do atendimento Procon Jacareí/SP
  */
 export class MenuService {
-  private getBlocoOpcoesMenu(): string {
-    return `*1* - Orientações e direitos do consumidor
-*2* - Quais documentos levar para comparecer ao Procon
-*3* - Contato, endereço e horário
-*4* - Agendamento (solicitar ou tirar dúvidas)`;
+  /** Primeira mensagem do bot: saudações e comando *menu*. */
+  private getMensagemBoasVindasInicial(): string {
+    return `Seja bem-vindo(a) ao chatbot do Procon Jacareí/SP
+
+Sou o assistente virtual deste atendimento. Veja as opções abaixo: você pode enviar o número da opção ou escrever sua dúvida em texto livre.
+
+1 - Orientações e direitos do consumidor
+2 - Quais documentos levar para comparecer ao Procon
+3 - Contato, endereço e horário
+4 - Agendamento (solicitar ou tirar dúvidas)
+
+Qual opção você prefere ou qual é a sua dúvida?
+
+Digite menu quando quiser ver este resumo de novo.`;
   }
 
-  /** Saudações (oi, bom dia, eai...): boas-vindas curtas e convite ao menu ou dúvida. */
+  /** Saudações (oi, bom dia, eai...): mesma mensagem inicial do chatbot. */
   getQualSuaDuvida(): string {
-    return `Seja bem-vindo(a)!
-
-Digite *menu* para ver as opções ou envie sua dúvida em texto livre.`;
+    return this.getMensagemBoasVindasInicial();
   }
 
   getWelcome(): string {
-    return `*Procon Jacareí - Atendimento WhatsApp*
-
-Seja bem-vindo(a) ao *chatbot do Procon Jacareí/SP*. Sou o assistente virtual deste canal.
-
-Escolha uma opção digitando o *número*:
-
-${this.getBlocoOpcoesMenu()}
-
-Digite *menu* a qualquer momento para ver as opções.`;
+    return this.getMensagemBoasVindasInicial();
   }
 
   /** Mensagem quando a pessoa cancela ou desiste do agendamento, com opções abaixo. */
