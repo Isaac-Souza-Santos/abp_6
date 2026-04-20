@@ -35,6 +35,14 @@ const apiBaseUrl = (import.meta.env.VITE_API_BASE_URL || "http://localhost:3000"
 const adminPanelToken = import.meta.env.VITE_ADMIN_PANEL_TOKEN || "";
 const statusOptions: Array<StatusAgendamento | "todos"> = ["todos", "solicitado", "confirmado", "cancelado", "atendido"];
 
+const rotuloStatus: Record<StatusAgendamento | "todos", string> = {
+  todos: "Todos",
+  solicitado: "Solicitado",
+  confirmado: "Confirmado",
+  cancelado: "Cancelado",
+  atendido: "Atendido",
+};
+
 type PainelTab = "agendamentos" | "metricas";
 
 function formatDateTime(value: string): string {
@@ -87,9 +95,9 @@ export default function Dashboard({ getIdToken, onSignOut }: DashboardProps) {
       let message = err instanceof Error ? err.message : "Erro desconhecido ao carregar dados.";
       if (message === "Failed to fetch" || message.includes("NetworkError")) {
         message =
-          "Falha de rede ou CORS. Confirme: (1) URL da API em build (VITE_API_BASE_URL) aponta para o bot público em HTTPS; " +
-          "(2) a imagem do bot em produção inclui GET /admin/agendamentos e ADMIN_PANEL_ORIGIN igual à URL deste painel (https); " +
-          "(3) no DevTools → Network, veja se o pedido aparece como bloqueado por CORS.";
+          "Falha de rede ou CORS. Verifique: (1) se no build a variável VITE_API_BASE_URL aponta para a URL pública do bot em HTTPS; " +
+          "(2) se em produção a imagem do bot expõe GET /admin/agendamentos e se ADMIN_PANEL_ORIGIN coincide com a URL deste painel (https); " +
+          "(3) no navegador, F12 → Rede, se o pedido foi bloqueado por CORS.";
       }
       setError(message);
     } finally {
@@ -143,7 +151,7 @@ export default function Dashboard({ getIdToken, onSignOut }: DashboardProps) {
         </div>
       </header>
 
-      <nav className="tabs" role="tablist" aria-label="Secções do painel">
+      <nav className="tabs" role="tablist" aria-label="Seções do painel">
         <button
           type="button"
           role="tab"
@@ -171,18 +179,24 @@ export default function Dashboard({ getIdToken, onSignOut }: DashboardProps) {
           <section className="filters">
             <input
               type="search"
-              placeholder="Buscar por nome, telefone, protocolo ou motivo..."
+              placeholder="Pesquisar por nome, telefone, protocolo ou motivo…"
               value={searchTerm}
               onChange={(event) => setSearchTerm(event.target.value)}
             />
             <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value as StatusAgendamento | "todos")}>
               {statusOptions.map((status) => (
                 <option key={status} value={status}>
-                  {status}
+                  {rotuloStatus[status]}
                 </option>
               ))}
             </select>
-            <input type="date" value={dateFilter} onChange={(event) => setDateFilter(event.target.value)} />
+            <input
+              type="date"
+              value={dateFilter}
+              onChange={(event) => setDateFilter(event.target.value)}
+              aria-label="Filtrar por data"
+              title="Filtrar por data"
+            />
           </section>
 
           <section className="tableWrap" role="tabpanel">
@@ -202,7 +216,9 @@ export default function Dashboard({ getIdToken, onSignOut }: DashboardProps) {
                 {filteredAgendamentos.length === 0 && (
                   <tr>
                     <td colSpan={7} className="empty">
-                      {loading ? "Carregando agendamentos..." : "Nenhum agendamento encontrado para os filtros aplicados."}
+                      {loading
+                        ? "Carregando agendamentos…"
+                        : "Nenhum agendamento encontrado com os filtros atuais."}
                     </td>
                   </tr>
                 )}
@@ -213,7 +229,7 @@ export default function Dashboard({ getIdToken, onSignOut }: DashboardProps) {
                     <td>{ag.telefone}</td>
                     <td>{ag.dataPreferida || formatDateTime(ag.slotInicio || "")}</td>
                     <td>
-                      <span className={`status status-${ag.status}`}>{ag.status}</span>
+                      <span className={`status status-${ag.status}`}>{rotuloStatus[ag.status]}</span>
                     </td>
                     <td>{formatDateTime(ag.criadoEm)}</td>
                     <td>
@@ -230,16 +246,17 @@ export default function Dashboard({ getIdToken, onSignOut }: DashboardProps) {
       {tab === "metricas" && (
         <div className="tabPanel" role="tabpanel">
           {!data?.metricas && (
-            <p className="emptyInline">{loading ? "A carregar métricas…" : "Sem dados de métricas."}</p>
+            <p className="emptyInline">{loading ? "Carregando métricas…" : "Não há dados de métricas disponíveis."}</p>
           )}
           {data?.metricas && (
             <>
               <p className="metricsLead">
-                Resumo calculado no servidor a partir de todos os agendamentos ({data.total} registos na API).
+                Resumo calculado no servidor a partir de todos os agendamentos ({data.total} registros retornados pela
+                API).
               </p>
               <section className="cards">
                 <article className="card">
-                  <span>Total (agendamentos)</span>
+                  <span>Total de agendamentos</span>
                   <strong>{data.metricas.total}</strong>
                 </article>
                 <article className="card">
@@ -283,7 +300,7 @@ export default function Dashboard({ getIdToken, onSignOut }: DashboardProps) {
                         return (
                           <tr key={st}>
                             <td>
-                              <span className={`status status-${st}`}>{st}</span>
+                              <span className={`status status-${st}`}>{rotuloStatus[st]}</span>
                             </td>
                             <td>{q}</td>
                             <td>

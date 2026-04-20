@@ -6,7 +6,7 @@ import { getMsalInstance, isAzureLoginConfigured } from "./authConfig.ts";
 
 const rootEl = document.getElementById("root");
 if (!rootEl) {
-  throw new Error("Elemento #root em falta");
+  throw new Error("Página sem o elemento #root necessário para o painel.");
 }
 
 void (async () => {
@@ -30,6 +30,7 @@ void (async () => {
     );
   }
 })().catch((err) => {
-  console.error(err);
-  rootEl.textContent = "Erro ao iniciar o painel. Veja a consola.";
+  console.error("[Painel] Erro ao iniciar a aplicação:", err);
+  rootEl.textContent =
+    "Erro ao iniciar o painel. Pressione F12, abra as ferramentas do desenvolvedor e leia as mensagens de erro (aba em que aparecem avisos em vermelho).";
 });

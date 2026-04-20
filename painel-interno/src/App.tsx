@@ -31,7 +31,7 @@ function AzureShell() {
   if (msalBooting) {
     return (
       <div className="loginPage" style={{ background: "#f8fafc" }}>
-        <p style={{ color: "#475569" }}>A iniciar sessão…</p>
+        <p style={{ color: "#475569" }}>Iniciando sessão…</p>
       </div>
     );
   }

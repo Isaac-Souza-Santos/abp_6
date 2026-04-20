@@ -13,7 +13,9 @@ export function LoginScreen() {
         <button type="button" className="loginMicrosoftBtn" onClick={() => void instance.loginRedirect(loginRequest)}>
           Entrar com Microsoft
         </button>
-        <p className="loginHint">O administrador deve registar esta URL de redirecionamento na app do Entra ID.</p>
+        <p className="loginHint">
+          O administrador deve cadastrar esta URL de redirecionamento no aplicativo do Entra ID (Azure AD).
+        </p>
       </div>
     </div>
   );
