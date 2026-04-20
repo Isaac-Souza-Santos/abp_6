@@ -54,7 +54,8 @@ function formatDateTime(value: string): string {
 export type DashboardProps = {
   /** ID token Entra (Bearer) quando login Azure está ativo; null em modo legado. */
   getIdToken: () => Promise<string | null>;
-  onSignOut?: () => void;
+  /** Termina sessão Microsoft (modo Azure) ou recarrega o painel (modo legado). */
+  onSignOut: () => void;
 };
 
 export default function Dashboard({ getIdToken, onSignOut }: DashboardProps) {
@@ -140,11 +141,9 @@ export default function Dashboard({ getIdToken, onSignOut }: DashboardProps) {
           <p>Visualização somente leitura do bot Procon Jacareí.</p>
         </div>
         <div className="headerActions">
-          {onSignOut && (
-            <button type="button" className="btnGhost" onClick={onSignOut}>
-              Sair
-            </button>
-          )}
+          <button type="button" className="btnGhost" onClick={onSignOut}>
+            Sair
+          </button>
           <button type="button" onClick={() => void loadData()} disabled={loading}>
             {loading ? "Atualizando..." : "Atualizar"}
           </button>
@@ -209,13 +208,12 @@ export default function Dashboard({ getIdToken, onSignOut }: DashboardProps) {
                   <th>Data/horário</th>
                   <th>Status</th>
                   <th>Criação</th>
-                  <th>Ciclo do protocolo</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredAgendamentos.length === 0 && (
                   <tr>
-                    <td colSpan={7} className="empty">
+                    <td colSpan={6} className="empty">
                       {loading
                         ? "Carregando agendamentos…"
                         : "Nenhum agendamento encontrado com os filtros atuais."}
@@ -232,9 +230,6 @@ export default function Dashboard({ getIdToken, onSignOut }: DashboardProps) {
                       <span className={`status status-${ag.status}`}>{rotuloStatus[ag.status]}</span>
                     </td>
                     <td>{formatDateTime(ag.criadoEm)}</td>
-                    <td>
-                      {ag.virouProcesso ? "Processo" : "-"} / {ag.gestaoPublica ? "Gestão" : "-"}
-                    </td>
                   </tr>
                 ))}
               </tbody>

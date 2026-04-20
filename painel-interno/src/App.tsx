@@ -50,9 +50,18 @@ function AzureShell() {
   );
 }
 
+function legacySignOut(): void {
+  try {
+    sessionStorage.clear();
+  } catch {
+    /* ignorar */
+  }
+  window.location.reload();
+}
+
 export default function App({ mode }: AppProps) {
   if (mode === "legacy") {
-    return <Dashboard getIdToken={async () => null} />;
+    return <Dashboard getIdToken={async () => null} onSignOut={legacySignOut} />;
   }
   return <AzureShell />;
 }
