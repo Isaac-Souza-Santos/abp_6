@@ -2,8 +2,11 @@
 # Pré-requisito: App Service já criado (ex.: infra/azure/deploy-painel-app-service.ps1 uma vez).
 #
 # Segredos:
-#   AZURE_WEBAPP_PUBLISH_PROFILE  — XML do "Download publish profile"
+#   AZURE_WEBAPP_PUBLISH_PROFILE  — XML completo de "Download publish profile" (App Service → Overview)
 #   AZURE_WEBAPP_NAME              — nome do App Service (ex.: app-painel-procon-xyz)
+#
+# Nota: azure/webapps-deploy@v3 pode falhar com "No credentials found" mesmo com publish profile;
+# este workflow usa @v2, que continua a aceitar só publish profile + app-name.
 #   PAINEL_VITE_API_BASE_URL
 #   PAINEL_VITE_ADMIN_PANEL_TOKEN  — opcional
 #   PAINEL_VITE_AZURE_CLIENT_ID    — opcional (login MSAL no painel)
@@ -62,8 +65,24 @@ jobs:
           npm install --omit=dev
           zip -r "$GITHUB_WORKSPACE/painel-app-service.zip" .
 
+      - name: Verificar segredos do App Service
+        shell: bash
+        env:
+          AZURE_WEBAPP_PUBLISH_PROFILE: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+          AZURE_WEBAPP_NAME: ${{ secrets.AZURE_WEBAPP_NAME }}
+        run: |
+          set -euo pipefail
+          if [ -z "${AZURE_WEBAPP_PUBLISH_PROFILE:-}" ]; then
+            echo "::error::Segredo AZURE_WEBAPP_PUBLISH_PROFILE vazio ou inexistente. Portal → App Service → Get publish profile → copie o ficheiro .PublishSettings (XML) inteiro para GitHub → Settings → Secrets."
+            exit 1
+          fi
+          if [ -z "${AZURE_WEBAPP_NAME:-}" ]; then
+            echo "::error::Segredo AZURE_WEBAPP_NAME vazio. Use o nome exacto do Web App (ex. app-painel-procon-abp6-0420)."
+            exit 1
+          fi
+
       - name: Deploy para Azure Web App
-        uses: azure/webapps-deploy@v3
+        uses: azure/webapps-deploy@v2
         with:
           app-name: ${{ secrets.AZURE_WEBAPP_NAME }}
           publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
