@@ -4,6 +4,12 @@
 
 export type StatusAgendamento = 'solicitado' | 'confirmado' | 'cancelado' | 'atendido';
 
+/** Pessoa adicional no mesmo agendamento (além do contacto principal `nome` / `telefone` do pedido). */
+export interface ParticipanteAgenda {
+  nome: string;
+  telefone?: string;
+}
+
 export interface Agendamento {
   id: string;
   telefone: string;
@@ -20,6 +26,8 @@ export interface Agendamento {
   virouProcesso?: boolean;
   /** Protocolo utilizado na gestão pública / indicadores (marcado pelo atendente). */
   gestaoPublica?: boolean;
+  /** Outras pessoas associadas ao mesmo horário/protocolo (editável no painel). */
+  participantes?: ParticipanteAgenda[];
 }
 
 /** Estado do fluxo de agendamento (por contato). */

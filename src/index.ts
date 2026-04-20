@@ -7,6 +7,7 @@ config({ path: getEnvPath() });
 import { ProconBot } from "./bot/ProconBot";
 import { AgendamentoStore } from "./services/AgendamentoStore";
 import { isAzureAdminPanelAuthConfigured, verifyAdminPanelAzureToken } from "./azureAdminAuth";
+import type { ParticipanteAgenda } from "./types/agendamento";
 
 const healthPort = Number(process.env.HEALTH_PORT || 3000);
 const adminPanelOrigin = process.env.ADMIN_PANEL_ORIGIN || "*";
@@ -20,8 +21,91 @@ function setJsonHeaders(res: http.ServerResponse): void {
 
 function setAdminCorsHeaders(res: http.ServerResponse): void {
   res.setHeader("Access-Control-Allow-Origin", adminPanelOrigin);
-  res.setHeader("Access-Control-Allow-Methods", "GET,OPTIONS");
+  res.setHeader("Access-Control-Allow-Methods", "GET,PATCH,OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type,x-admin-token,Authorization");
+}
+
+const MAX_ADMIN_JSON_BYTES = 65536;
+const STATUS_VALUES = ["solicitado", "confirmado", "cancelado", "atendido"] as const;
+type StatusAgendamento = (typeof STATUS_VALUES)[number];
+
+function readJsonBody(req: http.IncomingMessage): Promise<Record<string, unknown>> {
+  return new Promise((resolve, reject) => {
+    const chunks: Buffer[] = [];
+    let size = 0;
+    req.on("data", (chunk: Buffer | string) => {
+      const buf = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
+      size += buf.length;
+      if (size > MAX_ADMIN_JSON_BYTES) {
+        reject(new Error("Payload too large"));
+        return;
+      }
+      chunks.push(buf);
+    });
+    req.on("end", () => {
+      try {
+        const raw = Buffer.concat(chunks).toString("utf8").trim();
+        if (!raw) {
+          resolve({});
+          return;
+        }
+        const parsed = JSON.parse(raw) as unknown;
+        resolve(typeof parsed === "object" && parsed !== null && !Array.isArray(parsed) ? (parsed as Record<string, unknown>) : {});
+      } catch {
+        reject(new Error("Invalid JSON"));
+      }
+    });
+    req.on("error", reject);
+  });
+}
+
+const MAX_PARTICIPANTES = 30;
+
+function parseParticipantesAgenda(arr: unknown[]): ParticipanteAgenda[] {
+  const out: ParticipanteAgenda[] = [];
+  for (const el of arr) {
+    if (out.length >= MAX_PARTICIPANTES) break;
+    if (!el || typeof el !== "object") continue;
+    const o = el as Record<string, unknown>;
+    const nome = typeof o.nome === "string" ? o.nome.trim().slice(0, 200) : "";
+    if (!nome) continue;
+    const telRaw = typeof o.telefone === "string" ? o.telefone.trim().slice(0, 40) : "";
+    out.push(telRaw ? { nome, telefone: telRaw } : { nome });
+  }
+  return out;
+}
+
+function parseAgendamentoPatch(body: Record<string, unknown>): Partial<{
+  status: StatusAgendamento;
+  observacaoAtendente: string;
+  virouProcesso: boolean;
+  gestaoPublica: boolean;
+  participantes: ParticipanteAgenda[];
+}> {
+  const patch: Partial<{
+    status: StatusAgendamento;
+    observacaoAtendente: string;
+    virouProcesso: boolean;
+    gestaoPublica: boolean;
+    participantes: ParticipanteAgenda[];
+  }> = {};
+
+  if (typeof body.status === "string" && (STATUS_VALUES as readonly string[]).includes(body.status)) {
+    patch.status = body.status as StatusAgendamento;
+  }
+  if (typeof body.observacaoAtendente === "string") {
+    patch.observacaoAtendente = body.observacaoAtendente.slice(0, 4000);
+  }
+  if (typeof body.virouProcesso === "boolean") {
+    patch.virouProcesso = body.virouProcesso;
+  }
+  if (typeof body.gestaoPublica === "boolean") {
+    patch.gestaoPublica = body.gestaoPublica;
+  }
+  if (Object.prototype.hasOwnProperty.call(body, "participantes") && Array.isArray(body.participantes)) {
+    patch.participantes = parseParticipantesAgenda(body.participantes);
+  }
+  return patch;
 }
 
 function extractBearerToken(req: http.IncomingMessage): string | null {
@@ -103,6 +187,46 @@ function startHealthServer(bot: ProconBot): void {
             metricas,
           })
         );
+        return;
+      }
+
+      const patchMatch = /^\/admin\/agendamentos\/([^/]+)$/.exec(url.pathname);
+      if (patchMatch && req.method === "PATCH") {
+        setJsonHeaders(res);
+        const id = decodeURIComponent(patchMatch[1]);
+        let body: Record<string, unknown>;
+        try {
+          body = await readJsonBody(req);
+        } catch {
+          res.writeHead(400);
+          res.end(JSON.stringify({ error: "Corpo inválido ou demasiado grande." }));
+          return;
+        }
+        if (Object.prototype.hasOwnProperty.call(body, "participantes") && !Array.isArray(body.participantes)) {
+          res.writeHead(400);
+          res.end(JSON.stringify({ error: "participantes deve ser um array de objetos { nome, telefone? }." }));
+          return;
+        }
+        const patch = parseAgendamentoPatch(body);
+        if (Object.keys(patch).length === 0) {
+          res.writeHead(400);
+          res.end(
+            JSON.stringify({
+              error:
+                "Nenhum campo válido para atualizar (status, observacaoAtendente, virouProcesso, gestaoPublica, participantes).",
+            })
+          );
+          return;
+        }
+        const ok = agendamentoStore.update(id, patch);
+        if (!ok) {
+          res.writeHead(404);
+          res.end(JSON.stringify({ error: "Agendamento não encontrado." }));
+          return;
+        }
+        const agendamento = agendamentoStore.getById(id);
+        res.writeHead(200);
+        res.end(JSON.stringify({ agendamento }));
         return;
       }
 

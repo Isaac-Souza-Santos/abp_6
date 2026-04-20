@@ -125,7 +125,10 @@ export class AgendamentoStore {
   }
 
   /** Atualiza um agendamento (ex.: marcar virouProcesso, gestaoPublica). Retorna true se encontrado. */
-  update(id: string, patch: Partial<Pick<Agendamento, 'status' | 'observacaoAtendente' | 'virouProcesso' | 'gestaoPublica'>>): boolean {
+  update(
+    id: string,
+    patch: Partial<Pick<Agendamento, 'status' | 'observacaoAtendente' | 'virouProcesso' | 'gestaoPublica' | 'participantes'>>
+  ): boolean {
     const list = load();
     const idx = list.findIndex((a) => a.id === id);
     if (idx === -1) return false;

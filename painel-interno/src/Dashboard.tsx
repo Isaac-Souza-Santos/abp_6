@@ -1,60 +1,16 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { AjustesAgendaSection } from "./components/AjustesAgendaSection";
+import { AgendaConsultaList } from "./components/AgendaConsultaList";
+import { FiltersBar } from "./components/FiltersBar";
+import { MetricsTabPanel } from "./components/MetricsTabPanel";
+import { PanelHeader } from "./components/PanelHeader";
+import { PanelTabList } from "./components/PanelTabList";
+import { adminPanelToken, apiBaseUrl } from "./config/env";
+import type { Agendamento, ApiResponse, PainelTab, StatusAgendamento } from "./types/painel";
 import "./App.css";
 
-type StatusAgendamento = "solicitado" | "confirmado" | "cancelado" | "atendido";
-
-type Agendamento = {
-  id: string;
-  telefone: string;
-  nome: string;
-  motivo: string;
-  dataPreferida: string;
-  slotInicio?: string;
-  status: StatusAgendamento;
-  criadoEm: string;
-  atualizadoEm: string;
-  virouProcesso?: boolean;
-  gestaoPublica?: boolean;
-};
-
-type ApiResponse = {
-  total: number;
-  agendamentos: Agendamento[];
-  metricas: {
-    total: number;
-    hoje: number;
-    ultimos7Dias: number;
-    viraDado: number;
-    viraProcesso: number;
-    gestaoPublica: number;
-    porStatus: Record<StatusAgendamento, number>;
-  };
-};
-
-const apiBaseUrl = (import.meta.env.VITE_API_BASE_URL || "http://localhost:3000").replace(/\/$/, "");
-const adminPanelToken = import.meta.env.VITE_ADMIN_PANEL_TOKEN || "";
-const statusOptions: Array<StatusAgendamento | "todos"> = ["todos", "solicitado", "confirmado", "cancelado", "atendido"];
-
-const rotuloStatus: Record<StatusAgendamento | "todos", string> = {
-  todos: "Todos",
-  solicitado: "Solicitado",
-  confirmado: "Confirmado",
-  cancelado: "Cancelado",
-  atendido: "Atendido",
-};
-
-type PainelTab = "agendamentos" | "metricas";
-
-function formatDateTime(value: string): string {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "-";
-  return date.toLocaleString("pt-BR");
-}
-
 export type DashboardProps = {
-  /** ID token Entra (Bearer) quando login Azure está ativo; null em modo legado. */
   getIdToken: () => Promise<string | null>;
-  /** Termina sessão Microsoft (modo Azure) ou recarrega o painel (modo legado). */
   onSignOut: () => void;
 };
 
@@ -67,6 +23,18 @@ export default function Dashboard({ getIdToken, onSignOut }: DashboardProps) {
   const [statusFilter, setStatusFilter] = useState<StatusAgendamento | "todos">("todos");
   const [dateFilter, setDateFilter] = useState("");
 
+  const buildAuthHeaders = useCallback(async (): Promise<Record<string, string>> => {
+    const idToken = await getIdToken();
+    const headers: Record<string, string> = {};
+    if (idToken) {
+      headers.Authorization = `Bearer ${idToken}`;
+    }
+    if (adminPanelToken) {
+      headers["x-admin-token"] = adminPanelToken;
+    }
+    return headers;
+  }, [getIdToken]);
+
   const loadData = useCallback(async () => {
     setLoading(true);
     setError("");
@@ -76,14 +44,7 @@ export default function Dashboard({ getIdToken, onSignOut }: DashboardProps) {
         url.searchParams.set("token", adminPanelToken);
       }
 
-      const idToken = await getIdToken();
-      const headers: Record<string, string> = {};
-      if (idToken) {
-        headers.Authorization = `Bearer ${idToken}`;
-      }
-      if (adminPanelToken) {
-        headers["x-admin-token"] = adminPanelToken;
-      }
+      const headers = await buildAuthHeaders();
 
       const response = await fetch(url.toString(), { headers });
       if (!response.ok) {
@@ -104,13 +65,15 @@ export default function Dashboard({ getIdToken, onSignOut }: DashboardProps) {
     } finally {
       setLoading(false);
     }
-  }, [getIdToken]);
+  }, [buildAuthHeaders]);
 
   useEffect(() => {
+    // Fetch inicial na montagem (loadData atualiza estado após GET).
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- intencional
     void loadData();
   }, [loadData]);
 
-  const filteredAgendamentos = useMemo(() => {
+  const filteredAgendamentos = useMemo((): Agendamento[] => {
     if (!data) return [];
 
     const normalizedSearch = searchTerm.trim().toLowerCase();
@@ -128,195 +91,45 @@ export default function Dashboard({ getIdToken, onSignOut }: DashboardProps) {
       }
 
       if (!normalizedSearch) return true;
-      const haystack = `${ag.id} ${ag.nome} ${ag.telefone} ${ag.motivo}`.toLowerCase();
+      const extras = (ag.participantes ?? [])
+        .map((p) => `${p.nome} ${p.telefone ?? ""}`)
+        .join(" ");
+      const haystack = `${ag.id} ${ag.nome} ${ag.telefone} ${ag.motivo} ${extras}`.toLowerCase();
       return haystack.includes(normalizedSearch);
     });
   }, [data, dateFilter, searchTerm, statusFilter]);
 
   return (
     <main className="container">
-      <header className="header">
-        <div>
-          <h1>Painel interno de agendamentos</h1>
-          <p>Visualização somente leitura do bot Procon Jacareí.</p>
-        </div>
-        <div className="headerActions">
-          <button type="button" className="btnGhost" onClick={onSignOut}>
-            Sair
-          </button>
-          <button type="button" onClick={() => void loadData()} disabled={loading}>
-            {loading ? "Atualizando..." : "Atualizar"}
-          </button>
-        </div>
-      </header>
+      <PanelHeader loading={loading} onRefresh={() => void loadData()} onSignOut={onSignOut} />
 
-      <nav className="tabs" role="tablist" aria-label="Seções do painel">
-        <button
-          type="button"
-          role="tab"
-          aria-selected={tab === "agendamentos"}
-          className={`tab ${tab === "agendamentos" ? "tabActive" : ""}`}
-          onClick={() => setTab("agendamentos")}
-        >
-          Agendamentos
-        </button>
-        <button
-          type="button"
-          role="tab"
-          aria-selected={tab === "metricas"}
-          className={`tab ${tab === "metricas" ? "tabActive" : ""}`}
-          onClick={() => setTab("metricas")}
-        >
-          Métricas
-        </button>
-      </nav>
+      <PanelTabList active={tab} onChange={setTab} />
 
       {error && <p className="error">{error}</p>}
 
-      {tab === "agendamentos" && (
-        <>
-          <section className="filters">
-            <input
-              type="search"
-              placeholder="Pesquisar por nome, telefone, protocolo ou motivo…"
-              value={searchTerm}
-              onChange={(event) => setSearchTerm(event.target.value)}
-            />
-            <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value as StatusAgendamento | "todos")}>
-              {statusOptions.map((status) => (
-                <option key={status} value={status}>
-                  {rotuloStatus[status]}
-                </option>
-              ))}
-            </select>
-            <input
-              type="date"
-              value={dateFilter}
-              onChange={(event) => setDateFilter(event.target.value)}
-              aria-label="Filtrar por data"
-              title="Filtrar por data"
-            />
-          </section>
-
-          <section className="tableWrap" role="tabpanel">
-            <table>
-              <thead>
-                <tr>
-                  <th>Protocolo</th>
-                  <th>Nome</th>
-                  <th>Telefone</th>
-                  <th>Data/horário</th>
-                  <th>Status</th>
-                  <th>Criação</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredAgendamentos.length === 0 && (
-                  <tr>
-                    <td colSpan={6} className="empty">
-                      {loading
-                        ? "Carregando agendamentos…"
-                        : "Nenhum agendamento encontrado com os filtros atuais."}
-                    </td>
-                  </tr>
-                )}
-                {filteredAgendamentos.map((ag) => (
-                  <tr key={ag.id}>
-                    <td>{ag.id}</td>
-                    <td>{ag.nome}</td>
-                    <td>{ag.telefone}</td>
-                    <td>{ag.dataPreferida || formatDateTime(ag.slotInicio || "")}</td>
-                    <td>
-                      <span className={`status status-${ag.status}`}>{rotuloStatus[ag.status]}</span>
-                    </td>
-                    <td>{formatDateTime(ag.criadoEm)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </section>
-        </>
+      {(tab === "agendamentos" || tab === "ajustes") && (
+        <FiltersBar
+          searchTerm={searchTerm}
+          statusFilter={statusFilter}
+          dateFilter={dateFilter}
+          onSearchChange={setSearchTerm}
+          onStatusChange={setStatusFilter}
+          onDateChange={setDateFilter}
+        />
       )}
 
-      {tab === "metricas" && (
-        <div className="tabPanel" role="tabpanel">
-          {!data?.metricas && (
-            <p className="emptyInline">{loading ? "Carregando métricas…" : "Não há dados de métricas disponíveis."}</p>
-          )}
-          {data?.metricas && (
-            <>
-              <p className="metricsLead">
-                Resumo calculado no servidor a partir de todos os agendamentos ({data.total} registros retornados pela
-                API).
-              </p>
-              <section className="cards">
-                <article className="card">
-                  <span>Total de agendamentos</span>
-                  <strong>{data.metricas.total}</strong>
-                </article>
-                <article className="card">
-                  <span>Hoje</span>
-                  <strong>{data.metricas.hoje}</strong>
-                </article>
-                <article className="card">
-                  <span>Últimos 7 dias</span>
-                  <strong>{data.metricas.ultimos7Dias}</strong>
-                </article>
-                <article className="card">
-                  <span>Vira dado</span>
-                  <strong>{data.metricas.viraDado}</strong>
-                </article>
-                <article className="card">
-                  <span>Virou processo</span>
-                  <strong>{data.metricas.viraProcesso}</strong>
-                </article>
-                <article className="card">
-                  <span>Gestão pública</span>
-                  <strong>{data.metricas.gestaoPublica}</strong>
-                </article>
-              </section>
+      {tab === "agendamentos" && <AgendaConsultaList items={filteredAgendamentos} loading={loading} />}
 
-              <section className="metricsBlock">
-                <h2 className="metricsBlockTitle">Por status de agendamento</h2>
-                <div className="tableWrap">
-                  <table className="metricsTable">
-                    <thead>
-                      <tr>
-                        <th>Status</th>
-                        <th>Quantidade</th>
-                        <th>Parte do total</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {(["solicitado", "confirmado", "cancelado", "atendido"] as StatusAgendamento[]).map((st) => {
-                        const q = data.metricas.porStatus[st] ?? 0;
-                        const pct =
-                          data.metricas.total > 0 ? Math.round((q / data.metricas.total) * 1000) / 10 : 0;
-                        return (
-                          <tr key={st}>
-                            <td>
-                              <span className={`status status-${st}`}>{rotuloStatus[st]}</span>
-                            </td>
-                            <td>{q}</td>
-                            <td>
-                              <div className="barCell">
-                                <div className="barTrack" aria-hidden>
-                                  <div className="barFill" style={{ width: `${Math.min(pct, 100)}%` }} />
-                                </div>
-                                <span className="barPct">{pct}%</span>
-                              </div>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              </section>
-            </>
-          )}
-        </div>
+      {tab === "ajustes" && (
+        <AjustesAgendaSection
+          items={filteredAgendamentos}
+          loading={loading}
+          getAuthHeaders={buildAuthHeaders}
+          onSaved={() => void loadData()}
+        />
       )}
+
+      {tab === "metricas" && <MetricsTabPanel data={data} loading={loading} />}
     </main>
   );
 }

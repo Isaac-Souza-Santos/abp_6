@@ -44,10 +44,3 @@
 .loginMicrosoftBtn:hover {
   background: #106ebe;
 }
-
-.loginHint {
-  margin: 20px 0 0;
-  font-size: 0.8rem;
-  color: #64748b;
-  line-height: 1.4;
-}
