@@ -7,6 +7,101 @@
   gap: 16px;
 }
 
+.tabs {
+  display: flex;
+  gap: 4px;
+  border-bottom: 1px solid #e5e7eb;
+  padding-bottom: 0;
+}
+
+.tab {
+  border: 1px solid transparent;
+  border-bottom: none;
+  background: #f1f5f9;
+  color: #475569;
+  padding: 10px 18px;
+  border-radius: 8px 8px 0 0;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.95rem;
+  margin-bottom: -1px;
+}
+
+.tab:hover {
+  color: #0f172a;
+  background: #e2e8f0;
+}
+
+.tabActive {
+  background: #fff;
+  color: #0f172a;
+  border-color: #e5e7eb;
+  border-bottom-color: #fff;
+}
+
+.tabPanel {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.metricsLead {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #64748b;
+}
+
+.metricsBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.metricsBlockTitle {
+  margin: 0;
+  font-size: 1.05rem;
+  color: #0f172a;
+}
+
+.metricsTable {
+  min-width: 0;
+}
+
+.emptyInline {
+  margin: 0;
+  padding: 16px;
+  color: #64748b;
+  text-align: center;
+}
+
+.barCell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 140px;
+}
+
+.barTrack {
+  flex: 1;
+  height: 8px;
+  background: #e2e8f0;
+  border-radius: 999px;
+  overflow: hidden;
+  max-width: 180px;
+}
+
+.barFill {
+  height: 100%;
+  background: #3b82f6;
+  border-radius: 999px;
+}
+
+.barPct {
+  font-size: 0.85rem;
+  color: #64748b;
+  min-width: 3.5rem;
+}
+
 .header {
   display: flex;
   justify-content: space-between;

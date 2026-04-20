@@ -32,7 +32,7 @@ No bot, defina `ADMIN_PANEL_AZURE_TENANT_ID` e `ADMIN_PANEL_AZURE_CLIENT_ID` com
 
 - Arquivo `staticwebapp.config.json`: exige usuário autenticado (Entra) para as rotas do app.
 - Guias completos **não** estão no repositório: [../documentacao/AZURE-CONFIGURACAO.md](../documentacao/AZURE-CONFIGURACAO.md) — mantenha cópias em `local/` (ex. `local/PAINEL-AZURE-SWA.md`).
-- Workflow: [../.github/workflows/swa-painel-deploy.yml](../.github/workflows/swa-painel-deploy.yml).
+- Workflow SWA ([../.github/workflows/swa-painel-deploy.yml](../.github/workflows/swa-painel-deploy.yml)): só **manual** (`workflow_dispatch`), por causa de falhas intermitentes ao puxar a imagem do MCR no runner.
 
 ## Azure (App Service — plano B)
 

@@ -8,16 +8,16 @@
 #
 # No Portal Azure (Static Web App → Authentication):
 #   - Habilitar Microsoft (Entra ID) e restringir ao tenant da organização, se desejado.
+#
+# Deploy em push desativado: a action v1 constrói uma imagem Docker a partir do MCR
+# (mcr.microsoft.com/appsvc/staticappsclient) e em alguns ambientes o pull devolve 403.
+# O painel em produção neste repo usa sobretudo App Service (workflow azure-painel-app-service.yml).
+# Para publicar em SWA: Actions → "Deploy painel interno (SWA)" → Run workflow.
 
 name: Deploy painel interno (SWA)
 
 on:
   workflow_dispatch:
-  push:
-    branches: [main, master]
-    paths:
-      - "painel-interno/**"
-      - ".github/workflows/swa-painel-deploy.yml"
 
 concurrency:
   group: deploy-painel-swa-${{ github.ref }}
