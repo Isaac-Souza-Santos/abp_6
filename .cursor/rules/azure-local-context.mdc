@@ -1,0 +1,14 @@
+---
+description: Contexto Azure local (assinatura, RG, bot) e ficheiro local/azure-contexto.txt
+alwaysApply: false
+globs: infra/azure/**,documentacao/PAINEL-AZURE-SWA.md,.github/workflows/swa-painel-deploy.yml
+---
+
+# Azure — contexto local do projeto
+
+Antes de sugerir comandos `az` para este repositório (Container Apps, SWA, políticas de região):
+
+1. Ler o ficheiro **`local/azure-contexto.txt`** (se existir): contém subscription ID, tenant ID, nomes de RG e Container App usados pelo time.
+2. Se o ficheiro não existir, usar o modelo **`local/azure-contexto.EXEMPLO.txt`** e pedir ao utilizador para criar `local/azure-contexto.txt` (não versionado).
+3. **Azure for Students** costuma bloquear **Static Web Apps** em várias regiões (`RequestDisallowedByAzure`). SWA não existe em **France Central**; regiões típicas do recurso incluem **westeurope**. Documentação: `documentacao/PAINEL-AZURE-SWA.md`.
+4. Nunca escrever segredos (tokens de API, deployment token, passwords) na documentação versionada; apenas em `local/azure-contexto.txt` ou gestores de segredos (Key Vault / GitHub Secrets).

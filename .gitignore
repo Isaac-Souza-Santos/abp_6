@@ -13,7 +13,13 @@ dist/
 Thumbs.db
 .idea/
 .vscode/
-.cursor/
+# Cursor: ignorar tudo, exceto a regra versionada de contexto Azure local
+.cursor/**
+!.cursor/rules/
+.cursor/rules/**
+!.cursor/rules/azure-local-context.mdc
+# Dados Azure só na máquina (não versionar)
+local/azure-contexto.txt
 *.tsbuildinfo
 scripts/.github-created-issues.json
 # Scripts de criação de tarefas no GitHub (não versionar)
