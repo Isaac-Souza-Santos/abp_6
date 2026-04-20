@@ -1,5 +1,6 @@
 # Copie para local/azure-contexto.txt e preencha (ficheiro ignorado pelo Git).
 # Não coloque aqui GROQ_API_KEY, tokens de deploy, nem senhas.
+# Guias Azure completos: copie templates da equipa para local/PAINEL-AZURE-*.md e local/ARQUITETURA-AZURE.md (não versionados).
 
 AZURE_SUBSCRIPTION_NAME=
 AZURE_SUBSCRIPTION_ID=
@@ -8,3 +9,7 @@ RESOURCE_GROUP_BOT=rg-procon-bot-prod
 CONTAINER_APP_NAME=procon-bot
 STATIC_WEB_APP_NAME=
 STATIC_WEB_APP_REGION=westeurope
+
+APP_SERVICE_PLAN_NAME=asp-painel-procon
+APP_SERVICE_NAME=app-painel-procon-interno
+APP_SERVICE_LOCATION=francecentral

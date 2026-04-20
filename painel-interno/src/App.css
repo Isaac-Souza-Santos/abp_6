@@ -1,0 +1,172 @@
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: center;
+}
+
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.btnGhost {
+  border: 1px solid #cbd5e1;
+  background: #fff;
+  border-radius: 8px;
+  padding: 8px 14px;
+  cursor: pointer;
+  font-weight: 600;
+  color: #334155;
+}
+
+.btnGhost:hover {
+  background: #f8fafc;
+}
+
+.header h1 {
+  margin: 0;
+  font-size: 1.5rem;
+}
+
+.header p {
+  margin: 4px 0 0;
+  color: #4b5563;
+}
+
+.header button {
+  border: 1px solid #cbd5e1;
+  background: #fff;
+  border-radius: 8px;
+  padding: 8px 14px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.header button:disabled {
+  opacity: 0.7;
+  cursor: wait;
+}
+
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+}
+
+.card {
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 12px;
+  background: #fff;
+}
+
+.card span {
+  color: #6b7280;
+  display: block;
+  font-size: 0.85rem;
+}
+
+.card strong {
+  font-size: 1.25rem;
+}
+
+.filters {
+  display: grid;
+  grid-template-columns: 1fr 180px 170px;
+  gap: 10px;
+}
+
+.filters input,
+.filters select {
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  padding: 9px 10px;
+}
+
+.error {
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid #fecaca;
+  background: #fff1f2;
+  border-radius: 8px;
+  color: #991b1b;
+}
+
+.tableWrap {
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  overflow: auto;
+  background: #fff;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 980px;
+}
+
+th,
+td {
+  text-align: left;
+  border-bottom: 1px solid #f1f5f9;
+  padding: 10px;
+  font-size: 0.9rem;
+  vertical-align: top;
+}
+
+thead th {
+  background: #f8fafc;
+  color: #334155;
+}
+
+.empty {
+  text-align: center;
+  color: #6b7280;
+  padding: 24px;
+}
+
+.status {
+  border-radius: 999px;
+  font-size: 0.75rem;
+  padding: 4px 8px;
+  text-transform: capitalize;
+  font-weight: 600;
+  display: inline-block;
+}
+
+.status-solicitado {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.status-confirmado {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.status-cancelado {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.status-atendido {
+  background: #dbeafe;
+  color: #1e3a8a;
+}
+
+@media (max-width: 900px) {
+  .filters {
+    grid-template-columns: 1fr;
+  }
+}

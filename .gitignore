@@ -20,6 +20,15 @@ Thumbs.db
 !.cursor/rules/azure-local-context.mdc
 # Dados Azure só na máquina (não versionar)
 local/azure-contexto.txt
+# Guias Azure com nomes de recursos / passos de produção (não versionar)
+documentacao/PAINEL-AZURE-SWA.md
+documentacao/PAINEL-AZURE-APP-SERVICE.md
+documentacao/ARQUITETURA-AZURE.md
+local/PAINEL-AZURE-SWA.md
+local/PAINEL-AZURE-APP-SERVICE.md
+local/ARQUITETURA-AZURE.md
+# ZIP gerado localmente para deploy do painel no App Service
+infra/azure/painel-app-service.zip
 *.tsbuildinfo
 scripts/.github-created-issues.json
 # Scripts de criação de tarefas no GitHub (não versionar)

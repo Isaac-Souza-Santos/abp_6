@@ -40,6 +40,41 @@ npm run build
 npm start
 ```
 
+## Mini painel interno (React, somente leitura)
+
+Foi adicionado um painel em pasta separada: `painel-interno/`.
+
+### 1) Subir o bot/API (porta 3000)
+
+```bash
+npm run dev
+```
+
+### 2) Subir o painel React
+
+Em outro terminal:
+
+```bash
+npm run panel:dev
+```
+
+O painel consome `GET /admin/agendamentos` e mostra cards de métricas + tabela com filtros.
+
+### Variáveis opcionais para segurança/CORS
+
+- `ADMIN_PANEL_TOKEN`: se definido, a API exige token em `x-admin-token` ou `?token=`.
+- `ADMIN_PANEL_ORIGIN`: origem permitida para o painel (ex.: `http://localhost:5173`). Padrão: `*`.
+- `ADMIN_PANEL_AZURE_TENANT_ID` e `ADMIN_PANEL_AZURE_CLIENT_ID` (opcional): quando ambos estão definidos, a API aceita também o cabeçalho `Authorization: Bearer` com o **ID token** do Entra ID para essa app registration (mesmo *Application (client) ID* do painel). Pode coexistir com `ADMIN_PANEL_TOKEN` (aceita um ou outro).
+
+No painel (`painel-interno/.env`):
+
+```env
+VITE_API_BASE_URL=http://localhost:3000
+VITE_ADMIN_PANEL_TOKEN=
+```
+
+Configuração Azure (guias completos **não** estão no Git): [documentacao/AZURE-CONFIGURACAO.md](documentacao/AZURE-CONFIGURACAO.md). Scripts: [infra/azure/README.md](infra/azure/README.md).
+
 **Primeira conexão:** o terminal exibe um **QR Code**. No WhatsApp (celular): **Aparelhos conectados** → **Conectar um aparelho** → escanear o QR. A sessão fica em `.wwebjs_auth`.
 
 **Erro "Execution context was destroyed" ao iniciar:** (1) O bot tenta de novo sozinho após 4 segundos. (2) No `.env` adicione `HEADLESS=false`, rode `npm run dev` e escaneie o QR na janela do Chrome que abrir — muitas vezes resolve sem apagar nada.
@@ -95,7 +130,8 @@ Ver [documentacao/METRICAS-PROTOCOLO.md](documentacao/METRICAS-PROTOCOLO.md).
 | [documentacao/OUTLOOK-AGENDAMENTO.md](documentacao/OUTLOOK-AGENDAMENTO.md) | Integração gratuita com Outlook (Microsoft Graph).                   |
 | [documentacao/AGENDA-LIVRE-OCUPADA.md](documentacao/AGENDA-LIVRE-OCUPADA.md) | Gerenciamento de horários livres x ocupados.                         |
 | [documentacao/METRICAS-PROTOCOLO.md](documentacao/METRICAS-PROTOCOLO.md)  | Métricas: vira dado, vira processo, gestão pública.                  |
-| [infra/azure/README.md](infra/azure/README.md) | Plano e scripts de deploy no Azure Container Apps. |
+| [documentacao/AZURE-CONFIGURACAO.md](documentacao/AZURE-CONFIGURACAO.md) | Onde guardar guias Azure (fora do Git); pasta `local/`. |
+| [infra/azure/README.md](infra/azure/README.md) | Índice dos scripts de deploy (Container App, painel). |
 | [Apresentação Sprint 1 (YouTube)](https://www.youtube.com/watch?v=91aUjvrli_g) | Vídeo da apresentação / demo da Sprint 1.                           |
 
 ## Estrutura do projeto

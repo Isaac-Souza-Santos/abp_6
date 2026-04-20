@@ -1,0 +1,70 @@
+# Publica o painel interno num Azure App Service (Linux + Node).
+# Pré-requisito: App Service já criado (ex.: infra/azure/deploy-painel-app-service.ps1 uma vez).
+#
+# Segredos:
+#   AZURE_WEBAPP_PUBLISH_PROFILE  — XML do "Download publish profile"
+#   AZURE_WEBAPP_NAME              — nome do App Service (ex.: app-painel-procon-xyz)
+#   PAINEL_VITE_API_BASE_URL
+#   PAINEL_VITE_ADMIN_PANEL_TOKEN  — opcional
+#   PAINEL_VITE_AZURE_CLIENT_ID    — opcional (login MSAL no painel)
+#   PAINEL_VITE_AZURE_TENANT_ID    — opcional
+#   PAINEL_VITE_AZURE_REDIRECT_URI — opcional (ex.: https://app-painel-xxx.azurewebsites.net/)
+
+name: Deploy painel App Service
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, master]
+    paths:
+      - "painel-interno/**"
+      - ".github/workflows/azure-painel-app-service.yml"
+
+concurrency:
+  group: deploy-painel-appservice-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build_and_deploy:
+    if: github.event_name == 'workflow_dispatch' || github.event_name == 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: painel-interno/package-lock.json
+
+      - name: Build Vite e empacotar para App Service
+        env:
+          VITE_API_BASE_URL: ${{ secrets.PAINEL_VITE_API_BASE_URL }}
+          VITE_ADMIN_PANEL_TOKEN: ${{ secrets.PAINEL_VITE_ADMIN_PANEL_TOKEN }}
+          VITE_AZURE_CLIENT_ID: ${{ secrets.PAINEL_VITE_AZURE_CLIENT_ID }}
+          VITE_AZURE_TENANT_ID: ${{ secrets.PAINEL_VITE_AZURE_TENANT_ID }}
+          VITE_AZURE_REDIRECT_URI: ${{ secrets.PAINEL_VITE_AZURE_REDIRECT_URI }}
+        run: |
+          set -euo pipefail
+          if [ -z "${VITE_API_BASE_URL:-}" ]; then
+            echo "::error::Defina o segredo PAINEL_VITE_API_BASE_URL (URL do Container App, sem barra final)."
+            exit 1
+          fi
+          cd painel-interno
+          npm ci
+          npm run build
+          mkdir -p _deploy/dist
+          cp -r dist/* _deploy/dist/
+          cp azure-app-service-host/package.json azure-app-service-host/server.mjs _deploy/
+          cd _deploy
+          npm install --omit=dev
+          zip -r "$GITHUB_WORKSPACE/painel-app-service.zip" .
+
+      - name: Deploy para Azure Web App
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: ${{ secrets.AZURE_WEBAPP_NAME }}
+          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+          package: painel-app-service.zip
