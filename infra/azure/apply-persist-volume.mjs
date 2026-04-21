@@ -80,6 +80,36 @@ const template = {
 
 const cfg = app.properties.configuration;
 const ing = cfg.ingress;
+const envSecretRefs = new Set(
+  (Array.isArray(c.env) ? c.env : [])
+    .map((entry) => (typeof entry?.secretRef === "string" ? entry.secretRef.trim() : ""))
+    .filter(Boolean)
+);
+const invalidReferencedSecrets = [];
+const usableSecrets = (Array.isArray(cfg.secrets) ? cfg.secrets : []).filter((secret) => {
+  const name = typeof secret?.name === "string" ? secret.name.trim() : "";
+  if (!name) return false;
+  const hasPlainValue =
+    typeof secret.value === "string" && secret.value.trim() !== "" && secret.value.trim() !== "***";
+  const hasKeyVaultRef =
+    typeof secret.keyVaultUrl === "string" &&
+    secret.keyVaultUrl.trim() !== "" &&
+    (typeof secret.identity === "string" || typeof secret.identityref === "string") &&
+    (secret.identity || secret.identityref || "").trim() !== "";
+  const usable = hasPlainValue || hasKeyVaultRef;
+  if (!usable && envSecretRefs.has(name)) invalidReferencedSecrets.push(name);
+  if (!usable && !envSecretRefs.has(name)) {
+    console.warn(`Ignorando secret inválido não referenciado no PUT: ${name}`);
+  }
+  return usable;
+});
+if (invalidReferencedSecrets.length > 0) {
+  throw new Error(
+    `Secrets referenciados por env vars, mas inválidos para ARM PUT: ${invalidReferencedSecrets.join(
+      ", "
+    )}. Regrave-os com "az containerapp secret set" usando value ou keyvaultref+identity.`
+  );
+}
 const minimalCfg = {
   activeRevisionsMode: cfg.activeRevisionsMode,
   ingress: {
@@ -90,7 +120,7 @@ const minimalCfg = {
     traffic: ing.traffic,
   },
   registries: cfg.registries,
-  secrets: cfg.secrets,
+  secrets: usableSecrets.length > 0 ? usableSecrets : undefined,
 };
 
 const put = {
