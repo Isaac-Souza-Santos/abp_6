@@ -132,7 +132,10 @@ jobs:
             echo "::error::Revisao mais recente nao esta ativa."
             exit 1
           fi
-          if [ "$running" != "Running" ]; then
-            echo "::error::Revisao mais recente nao esta em Running."
-            exit 1
-          fi
+          case "$running" in
+            Running|RunningAtMaxScale|RunningAtMinScale) ;;
+            *)
+              echo "::error::Revisao com runningState inesperado (esperado Running*): $running"
+              exit 1
+              ;;
+          esac
