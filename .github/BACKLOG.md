@@ -79,6 +79,8 @@ Como o sistema **deve se comportar** – qualidade, segurança, documentação e
 
 **Entrega Sprint 2:** Atendimento completo via menu (1–6), agendamento com LGPD e horários livres.
 
+**Extensão – painel web (tarefas adicionais):** ver [documentacao/SPRINT-2-PAINEL-INTERNO.md](../documentacao/SPRINT-2-PAINEL-INTERNO.md) (configuração em `data/`, UX, exportação, acessibilidade).
+
 ---
 
 ## Sprint 3 – Painel do atendente, métricas e entrega

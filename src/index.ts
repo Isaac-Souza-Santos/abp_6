@@ -8,12 +8,15 @@ import { ProconBot } from "./bot/ProconBot";
 import { AgendamentoStore } from "./services/AgendamentoStore";
 import { isAzureAdminPanelAuthConfigured, verifyAdminPanelAzureToken } from "./azureAdminAuth";
 import type { ParticipanteAgenda } from "./types/agendamento";
+import { agendaAtendentesConfigStore, parseAgendaAtendentesConfig } from "./services/AgendaAtendentesConfigStore";
+import { GroqMetricasStore } from "./services/GroqMetricasStore";
 
 const healthPort = Number(process.env.HEALTH_PORT || 3000);
 const adminPanelOrigin = process.env.ADMIN_PANEL_ORIGIN || "*";
 const adminPanelToken = process.env.ADMIN_PANEL_TOKEN?.trim();
 
 const agendamentoStore = new AgendamentoStore();
+const groqMetricasStore = new GroqMetricasStore();
 
 function setJsonHeaders(res: http.ServerResponse): void {
   res.setHeader("Content-Type", "application/json");
@@ -21,7 +24,7 @@ function setJsonHeaders(res: http.ServerResponse): void {
 
 function setAdminCorsHeaders(res: http.ServerResponse): void {
   res.setHeader("Access-Control-Allow-Origin", adminPanelOrigin);
-  res.setHeader("Access-Control-Allow-Methods", "GET,PATCH,OPTIONS");
+  res.setHeader("Access-Control-Allow-Methods", "GET,PATCH,PUT,OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type,x-admin-token,Authorization");
 }
 
@@ -179,14 +182,50 @@ function startHealthServer(bot: ProconBot): void {
         setJsonHeaders(res);
         const agendamentos = agendamentoStore.listarTodos();
         const metricas = agendamentoStore.getMetricas();
+        const groqMetricas = groqMetricasStore.getMetricas();
         res.writeHead(200);
         res.end(
           JSON.stringify({
             total: agendamentos.length,
             agendamentos,
             metricas,
+            groqMetricas,
           })
         );
+        return;
+      }
+
+      if (url.pathname === "/admin/agenda-atendentes" && req.method === "GET") {
+        setJsonHeaders(res);
+        res.writeHead(200);
+        res.end(JSON.stringify(agendaAtendentesConfigStore.getConfig()));
+        return;
+      }
+
+      if (url.pathname === "/admin/agenda-atendentes" && req.method === "PUT") {
+        setJsonHeaders(res);
+        let body: Record<string, unknown>;
+        try {
+          body = await readJsonBody(req);
+        } catch {
+          res.writeHead(400);
+          res.end(JSON.stringify({ error: "Corpo inválido ou demasiado grande." }));
+          return;
+        }
+        const parsed = parseAgendaAtendentesConfig(body);
+        if (!parsed) {
+          res.writeHead(400);
+          res.end(
+            JSON.stringify({
+              error:
+                "Configuração inválida. Envie { atendentes: [{ id?, nome, intervaloMinutos?, blocos?, almoco?: { inicioH, inicioM, fimH, fimM } }] }.",
+            })
+          );
+          return;
+        }
+        agendaAtendentesConfigStore.saveConfig(parsed);
+        res.writeHead(200);
+        res.end(JSON.stringify(parsed));
         return;
       }
 

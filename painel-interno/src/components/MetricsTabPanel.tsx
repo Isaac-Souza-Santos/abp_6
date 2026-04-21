@@ -10,6 +10,8 @@ type Props = {
 };
 
 export function MetricsTabPanel({ data, loading }: Props) {
+  const groqMetricas = data?.groqMetricas ?? { satisfatoria: 0, naoSatisfatoria: 0 };
+
   return (
     <div className="tabPanel" role="tabpanel">
       {!data?.metricas && (
@@ -18,38 +20,13 @@ export function MetricsTabPanel({ data, loading }: Props) {
       {data?.metricas && (
         <>
           <p className="metricsLead">
-            Resumo calculado no servidor a partir de todos os agendamentos ({data.total} registros retornados pela API).
+            Apenas os gráficos solicitados: avaliação do chat e agendamentos.
           </p>
-          <section className="cards">
-            <article className="card cardAccent">
-              <span>Total de agendamentos</span>
-              <strong>{data.metricas.total}</strong>
-            </article>
-            <article className="card">
-              <span>Hoje</span>
-              <strong>{data.metricas.hoje}</strong>
-            </article>
-            <article className="card">
-              <span>Últimos 7 dias</span>
-              <strong>{data.metricas.ultimos7Dias}</strong>
-            </article>
-            <article className="card">
-              <span>Vira dado</span>
-              <strong>{data.metricas.viraDado}</strong>
-            </article>
-            <article className="card">
-              <span>Virou processo</span>
-              <strong>{data.metricas.viraProcesso}</strong>
-            </article>
-            <article className="card">
-              <span>Gestão pública</span>
-              <strong>{data.metricas.gestaoPublica}</strong>
-            </article>
-          </section>
 
           <Suspense fallback={<p className="chartsFallback">A carregar gráficos…</p>}>
             <MetricsCharts
               metricas={data.metricas}
+              groqMetricas={groqMetricas}
               rotulos={{
                 solicitado: rotuloStatus.solicitado,
                 confirmado: rotuloStatus.confirmado,

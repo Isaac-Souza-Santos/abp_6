@@ -55,6 +55,12 @@ export function AgendaCard({ ag, variant, children }: Props) {
           <dt>Data preferida</dt>
           <dd>{ag.dataPreferida || formatDateTime(ag.slotInicio || "")}</dd>
         </div>
+        {ag.atendenteNome || ag.atendenteId ? (
+          <div>
+            <dt>Linha de atendimento</dt>
+            <dd>{ag.atendenteNome || ag.atendenteId}</dd>
+          </div>
+        ) : null}
         {variant === "consulta" ? (
           <div>
             <dt>Criado em</dt>

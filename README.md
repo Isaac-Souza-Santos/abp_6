@@ -40,9 +40,23 @@ npm run build
 npm start
 ```
 
-## Mini painel interno (React, somente leitura)
+## Mini painel interno (React)
 
-Foi adicionado um painel em pasta separada: `painel-interno/`.
+Foi adicionado um painel em pasta separada: `painel-interno/`. Permite consultar agendamentos, métricas e, na aba **Ajustes da agenda**, editar protocolos e **guardar horário de almoço por linha de atendimento** (configuração persistida em `data/agenda-atendentes.json`).
+
+### Dados em `data/`
+
+| Ficheiro | Conteúdo |
+|----------|----------|
+| `data/agendamentos.json` | Todos os pedidos de agendamento (`slotInicio`, `status`, `atendenteId` / `atendenteNome` quando aplicável). |
+| `data/agenda-atendentes.json` | Linhas de atendimento: `id`, `nome`, `intervaloMinutos`, `blocos` (expediente); opcionalmente `almoco` (intervalo sem slots). |
+
+A API expõe:
+
+- `GET /admin/agendamentos` — lista + métricas (usado pelo painel).
+- `GET` e `PUT /admin/agenda-atendentes` — lê e grava a configuração da agenda (mesma autenticação que o resto do admin: `x-admin-token`, `?token=` ou Bearer Azure, conforme `.env`).
+
+Tarefas planeadas para evolução do painel: [documentacao/SPRINT-2-PAINEL-INTERNO.md](documentacao/SPRINT-2-PAINEL-INTERNO.md).
 
 ### 1) Subir o bot/API (porta 3000)
 
@@ -58,7 +72,7 @@ Em outro terminal:
 npm run panel:dev
 ```
 
-O painel consome `GET /admin/agendamentos` e mostra cards de métricas + tabela com filtros.
+O painel consome `GET /admin/agendamentos` (lista e métricas), `PATCH /admin/agendamentos/:id` (ajustes por protocolo) e `GET`/`PUT /admin/agenda-atendentes` (horário de almoço por linha).
 
 ### Variáveis opcionais para segurança/CORS
 
@@ -129,6 +143,7 @@ Ver [documentacao/METRICAS-PROTOCOLO.md](documentacao/METRICAS-PROTOCOLO.md).
 | [documentacao/REQUISITOS-API-E-MAIS.md](documentacao/REQUISITOS-API-E-MAIS.md) | API, ambiente, segurança, Evolution API.                             |
 | [documentacao/OUTLOOK-AGENDAMENTO.md](documentacao/OUTLOOK-AGENDAMENTO.md) | Integração gratuita com Outlook (Microsoft Graph).                   |
 | [documentacao/AGENDA-LIVRE-OCUPADA.md](documentacao/AGENDA-LIVRE-OCUPADA.md) | Gerenciamento de horários livres x ocupados.                         |
+| [documentacao/SPRINT-2-PAINEL-INTERNO.md](documentacao/SPRINT-2-PAINEL-INTERNO.md) | Tarefas Sprint 2 – evolução do painel interno.                         |
 | [documentacao/METRICAS-PROTOCOLO.md](documentacao/METRICAS-PROTOCOLO.md)  | Métricas: vira dado, vira processo, gestão pública.                  |
 | [documentacao/AZURE-CONFIGURACAO.md](documentacao/AZURE-CONFIGURACAO.md) | Onde guardar guias Azure (fora do Git); pasta `local/`. |
 | [infra/azure/README.md](infra/azure/README.md) | Índice dos scripts de deploy (Container App, painel). |
@@ -149,7 +164,7 @@ src/
 └── types/agendamento.ts
 ```
 
-Dados persistidos em `data/agendamentos.json` (pasta `data/` no `.gitignore`).
+Dados persistidos em `data/agendamentos.json` e `data/agenda-atendentes.json` (pasta `data/` no `.gitignore`).
 
 ## Configuração de textos (Procon)
 

@@ -7,6 +7,7 @@
     "build": "tsc",
     "start": "node dist/index.js",
     "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
+    "issues:sprint2:painel": "node scripts/create-sprint2-painel-issues.mjs",
     "panel:dev": "npm --prefix painel-interno run dev",
     "panel:build": "npm --prefix painel-interno run build",
     "panel:preview": "npm --prefix painel-interno run preview",

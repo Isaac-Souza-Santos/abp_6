@@ -18,6 +18,10 @@ export interface Agendamento {
   dataPreferida: string;
   /** Início do slot reservado (ISO), quando escolhido da lista de horários livres. */
   slotInicio?: string;
+  /** Linha de atendimento (guichê) quando há várias agendas paralelas. */
+  atendenteId?: string;
+  /** Nome da linha no momento do agendamento (exibição estável). */
+  atendenteNome?: string;
   status: StatusAgendamento;
   criadoEm: string; // ISO
   atualizadoEm: string;
@@ -41,9 +45,11 @@ export interface EstadoFluxoAgendamento {
   /** Data do dia escolhido (YYYY-MM-DD), preenchido ao sair de escolher_dia. */
   diaEscolhido?: string;
   /** Quando step === 'escolher_slot', lista de horários do dia (número = índice+1). */
-  slotsDisponiveis?: { label: string; dataHora: string }[];
+  slotsDisponiveis?: { label: string; dataHora: string; atendenteId: string }[];
   /** Slot reservado (ISO), preenchido ao escolher da lista de horários livres. */
   slotInicio?: string;
+  /** Linha de atendimento associada ao slot escolhido. */
+  atendenteId?: string;
 }
 
 /** Resumo para métricas (ciclo do protocolo: vira dado → vira processo → gestão pública). */

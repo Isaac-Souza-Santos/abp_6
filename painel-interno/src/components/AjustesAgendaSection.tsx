@@ -1,5 +1,6 @@
 import { AgendaCard } from "./AgendaCard";
 import { AgendaCardEditor } from "./AgendaCardEditor";
+import { AtendentesAgendaConfigEditor } from "./AtendentesAgendaConfigEditor";
 import { adminPanelToken, apiBaseUrl } from "../config/env";
 import type { Agendamento } from "../types/painel";
 
@@ -13,6 +14,7 @@ type Props = {
 export function AjustesAgendaSection({ items, loading, getAuthHeaders, onSaved }: Props) {
   return (
     <section className="tabPanel" role="tabpanel" aria-label="Ajustes da agenda">
+      <AtendentesAgendaConfigEditor getAuthHeaders={getAuthHeaders} />
       <p className="tabIntro">
         Altere o <strong>status</strong>, marque <strong>virou processo</strong> / <strong>gestão pública</strong> e
         escreva <strong>observações</strong>. Use <em>Guardar alterações</em> em cada protocolo.

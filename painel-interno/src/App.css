@@ -465,6 +465,147 @@
   box-shadow: none;
 }
 
+.agendaInput {
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 0.9rem;
+  background: #fff;
+  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.agendaTimeInput {
+  width: auto;
+  max-width: 8rem;
+}
+
+.agendaIntervalInput {
+  width: 5.5rem;
+}
+
+.agendaConfigCard {
+  border: 1px solid #c7d2fe;
+  border-radius: 12px;
+  padding: 16px 18px;
+  background: linear-gradient(180deg, #f8fafc 0%, #fff 100%);
+}
+
+.agendaConfigTitle {
+  margin: 0 0 8px;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.agendaConfigLead {
+  margin: 0 0 16px;
+  font-size: 0.88rem;
+  line-height: 1.55;
+  color: #475569;
+}
+
+.agendaConfigError {
+  margin: 0 0 12px;
+  color: #b91c1c;
+  font-size: 0.9rem;
+}
+
+.agendaConfigList {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 14px;
+}
+
+.agendaConfigAtendente {
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 14px;
+  background: #fff;
+}
+
+.agendaConfigAtendenteNome {
+  margin: 0 0 10px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.agendaCheckBlock {
+  margin-bottom: 12px;
+  align-items: flex-start;
+}
+
+.agendaCheckBlock span {
+  line-height: 1.4;
+}
+
+.agendaConfigSub {
+  margin: 14px 0 8px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #64748b;
+}
+
+.agendaConfigBlocos {
+  list-style: none;
+  margin: 0 0 10px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.agendaConfigBlocoRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px;
+}
+
+.btnSecondary {
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  color: #334155;
+  background: #fff;
+}
+
+.btnSecondary:hover {
+  background: #f1f5f9;
+}
+
+.btnSmall {
+  font-size: 0.82rem;
+  padding: 6px 10px;
+}
+
+.btnRemoveLine {
+  border: none;
+  background: transparent;
+  color: #b91c1c;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
+  padding: 4px 0;
+}
+
+.agendaConfigActions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-top: 12px;
+}
+
 .agendaSaveError {
   font-size: 0.85rem;
   color: #b91c1c;

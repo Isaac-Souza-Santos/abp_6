@@ -6,6 +6,25 @@ export type ParticipanteAgenda = {
   telefone?: string;
 };
 
+export type HorarioBlocoAtendente = {
+  inicioH: number;
+  inicioM: number;
+  fimH: number;
+  fimM: number;
+};
+
+export type AtendenteAgendaConfig = {
+  id: string;
+  nome: string;
+  intervaloMinutos: number;
+  blocos: HorarioBlocoAtendente[];
+  almoco?: HorarioBlocoAtendente;
+};
+
+export type AgendaAtendentesConfig = {
+  atendentes: AtendenteAgendaConfig[];
+};
+
 export type Agendamento = {
   id: string;
   telefone: string;
@@ -13,6 +32,8 @@ export type Agendamento = {
   motivo: string;
   dataPreferida: string;
   slotInicio?: string;
+  atendenteId?: string;
+  atendenteNome?: string;
   status: StatusAgendamento;
   criadoEm: string;
   atualizadoEm: string;
@@ -32,10 +53,16 @@ export type MetricasResumo = {
   porStatus: Record<StatusAgendamento, number>;
 };
 
+export type MetricasGroq = {
+  satisfatoria: number;
+  naoSatisfatoria: number;
+};
+
 export type ApiResponse = {
   total: number;
   agendamentos: Agendamento[];
   metricas: MetricasResumo;
+  groqMetricas?: MetricasGroq;
 };
 
 export type PainelTab = "agendamentos" | "ajustes" | "metricas";

@@ -1,6 +1,6 @@
 # Painel interno de agendamentos
 
-Aplicação React (Vite + TypeScript) para visualização somente leitura dos agendamentos.
+Aplicação React (Vite + TypeScript) para **consultar e ajustar** agendamentos: filtros, métricas, edição de protocolos (aba **Ajustes da agenda**) e **horário de almoço por linha** (gravado na API em `data/agenda-atendentes.json`).
 
 ## Rodar localmente
 
@@ -9,7 +9,7 @@ npm install
 npm run dev
 ```
 
-Por padrão, a API é lida de `http://localhost:3000/admin/agendamentos`.
+Por padrão, a API base é `http://localhost:3000` (endpoints `GET /admin/agendamentos`, `PATCH /admin/agendamentos/:id`, `GET` e `PUT /admin/agenda-atendentes`).
 
 ## Configuração
 
@@ -21,7 +21,7 @@ VITE_ADMIN_PANEL_TOKEN=
 ```
 
 - `VITE_API_BASE_URL`: URL base da API do bot.
-- `VITE_ADMIN_PANEL_TOKEN`: token opcional para autenticação no endpoint `/admin/agendamentos`.
+- `VITE_ADMIN_PANEL_TOKEN`: token opcional para autenticação nos endpoints `/admin/*` (agendamentos e agenda-atendentes).
 - `VITE_AZURE_CLIENT_ID`: se preenchido, o painel mostra **login Microsoft** (MSAL) antes dos dados. Use o mesmo *Application (client) ID* da app Entra do painel.
 - `VITE_AZURE_TENANT_ID`: ID do tenant (ou `common`); opcional se quiser multi-tenant.
 - `VITE_AZURE_REDIRECT_URI`: opcional; por defeito `window.location.origin + "/"`.
@@ -37,3 +37,7 @@ No bot, defina `ADMIN_PANEL_AZURE_TENANT_ID` e `ADMIN_PANEL_AZURE_CLIENT_ID` com
 ## Azure (App Service — plano B)
 
 Mesma política: documentação detalhada em `local/` (ex. `local/PAINEL-AZURE-APP-SERVICE.md`). Pasta `azure-app-service-host/` (Express) + scripts em `infra/azure/`. Workflow [../.github/workflows/azure-painel-app-service.yml](../.github/workflows/azure-painel-app-service.yml): deploy **automático** em push para `main`/`master` quando mudam ficheiros em `painel-interno/`, além de execução manual.
+
+## Planeamento (Sprint 2 – painel)
+
+Tarefas sugeridas para a próxima iteração do painel: [../documentacao/SPRINT-2-PAINEL-INTERNO.md](../documentacao/SPRINT-2-PAINEL-INTERNO.md).

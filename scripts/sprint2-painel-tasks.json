@@ -1,0 +1,69 @@
+{
+  "milestone": {
+    "title": "Sprint 2 – Painel interno",
+    "description": "Evolução do painel interno: configuração de agenda, UX, segurança e operação."
+  },
+  "labels": ["Sprint 2", "painel-interno", "prioridade-alta", "prioridade-media", "prioridade-baixa"],
+  "tasks": [
+    {
+      "id": "P2.1",
+      "title": "Documentar no README raiz os ficheiros em data/ e o endpoint GET/PUT /admin/agenda-atendentes",
+      "priority": "Alta",
+      "acceptanceCriteria": "README descreve agenda-atendentes.json, agendamentos.json e autenticação admin"
+    },
+    {
+      "id": "P2.2",
+      "title": "Atualizar README do painel: fluxos reais (abas Agendamentos, Ajustes, Métricas) e edição de almoço",
+      "priority": "Alta",
+      "acceptanceCriteria": "painel-interno/README.md reflete comportamento atual (não só leitura)"
+    },
+    {
+      "id": "P2.3",
+      "title": "Checklist de testes manuais: login, listar agendamentos, guardar almoço e PATCH protocolo",
+      "priority": "Alta",
+      "acceptanceCriteria": "Documento ou secção com passos reproduzíveis e resultado esperado"
+    },
+    {
+      "id": "P2.4",
+      "title": "Tratamento de erro de rede na secção de almoço (retry, mensagem clara, estado após falha)",
+      "priority": "Média",
+      "acceptanceCriteria": "Utilizador vê mensagem útil; botão Tentar de novo funciona"
+    },
+    {
+      "id": "P2.5",
+      "title": "Validação client-side antes do PUT (almoço: início antes do fim; horas 0-23)",
+      "priority": "Média",
+      "acceptanceCriteria": "PUT não é enviado com intervalo inválido; mensagem inline"
+    },
+    {
+      "id": "P2.6",
+      "title": "Exibir no card de agendamento resumo consistente de data/hora e linha",
+      "priority": "Média",
+      "acceptanceCriteria": "Protocolos com atendenteNome/slotInicio legíveis sem abrir consola"
+    },
+    {
+      "id": "P2.7",
+      "title": "Gestão de várias linhas de atendimento no painel (adicionar/remover linha com nome e id seguros)",
+      "priority": "Baixa",
+      "acceptanceCriteria": "API aceita config; UI permite N linhas sem editar JSON à mão"
+    },
+    {
+      "id": "P2.8",
+      "title": "Exportar lista filtrada de agendamentos (CSV ou JSON) a partir do painel",
+      "priority": "Baixa",
+      "acceptanceCriteria": "Ficheiro descarregável com colunas mínimas (id, data, status, telefone)"
+    },
+    {
+      "id": "P2.9",
+      "title": "Revisão de acessibilidade (labels, aria-*, contraste nas abas e formulários)",
+      "priority": "Média",
+      "acceptanceCriteria": "Navegação por teclado nas abas e controlos de almoço sem armadilhas óbvias"
+    },
+    {
+      "id": "P2.10",
+      "title": "Alinhar documentacao/AGENDA-LIVRE-OCUPADA.md com modelo multi-linha + almoço + atendenteId",
+      "priority": "Média",
+      "acceptanceCriteria": "Documento descreve ocupação por linha e exclusão de slots no almoço"
+    }
+  ]
+}

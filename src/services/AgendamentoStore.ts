@@ -158,4 +158,18 @@ export class AgendamentoStore {
     }
     return ocupados;
   }
+
+  /**
+   * Indica se um início de slot (ISO) está indisponível para uma linha de atendimento.
+   * Agendamentos antigos sem `atendenteId` bloqueiam todas as linhas nesse horário (comportamento legado).
+   */
+  isSlotBloqueadoParaLinha(slotIso: string, atendenteId: string): boolean {
+    const list = load();
+    for (const a of list) {
+      if (a.status === 'cancelado' || !a.slotInicio || a.slotInicio !== slotIso) continue;
+      if (a.atendenteId == null) return true;
+      if (a.atendenteId === atendenteId) return true;
+    }
+    return false;
+  }
 }

@@ -1,5 +1,7 @@
 import type { Agendamento, EstadoFluxoAgendamento } from '../types/agendamento';
 import { AgendamentoStore } from './AgendamentoStore';
+import { agendaAtendentesConfigStore } from './AgendaAtendentesConfigStore';
+import { slotsDoAtendenteNoDia } from './agendaSlotUtils';
 
 const store = new AgendamentoStore();
 
@@ -10,11 +12,6 @@ function normalizarTelefone(t: string): string {
   return t.replace(/\D/g, '');
 }
 
-/** Horários de atendimento: manhã 9h–12h e tarde 14h–17h, slots de 30 min. */
-const SLOTS_HORARIOS: { h: number; m: number }[] = [
-  { h: 9, m: 0 }, { h: 9, m: 30 }, { h: 10, m: 0 }, { h: 10, m: 30 }, { h: 11, m: 0 }, { h: 11, m: 30 },
-  { h: 14, m: 0 }, { h: 14, m: 30 }, { h: 15, m: 0 }, { h: 15, m: 30 }, { h: 16, m: 0 }, { h: 16, m: 30 },
-];
 const MAX_DIAS_BUSCA = 15;
 const MAX_SLOTS_LISTADOS = 12;
 /** Máximo de dias úteis mostrados na etapa "escolha o dia" (semana). */
@@ -90,59 +87,78 @@ Digite *1* ou *2*:`;
     return resultado;
   }
 
-  /** Slots livres em um único dia (apenas horários). */
-  getSlotsLivresParaDia(dataKey: string): { label: string; dataHora: string }[] {
-    const [y, m, d] = dataKey.split('-').map(Number);
-    const dia = new Date(y, m - 1, d, 0, 0, 0);
+  /** Slots livres em um único dia (horário + linha de atendimento). */
+  getSlotsLivresParaDia(dataKey: string): { label: string; dataHora: string; atendenteId: string }[] {
+    const cfg = agendaAtendentesConfigStore.getConfig();
+    const [y, mon, day] = dataKey.split('-').map(Number);
+    const dia = new Date(y, mon - 1, day, 0, 0, 0);
     const now = new Date();
-    const ocupadosSet = new Set(
-      this.agendamentoStore.getSlotsOcupados(dia, new Date(dia.getTime() + 24 * 60 * 60 * 1000))
-    );
-    const resultado: { label: string; dataHora: string }[] = [];
-    const hoje = dataKey === now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0');
-    for (const { h, m } of SLOTS_HORARIOS) {
-      const slotStart = new Date(dia);
-      slotStart.setHours(h, m, 0, 0);
-      if (hoje && slotStart <= now) continue;
-      const iso = slotStart.toISOString();
-      if (ocupadosSet.has(iso)) continue;
-      resultado.push({
-        label: slotStart.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
-        dataHora: iso,
-      });
-    }
-    return resultado;
-  }
+    const resultado: { label: string; dataHora: string; atendenteId: string }[] = [];
+    const hojeKey =
+      now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0');
+    const hoje = dataKey === hojeKey;
 
-  /** Gera lista de slots livres (não ocupados) nos próximos dias úteis. */
-  getProximosSlotsLivres(): { label: string; dataHora: string }[] {
-    const now = new Date();
-    const from = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
-    const to = new Date(from);
-    to.setDate(to.getDate() + MAX_DIAS_BUSCA);
-    const ocupadosSet = new Set(
-      this.agendamentoStore.getSlotsOcupados(from, to)
-    );
-    const resultado: { label: string; dataHora: string }[] = [];
-
-    for (let d = 0; d < MAX_DIAS_BUSCA && resultado.length < MAX_SLOTS_LISTADOS; d++) {
-      const dia = new Date(from);
-      dia.setDate(dia.getDate() + d);
-      const dow = dia.getDay();
-      if (dow === 0 || dow === 6) continue; // fim de semana
-      const hoje = d === 0;
-      for (const { h, m } of SLOTS_HORARIOS) {
+    for (const at of cfg.atendentes) {
+      for (const { h, m } of slotsDoAtendenteNoDia(at)) {
         const slotStart = new Date(dia);
         slotStart.setHours(h, m, 0, 0);
         if (hoje && slotStart <= now) continue;
         const iso = slotStart.toISOString();
-        if (ocupadosSet.has(iso)) continue;
-        const label = slotStart.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' }) + ' às ' + slotStart.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-        resultado.push({ label, dataHora: iso });
-        if (resultado.length >= MAX_SLOTS_LISTADOS) break;
+        if (this.agendamentoStore.isSlotBloqueadoParaLinha(iso, at.id)) continue;
+        const horaLabel = slotStart.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+        resultado.push({
+          label: `${horaLabel} — ${at.nome}`,
+          dataHora: iso,
+          atendenteId: at.id,
+        });
       }
     }
+    resultado.sort((a, b) => {
+      const ta = new Date(a.dataHora).getTime() - new Date(b.dataHora).getTime();
+      if (ta !== 0) return ta;
+      return a.atendenteId.localeCompare(b.atendenteId);
+    });
     return resultado;
+  }
+
+  /** Gera lista de slots livres (não ocupados) nos próximos dias úteis, em ordem cronológica. */
+  getProximosSlotsLivres(): { label: string; dataHora: string; atendenteId: string }[] {
+    const now = new Date();
+    const from = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
+    const cfg = agendaAtendentesConfigStore.getConfig();
+    const candidatos: { label: string; dataHora: string; atendenteId: string; t: number }[] = [];
+
+    for (let d = 0; d < MAX_DIAS_BUSCA; d++) {
+      const dia = new Date(from);
+      dia.setDate(dia.getDate() + d);
+      const dow = dia.getDay();
+      if (dow === 0 || dow === 6) continue;
+      const hoje = d === 0;
+
+      for (const at of cfg.atendentes) {
+        for (const { h, m } of slotsDoAtendenteNoDia(at)) {
+          const slotStart = new Date(dia);
+          slotStart.setHours(h, m, 0, 0);
+          if (hoje && slotStart <= now) continue;
+          const iso = slotStart.toISOString();
+          if (this.agendamentoStore.isSlotBloqueadoParaLinha(iso, at.id)) continue;
+          const label =
+            slotStart.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' }) +
+            ' às ' +
+            slotStart.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) +
+            ' — ' +
+            at.nome;
+          candidatos.push({ label, dataHora: iso, atendenteId: at.id, t: slotStart.getTime() });
+        }
+      }
+    }
+
+    candidatos.sort((a, b) => {
+      if (a.t !== b.t) return a.t - b.t;
+      return a.atendenteId.localeCompare(b.atendenteId);
+    });
+
+    return candidatos.slice(0, MAX_SLOTS_LISTADOS).map(({ t: _t, ...rest }) => rest);
   }
 
   formataListaDias(dias: { label: string; dataKey: string }[]): string {
@@ -285,7 +301,10 @@ Digite *menu* para outras opções.`;
   }
 
   /** Usuário escolheu o dia (1-based). Retorna slots do dia e label do dia para exibir. */
-  setDiaEscolhido(telefone: string, numero: number): { slots: { label: string; dataHora: string }[]; diaLabel: string } | null {
+  setDiaEscolhido(
+    telefone: string,
+    numero: number
+  ): { slots: { label: string; dataHora: string; atendenteId: string }[]; diaLabel: string } | null {
     const key = normalizarTelefone(telefone);
     const e = fluxoPorTelefone.get(key);
     if (!e || e.step !== 'escolher_dia' || !e.diasDisponiveis?.length) return null;
@@ -302,7 +321,7 @@ Digite *menu* para outras opções.`;
   }
 
   /** Mostra horários livres e passa para o passo de escolher por número. Se não houver slots, mantém step em 'data'. (Usado quando não há dias no fluxo dia→hora.) */
-  setSlotsDisponiveis(telefone: string): { label: string; dataHora: string }[] {
+  setSlotsDisponiveis(telefone: string): { label: string; dataHora: string; atendenteId: string }[] {
     const key = normalizarTelefone(telefone);
     const e = fluxoPorTelefone.get(key)!;
     const slots = this.getProximosSlotsLivres();
@@ -323,6 +342,7 @@ Digite *menu* para outras opções.`;
     if (idx < 0 || idx >= e.slotsDisponiveis.length) return false;
     const slot = e.slotsDisponiveis[idx];
     e.slotInicio = slot.dataHora;
+    e.atendenteId = slot.atendenteId;
     if (e.diaEscolhido) {
       const [y, m, d] = e.diaEscolhido.split('-').map(Number);
       const dataStr = new Date(y, m - 1, d).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
@@ -348,12 +368,16 @@ Digite *menu* para outras opções.`;
     if (!e || e.step !== 'confirmar' || !e.nome || !e.motivo) {
       return { ok: false, msg: 'Dados incompletos. Digite *menu* e escolha *4* para recomeçar.' };
     }
+    const cfg = agendaAtendentesConfigStore.getConfig();
+    const linha = e.atendenteId ? cfg.atendentes.find((x) => x.id === e.atendenteId) : undefined;
     const ag = this.agendamentoStore.add({
       telefone,
       nome: e.nome,
       motivo: e.motivo,
       dataPreferida: e.dataPreferida || 'Não informada',
       slotInicio: e.slotInicio,
+      atendenteId: e.atendenteId,
+      atendenteNome: linha?.nome,
       status: 'solicitado',
     });
     fluxoPorTelefone.delete(key);
