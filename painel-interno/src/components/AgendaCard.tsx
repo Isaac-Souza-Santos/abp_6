@@ -61,6 +61,15 @@ export function AgendaCard({ ag, variant, children }: Props) {
             <dd>{ag.atendenteNome || ag.atendenteId}</dd>
           </div>
         ) : null}
+        {ag.atendidoPorNome ? (
+          <div>
+            <dt>Quem atendeu</dt>
+            <dd>
+              {ag.atendidoPorNome}
+              {ag.atendidoPorEm ? <span className="agendaMetaSub"> · {formatDateTime(ag.atendidoPorEm)}</span> : null}
+            </dd>
+          </div>
+        ) : null}
         {variant === "consulta" ? (
           <div>
             <dt>Criado em</dt>

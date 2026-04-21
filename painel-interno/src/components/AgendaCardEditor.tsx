@@ -9,13 +9,13 @@ type Props = {
   apiBaseUrl: string;
   adminPanelToken: string;
   getAuthHeaders: () => Promise<Record<string, string>>;
+  nomeUtilizadorSessao?: string;
   onSaved: () => void;
 };
 
-export function AgendaCardEditor({ ag, apiBaseUrl, adminPanelToken, getAuthHeaders, onSaved }: Props) {
+export function AgendaCardEditor({ ag, apiBaseUrl, adminPanelToken, getAuthHeaders, nomeUtilizadorSessao, onSaved }: Props) {
   const [status, setStatus] = useState<StatusAgendamento>(ag.status);
-  const [virouProcesso, setVirouProcesso] = useState(Boolean(ag.virouProcesso));
-  const [gestaoPublica, setGestaoPublica] = useState(Boolean(ag.gestaoPublica));
+  const [atendidoPorNome, setAtendidoPorNome] = useState(ag.atendidoPorNome ?? "");
   const [observacao, setObservacao] = useState(ag.observacaoAtendente ?? "");
   const [participantesRows, setParticipantesRows] = useState<ParticipanteFormRow[]>(() => participantesFormFromServer(ag.participantes));
   const [saving, setSaving] = useState(false);
@@ -25,13 +25,17 @@ export function AgendaCardEditor({ ag, apiBaseUrl, adminPanelToken, getAuthHeade
 
   const dirty =
     status !== ag.status ||
-    virouProcesso !== Boolean(ag.virouProcesso) ||
-    gestaoPublica !== Boolean(ag.gestaoPublica) ||
+    atendidoPorNome.trim() !== (ag.atendidoPorNome ?? "").trim() ||
     observacao !== (ag.observacaoAtendente ?? "") ||
     !participantesPayloadEqual(ag.participantes, payloadParticipantes);
 
   const save = useCallback(async () => {
     setSaveError("");
+    const becameAtendido = status === "atendido" && ag.status !== "atendido";
+    if (becameAtendido && !atendidoPorNome.trim()) {
+      setSaveError("Ao marcar como atendido, indique quem atendeu (nome).");
+      return;
+    }
     setSaving(true);
     try {
       const url = new URL(`${apiBaseUrl}/admin/agendamentos/${encodeURIComponent(ag.id)}`);
@@ -41,8 +45,9 @@ export function AgendaCardEditor({ ag, apiBaseUrl, adminPanelToken, getAuthHeade
       const headers = await getAuthHeaders();
       const body: Record<string, unknown> = {};
       if (status !== ag.status) body.status = status;
-      if (virouProcesso !== Boolean(ag.virouProcesso)) body.virouProcesso = virouProcesso;
-      if (gestaoPublica !== Boolean(ag.gestaoPublica)) body.gestaoPublica = gestaoPublica;
+      if (atendidoPorNome.trim() !== (ag.atendidoPorNome ?? "").trim()) {
+        body.atendidoPorNome = atendidoPorNome.trim().slice(0, 200) || null;
+      }
       if (observacao !== (ag.observacaoAtendente ?? "")) body.observacaoAtendente = observacao;
       const nextP = participantesToPayload(participantesRows);
       if (!participantesPayloadEqual(ag.participantes, nextP)) {
@@ -73,15 +78,14 @@ export function AgendaCardEditor({ ag, apiBaseUrl, adminPanelToken, getAuthHeade
     }
   }, [
     ag,
+    atendidoPorNome,
     apiBaseUrl,
     adminPanelToken,
-    gestaoPublica,
     getAuthHeaders,
     observacao,
     onSaved,
     participantesRows,
     status,
-    virouProcesso,
   ]);
 
   return (
@@ -104,15 +108,29 @@ export function AgendaCardEditor({ ag, apiBaseUrl, adminPanelToken, getAuthHeade
             ))}
           </select>
         </label>
-        <label className="agendaCheck">
-          <input type="checkbox" checked={virouProcesso} onChange={(e) => setVirouProcesso(e.target.checked)} />
-          <span>Virou processo</span>
-        </label>
-        <label className="agendaCheck">
-          <input type="checkbox" checked={gestaoPublica} onChange={(e) => setGestaoPublica(e.target.checked)} />
-          <span>Gestão pública</span>
-        </label>
       </div>
+      <label className="agendaField agendaFieldBlock">
+        <span className="agendaFieldLabel">Quem atendeu</span>
+        <input
+          type="text"
+          className="agendaInput"
+          value={atendidoPorNome}
+          onChange={(e) => setAtendidoPorNome(e.target.value)}
+          maxLength={200}
+          placeholder="Nome do atendente ou equipa…"
+          aria-label="Quem atendeu"
+        />
+        {nomeUtilizadorSessao ? (
+          <div className="agendaFieldActions">
+            <button type="button" className="btnSecondary btnSmall" onClick={() => setAtendidoPorNome(nomeUtilizadorSessao)}>
+              Usar o meu nome ({nomeUtilizadorSessao})
+            </button>
+          </div>
+        ) : null}
+        {ag.atendidoPorEm ? (
+          <span className="agendaFieldHint">Registrado em: {new Date(ag.atendidoPorEm).toLocaleString("pt-BR")}</span>
+        ) : null}
+      </label>
       <label className="agendaField agendaFieldBlock">
         <span className="agendaFieldLabel">Observação do atendente</span>
         <textarea

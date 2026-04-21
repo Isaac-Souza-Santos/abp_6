@@ -3,6 +3,7 @@ import type { PainelTab } from "../types/painel";
 const TABS: { id: PainelTab; label: string }[] = [
   { id: "agendamentos", label: "Agendamentos" },
   { id: "ajustes", label: "Ajustes da agenda" },
+  { id: "equipe", label: "Equipe e horários" },
   { id: "metricas", label: "Métricas" },
 ];
 

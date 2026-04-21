@@ -10,8 +10,8 @@ export function PanelHeader({ loading, onRefresh, onSignOut }: Props) {
       <div>
         <h1>Painel interno de agendamentos</h1>
         <p>
-          Consulte e filtre pedidos em <strong>Agendamentos</strong>. Altere status, indicadores e observações em{" "}
-          <strong>Ajustes da agenda</strong>.
+          Consulte e filtre pedidos em <strong>Agendamentos</strong>. Altere status, registo de quem atendeu e observações
+          em <strong>Ajustes da agenda</strong>. Configure atendentes e horários em <strong>Equipe e horários</strong>.
         </p>
       </div>
       <div className="headerActions">

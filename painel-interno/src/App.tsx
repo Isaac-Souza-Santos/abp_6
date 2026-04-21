@@ -40,9 +40,13 @@ function AzureShell() {
     return <LoginScreen />;
   }
 
+  const account = accounts[0];
+  const nomeUtilizadorSessao = account?.name?.trim() || account?.username?.trim() || undefined;
+
   return (
     <Dashboard
       getIdToken={getIdToken}
+      nomeUtilizadorSessao={nomeUtilizadorSessao}
       onSignOut={() => {
         void instance.logoutRedirect({ postLogoutRedirectUri: window.location.origin });
       }}
@@ -61,7 +65,7 @@ function legacySignOut(): void {
 
 export default function App({ mode }: AppProps) {
   if (mode === "legacy") {
-    return <Dashboard getIdToken={async () => null} onSignOut={legacySignOut} />;
+    return <Dashboard getIdToken={async () => null} nomeUtilizadorSessao={undefined} onSignOut={legacySignOut} />;
   }
   return <AzureShell />;
 }

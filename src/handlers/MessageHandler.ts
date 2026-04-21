@@ -298,9 +298,11 @@ export class MessageHandler {
       for (const a of lista) {
         const data = new Date(a.criadoEm).toLocaleString('pt-BR');
         const flags = [a.virouProcesso && 'processo', a.gestaoPublica && 'gestão'].filter(Boolean).join(', ') || '-';
+        const quem = a.atendidoPorNome ? `Atendido por: ${a.atendidoPorNome}` : 'Atendido por: —';
         msg += `\n📌 ${a.nome} | ${a.telefone}\n`;
         msg += `   ID: ${a.id} | ${a.dataPreferida} | ${a.status}\n`;
         msg += `   Motivo: ${a.motivo}\n`;
+        msg += `   ${quem}\n`;
         msg += `   Processo/Gestão: ${flags} | _${data}_\n`;
       }
     }

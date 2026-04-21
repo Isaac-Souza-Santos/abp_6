@@ -398,6 +398,27 @@
   color: #94a3b8;
 }
 
+.agendaFieldActions {
+  margin-top: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.agendaFieldHint {
+  display: block;
+  margin-top: 6px;
+  font-size: 0.78rem;
+  color: #64748b;
+  line-height: 1.35;
+}
+
+.agendaMetaSub {
+  font-weight: 400;
+  color: #64748b;
+  font-size: 0.82rem;
+}
+
 .agendaSelect {
   border: 1px solid #cbd5e1;
   border-radius: 8px;

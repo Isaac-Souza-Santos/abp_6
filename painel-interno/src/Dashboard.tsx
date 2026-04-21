@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { AgendaEquipeSection } from "./components/AgendaEquipeSection";
 import { AjustesAgendaSection } from "./components/AjustesAgendaSection";
 import { AgendaConsultaList } from "./components/AgendaConsultaList";
 import { FiltersBar } from "./components/FiltersBar";
@@ -11,10 +12,12 @@ import "./App.css";
 
 export type DashboardProps = {
   getIdToken: () => Promise<string | null>;
+  /** Nome da conta Microsoft (quando o painel usa login Azure). */
+  nomeUtilizadorSessao?: string;
   onSignOut: () => void;
 };
 
-export default function Dashboard({ getIdToken, onSignOut }: DashboardProps) {
+export default function Dashboard({ getIdToken, nomeUtilizadorSessao, onSignOut }: DashboardProps) {
   const [data, setData] = useState<ApiResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -125,9 +128,12 @@ export default function Dashboard({ getIdToken, onSignOut }: DashboardProps) {
           items={filteredAgendamentos}
           loading={loading}
           getAuthHeaders={buildAuthHeaders}
+          nomeUtilizadorSessao={nomeUtilizadorSessao}
           onSaved={() => void loadData()}
         />
       )}
+
+      {tab === "equipe" && <AgendaEquipeSection getAuthHeaders={buildAuthHeaders} />}
 
       {tab === "metricas" && <MetricsTabPanel data={data} loading={loading} />}
     </main>

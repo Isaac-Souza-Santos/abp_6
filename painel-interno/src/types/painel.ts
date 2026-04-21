@@ -41,6 +41,10 @@ export type Agendamento = {
   gestaoPublica?: boolean;
   observacaoAtendente?: string;
   participantes?: ParticipanteAgenda[];
+  /** Nome de quem realizou o atendimento (registo no painel). */
+  atendidoPorNome?: string;
+  /** Quando o registo "quem atendeu" foi gravado ou alterado (ISO). */
+  atendidoPorEm?: string;
 };
 
 export type MetricasResumo = {
@@ -65,4 +69,4 @@ export type ApiResponse = {
   groqMetricas?: MetricasGroq;
 };
 
-export type PainelTab = "agendamentos" | "ajustes" | "metricas";
+export type PainelTab = "agendamentos" | "ajustes" | "equipe" | "metricas";

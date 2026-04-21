@@ -32,6 +32,10 @@ export interface Agendamento {
   gestaoPublica?: boolean;
   /** Outras pessoas associadas ao mesmo horário/protocolo (editável no painel). */
   participantes?: ParticipanteAgenda[];
+  /** Quem realizou o atendimento presencial/telefónico (registo no painel). */
+  atendidoPorNome?: string;
+  /** Momento em que `atendidoPorNome` foi definido ou alterado (ISO). */
+  atendidoPorEm?: string;
 }
 
 /** Estado do fluxo de agendamento (por contato). */

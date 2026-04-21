@@ -1,6 +1,5 @@
 import { AgendaCard } from "./AgendaCard";
 import { AgendaCardEditor } from "./AgendaCardEditor";
-import { AtendentesAgendaConfigEditor } from "./AtendentesAgendaConfigEditor";
 import { adminPanelToken, apiBaseUrl } from "../config/env";
 import type { Agendamento } from "../types/painel";
 
@@ -8,16 +7,16 @@ type Props = {
   items: Agendamento[];
   loading: boolean;
   getAuthHeaders: () => Promise<Record<string, string>>;
+  nomeUtilizadorSessao?: string;
   onSaved: () => void;
 };
 
-export function AjustesAgendaSection({ items, loading, getAuthHeaders, onSaved }: Props) {
+export function AjustesAgendaSection({ items, loading, getAuthHeaders, nomeUtilizadorSessao, onSaved }: Props) {
   return (
     <section className="tabPanel" role="tabpanel" aria-label="Ajustes da agenda">
-      <AtendentesAgendaConfigEditor getAuthHeaders={getAuthHeaders} />
       <p className="tabIntro">
-        Altere o <strong>status</strong>, marque <strong>virou processo</strong> / <strong>gestão pública</strong> e
-        escreva <strong>observações</strong>. Use <em>Guardar alterações</em> em cada protocolo.
+        Altere o <strong>status</strong>, registe <strong>quem atendeu</strong> quando passar a <em>atendido</em>, e escreva{" "}
+        <strong>observações</strong>. Use <em>Guardar alterações</em> em cada protocolo.
       </p>
       <div className="agendaList">
         {items.length === 0 ? (
@@ -34,6 +33,7 @@ export function AjustesAgendaSection({ items, loading, getAuthHeaders, onSaved }
                   apiBaseUrl={apiBaseUrl}
                   adminPanelToken={adminPanelToken}
                   getAuthHeaders={getAuthHeaders}
+                  nomeUtilizadorSessao={nomeUtilizadorSessao}
                   onSaved={onSaved}
                 />
               </AgendaCard>

@@ -127,13 +127,35 @@ export class AgendamentoStore {
   /** Atualiza um agendamento (ex.: marcar virouProcesso, gestaoPublica). Retorna true se encontrado. */
   update(
     id: string,
-    patch: Partial<Pick<Agendamento, 'status' | 'observacaoAtendente' | 'virouProcesso' | 'gestaoPublica' | 'participantes'>>
+    patch: Partial<
+      Pick<
+        Agendamento,
+        'status' | 'observacaoAtendente' | 'virouProcesso' | 'gestaoPublica' | 'participantes' | 'atendidoPorNome'
+      >
+    >
   ): boolean {
     const list = load();
     const idx = list.findIndex((a) => a.id === id);
     if (idx === -1) return false;
     const now = new Date().toISOString();
-    list[idx] = { ...list[idx], ...patch, atualizadoEm: now };
+    const base = list[idx];
+    const merged: Agendamento = { ...base, ...patch, atualizadoEm: now };
+
+    if (Object.prototype.hasOwnProperty.call(patch, 'atendidoPorNome')) {
+      const trimmed = (patch.atendidoPorNome ?? '').trim().slice(0, 200);
+      if (!trimmed) {
+        merged.atendidoPorNome = undefined;
+        merged.atendidoPorEm = undefined;
+      } else {
+        const prev = (base.atendidoPorNome ?? '').trim();
+        merged.atendidoPorNome = trimmed;
+        if (trimmed !== prev) {
+          merged.atendidoPorEm = now;
+        }
+      }
+    }
+
+    list[idx] = merged;
     save(list);
     return true;
   }

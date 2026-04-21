@@ -84,6 +84,7 @@ function parseAgendamentoPatch(body: Record<string, unknown>): Partial<{
   virouProcesso: boolean;
   gestaoPublica: boolean;
   participantes: ParticipanteAgenda[];
+  atendidoPorNome: string;
 }> {
   const patch: Partial<{
     status: StatusAgendamento;
@@ -91,6 +92,7 @@ function parseAgendamentoPatch(body: Record<string, unknown>): Partial<{
     virouProcesso: boolean;
     gestaoPublica: boolean;
     participantes: ParticipanteAgenda[];
+    atendidoPorNome: string;
   }> = {};
 
   if (typeof body.status === "string" && (STATUS_VALUES as readonly string[]).includes(body.status)) {
@@ -107,6 +109,13 @@ function parseAgendamentoPatch(body: Record<string, unknown>): Partial<{
   }
   if (Object.prototype.hasOwnProperty.call(body, "participantes") && Array.isArray(body.participantes)) {
     patch.participantes = parseParticipantesAgenda(body.participantes);
+  }
+  if (Object.prototype.hasOwnProperty.call(body, "atendidoPorNome")) {
+    if (body.atendidoPorNome === null) {
+      patch.atendidoPorNome = "";
+    } else if (typeof body.atendidoPorNome === "string") {
+      patch.atendidoPorNome = body.atendidoPorNome.trim().slice(0, 200);
+    }
   }
   return patch;
 }
@@ -246,13 +255,22 @@ function startHealthServer(bot: ProconBot): void {
           res.end(JSON.stringify({ error: "participantes deve ser um array de objetos { nome, telefone? }." }));
           return;
         }
+        if (
+          Object.prototype.hasOwnProperty.call(body, "atendidoPorNome") &&
+          body.atendidoPorNome !== null &&
+          typeof body.atendidoPorNome !== "string"
+        ) {
+          res.writeHead(400);
+          res.end(JSON.stringify({ error: "atendidoPorNome deve ser texto ou null (para limpar)." }));
+          return;
+        }
         const patch = parseAgendamentoPatch(body);
         if (Object.keys(patch).length === 0) {
           res.writeHead(400);
           res.end(
             JSON.stringify({
               error:
-                "Nenhum campo válido para atualizar (status, observacaoAtendente, virouProcesso, gestaoPublica, participantes).",
+                "Nenhum campo válido para atualizar (status, observacaoAtendente, virouProcesso, gestaoPublica, participantes, atendidoPorNome).",
             })
           );
           return;
