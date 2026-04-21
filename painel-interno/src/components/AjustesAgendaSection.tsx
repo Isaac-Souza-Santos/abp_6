@@ -1,5 +1,6 @@
 import { AgendaCard } from "./AgendaCard";
 import { AgendaCardEditor } from "./AgendaCardEditor";
+import { LembreteConfirmacaoBlock } from "./LembreteConfirmacaoBlock";
 import { adminPanelToken, apiBaseUrl } from "../config/env";
 import type { Agendamento } from "../types/painel";
 
@@ -14,6 +15,7 @@ type Props = {
 export function AjustesAgendaSection({ items, loading, getAuthHeaders, nomeUtilizadorSessao, onSaved }: Props) {
   return (
     <section className="tabPanel" role="tabpanel" aria-label="Ajustes da agenda">
+      <LembreteConfirmacaoBlock getAuthHeaders={getAuthHeaders} />
       <p className="tabIntro">
         Altere o <strong>status</strong>, registe <strong>quem atendeu</strong> quando passar a <em>atendido</em>, e escreva{" "}
         <strong>observações</strong>. Use <em>Guardar alterações</em> em cada protocolo.

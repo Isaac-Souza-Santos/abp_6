@@ -25,6 +25,13 @@ export type AgendaAtendentesConfig = {
   atendentes: AtendenteAgendaConfig[];
 };
 
+/** Lembrete por WhatsApp (Ajustes da agenda): texto + antecedência ao slot. */
+export type AgendaLembreteConfirmacaoConfig = {
+  ativo: boolean;
+  antecedenciaDias: number;
+  mensagemTemplate: string;
+};
+
 export type Agendamento = {
   id: string;
   telefone: string;
@@ -45,6 +52,8 @@ export type Agendamento = {
   atendidoPorNome?: string;
   /** Quando o registo "quem atendeu" foi gravado ou alterado (ISO). */
   atendidoPorEm?: string;
+  /** Quando o lembrete automático foi enviado (ISO). */
+  lembreteConfirmacaoEnviadoEm?: string;
 };
 
 export type MetricasResumo = {

@@ -19,27 +19,29 @@ export function FiltersBar({
   onDateChange,
 }: Props) {
   return (
-    <section className="filters" aria-label="Filtros da lista">
-      <input
-        type="search"
-        placeholder="Pesquisar por nome, telefone, protocolo ou motivo…"
-        value={searchTerm}
-        onChange={(e) => onSearchChange(e.target.value)}
-      />
-      <select value={statusFilter} onChange={(e) => onStatusChange(e.target.value as StatusAgendamento | "todos")}>
-        {statusOptions.map((status) => (
-          <option key={status} value={status}>
-            {rotuloStatus[status]}
-          </option>
-        ))}
-      </select>
-      <input
-        type="date"
-        value={dateFilter}
-        onChange={(e) => onDateChange(e.target.value)}
-        aria-label="Filtrar por data"
-        title="Filtrar por data"
-      />
+    <section className="panelCard panelCard--filters" aria-label="Filtros da lista">
+      <div className="filters">
+        <input
+          type="search"
+          placeholder="Pesquisar por nome, telefone, protocolo ou motivo…"
+          value={searchTerm}
+          onChange={(e) => onSearchChange(e.target.value)}
+        />
+        <select value={statusFilter} onChange={(e) => onStatusChange(e.target.value as StatusAgendamento | "todos")}>
+          {statusOptions.map((status) => (
+            <option key={status} value={status}>
+              {rotuloStatus[status]}
+            </option>
+          ))}
+        </select>
+        <input
+          type="date"
+          value={dateFilter}
+          onChange={(e) => onDateChange(e.target.value)}
+          aria-label="Filtrar por data"
+          title="Filtrar por data"
+        />
+      </div>
     </section>
   );
 }

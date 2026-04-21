@@ -36,6 +36,8 @@ export interface Agendamento {
   atendidoPorNome?: string;
   /** Momento em que `atendidoPorNome` foi definido ou alterado (ISO). */
   atendidoPorEm?: string;
+  /** Preenchido pelo bot quando o lembrete automático (WhatsApp) foi enviado. */
+  lembreteConfirmacaoEnviadoEm?: string;
 }
 
 /** Estado do fluxo de agendamento (por contato). */

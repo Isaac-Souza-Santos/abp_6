@@ -103,39 +103,41 @@ export default function Dashboard({ getIdToken, nomeUtilizadorSessao, onSignOut 
   }, [data, dateFilter, searchTerm, statusFilter]);
 
   return (
-    <main className="container">
-      <PanelHeader loading={loading} onRefresh={() => void loadData()} onSignOut={onSignOut} />
+    <div className="appShell">
+      <main className="container">
+        <PanelHeader loading={loading} onRefresh={() => void loadData()} onSignOut={onSignOut} />
 
-      <PanelTabList active={tab} onChange={setTab} />
+        <PanelTabList active={tab} onChange={setTab} />
 
-      {error && <p className="error">{error}</p>}
+        {error && <p className="error">{error}</p>}
 
-      {(tab === "agendamentos" || tab === "ajustes") && (
-        <FiltersBar
-          searchTerm={searchTerm}
-          statusFilter={statusFilter}
-          dateFilter={dateFilter}
-          onSearchChange={setSearchTerm}
-          onStatusChange={setStatusFilter}
-          onDateChange={setDateFilter}
-        />
-      )}
+        {(tab === "agendamentos" || tab === "ajustes") && (
+          <FiltersBar
+            searchTerm={searchTerm}
+            statusFilter={statusFilter}
+            dateFilter={dateFilter}
+            onSearchChange={setSearchTerm}
+            onStatusChange={setStatusFilter}
+            onDateChange={setDateFilter}
+          />
+        )}
 
-      {tab === "agendamentos" && <AgendaConsultaList items={filteredAgendamentos} loading={loading} />}
+        {tab === "agendamentos" && <AgendaConsultaList items={filteredAgendamentos} loading={loading} />}
 
-      {tab === "ajustes" && (
-        <AjustesAgendaSection
-          items={filteredAgendamentos}
-          loading={loading}
-          getAuthHeaders={buildAuthHeaders}
-          nomeUtilizadorSessao={nomeUtilizadorSessao}
-          onSaved={() => void loadData()}
-        />
-      )}
+        {tab === "ajustes" && (
+          <AjustesAgendaSection
+            items={filteredAgendamentos}
+            loading={loading}
+            getAuthHeaders={buildAuthHeaders}
+            nomeUtilizadorSessao={nomeUtilizadorSessao}
+            onSaved={() => void loadData()}
+          />
+        )}
 
-      {tab === "equipe" && <AgendaEquipeSection getAuthHeaders={buildAuthHeaders} />}
+        {tab === "equipe" && <AgendaEquipeSection getAuthHeaders={buildAuthHeaders} />}
 
-      {tab === "metricas" && <MetricsTabPanel data={data} loading={loading} />}
-    </main>
+        {tab === "metricas" && <MetricsTabPanel data={data} loading={loading} />}
+      </main>
+    </div>
   );
 }

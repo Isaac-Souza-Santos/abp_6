@@ -182,7 +182,7 @@ export function AtendentesAgendaConfigEditor({ getAuthHeaders }: Props) {
         <p className="agendaConfigError" role="alert">
           {loadError || "Sem dados."}
         </p>
-        <button type="button" className="btnSecondary" onClick={() => void load()}>
+        <button type="button" className="btn btnSecondary" onClick={() => void load()}>
           Tentar de novo
         </button>
       </div>
@@ -209,7 +209,7 @@ export function AtendentesAgendaConfigEditor({ getAuthHeaders }: Props) {
             onChange={(e) => ajustarQuantidadeAtendentes(Number(e.target.value))}
           />
         </label>
-        <button type="button" className="btnSecondary btnSmall" onClick={() => ajustarQuantidadeAtendentes(config.atendentes.length + 1)}>
+        <button type="button" className="btn btnSecondary btnSmall" onClick={() => ajustarQuantidadeAtendentes(config.atendentes.length + 1)}>
           + Ativar novo atendente
         </button>
       </div>
@@ -302,7 +302,7 @@ export function AtendentesAgendaConfigEditor({ getAuthHeaders }: Props) {
               </ul>
               <button
                 type="button"
-                className="btnSecondary btnSmall"
+                className="btn btnSecondary btnSmall"
                 onClick={() => {
                   atualizarAtendente(ai, {
                     blocos: [...at.blocos, { inicioH: 9, inicioM: 0, fimH: 12, fimM: 0 }],
@@ -366,7 +366,7 @@ export function AtendentesAgendaConfigEditor({ getAuthHeaders }: Props) {
       </div>
 
       <div className="agendaConfigActions">
-        <button type="button" className="btnSave" disabled={saving} onClick={() => void salvar()}>
+        <button type="button" className="btn btnPrimary" disabled={saving} onClick={() => void salvar()}>
           {saving ? "A guardar…" : "Guardar horários de almoço"}
         </button>
         {saveError ? (

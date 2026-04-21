@@ -9,6 +9,11 @@ import { AgendamentoStore } from "./services/AgendamentoStore";
 import { isAzureAdminPanelAuthConfigured, verifyAdminPanelAzureToken } from "./azureAdminAuth";
 import type { ParticipanteAgenda } from "./types/agendamento";
 import { agendaAtendentesConfigStore, parseAgendaAtendentesConfig } from "./services/AgendaAtendentesConfigStore";
+import {
+  agendaLembreteConfirmacaoStore,
+  parseAgendaLembreteConfirmacaoConfig,
+} from "./services/AgendaLembreteConfirmacaoStore";
+import { iniciarAgendadorLembreteConfirmacao } from "./services/lembreteConfirmacaoLoop";
 import { GroqMetricasStore } from "./services/GroqMetricasStore";
 
 const healthPort = Number(process.env.HEALTH_PORT || 3000);
@@ -238,6 +243,40 @@ function startHealthServer(bot: ProconBot): void {
         return;
       }
 
+      if (url.pathname === "/admin/agenda-lembrete-confirmacao" && req.method === "GET") {
+        setJsonHeaders(res);
+        res.writeHead(200);
+        res.end(JSON.stringify(agendaLembreteConfirmacaoStore.getConfig()));
+        return;
+      }
+
+      if (url.pathname === "/admin/agenda-lembrete-confirmacao" && req.method === "PUT") {
+        setJsonHeaders(res);
+        let body: Record<string, unknown>;
+        try {
+          body = await readJsonBody(req);
+        } catch {
+          res.writeHead(400);
+          res.end(JSON.stringify({ error: "Corpo inválido ou demasiado grande." }));
+          return;
+        }
+        const parsed = parseAgendaLembreteConfirmacaoConfig(body);
+        if (!parsed) {
+          res.writeHead(400);
+          res.end(
+            JSON.stringify({
+              error:
+                "Configuração inválida. Envie { ativo: boolean, antecedenciaDias: 1..14, mensagemTemplate: string (mín. 20 caracteres) } com placeholders {nome}, {dataHora}, {motivo}, {protocolo}, {guiche}, {endereco}.",
+            })
+          );
+          return;
+        }
+        agendaLembreteConfirmacaoStore.saveConfig(parsed);
+        res.writeHead(200);
+        res.end(JSON.stringify(parsed));
+        return;
+      }
+
       const patchMatch = /^\/admin\/agendamentos\/([^/]+)$/.exec(url.pathname);
       if (patchMatch && req.method === "PATCH") {
         setJsonHeaders(res);
@@ -307,6 +346,7 @@ async function main(): Promise<void> {
   const bot = new ProconBot();
   startHealthServer(bot);
   await bot.start();
+  iniciarAgendadorLembreteConfirmacao(bot, agendamentoStore);
 }
 
 main().catch((err) => {

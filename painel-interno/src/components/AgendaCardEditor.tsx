@@ -122,7 +122,7 @@ export function AgendaCardEditor({ ag, apiBaseUrl, adminPanelToken, getAuthHeade
         />
         {nomeUtilizadorSessao ? (
           <div className="agendaFieldActions">
-            <button type="button" className="btnSecondary btnSmall" onClick={() => setAtendidoPorNome(nomeUtilizadorSessao)}>
+            <button type="button" className="btn btnSecondary btnSmall" onClick={() => setAtendidoPorNome(nomeUtilizadorSessao)}>
               Usar o meu nome ({nomeUtilizadorSessao})
             </button>
           </div>
@@ -143,7 +143,7 @@ export function AgendaCardEditor({ ag, apiBaseUrl, adminPanelToken, getAuthHeade
         />
       </label>
       <div className="agendaControlsActions">
-        <button type="button" className="btnSave" disabled={!dirty || saving} onClick={() => void save()}>
+        <button type="button" className="btn btnPrimary" disabled={!dirty || saving} onClick={() => void save()}>
           {saving ? "A guardar…" : "Guardar alterações"}
         </button>
         {saveError ? (

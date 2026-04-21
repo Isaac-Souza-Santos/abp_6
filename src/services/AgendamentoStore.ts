@@ -130,7 +130,13 @@ export class AgendamentoStore {
     patch: Partial<
       Pick<
         Agendamento,
-        'status' | 'observacaoAtendente' | 'virouProcesso' | 'gestaoPublica' | 'participantes' | 'atendidoPorNome'
+        | 'status'
+        | 'observacaoAtendente'
+        | 'virouProcesso'
+        | 'gestaoPublica'
+        | 'participantes'
+        | 'atendidoPorNome'
+        | 'lembreteConfirmacaoEnviadoEm'
       >
     >
   ): boolean {

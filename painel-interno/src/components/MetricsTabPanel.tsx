@@ -15,10 +15,12 @@ export function MetricsTabPanel({ data, loading }: Props) {
   return (
     <div className="tabPanel" role="tabpanel">
       {!data?.metricas && (
-        <p className="emptyInline">{loading ? "Carregando métricas…" : "Não há dados de métricas disponíveis."}</p>
+        <div className="panelCard">
+          <p className="emptyInline">{loading ? "Carregando métricas…" : "Não há dados de métricas disponíveis."}</p>
+        </div>
       )}
       {data?.metricas && (
-        <>
+        <div className="panelCard">
           <p className="metricsLead">
             Apenas os gráficos solicitados: avaliação do chat e agendamentos.
           </p>
@@ -35,7 +37,7 @@ export function MetricsTabPanel({ data, loading }: Props) {
               }}
             />
           </Suspense>
-        </>
+        </div>
       )}
     </div>
   );

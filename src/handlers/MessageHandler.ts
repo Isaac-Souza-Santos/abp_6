@@ -4,6 +4,10 @@ import { AgendamentoService } from '../services/AgendamentoService';
 import { criarEventoOutlook } from '../services/OutlookCalendarService';
 import { GroqService } from '../services/GroqService';
 import { GroqMetricasStore } from '../services/GroqMetricasStore';
+import {
+  limparPendenteRespostaLembrete,
+  obterAgendamentoPendenteConfirmacaoLembrete,
+} from '../services/lembreteConfirmacaoRespostaPendente';
 
 const ADMIN_NUMBER = (process.env.ADMIN_NUMBER || '').replace(/\D/g, '');
 
@@ -79,6 +83,53 @@ export class MessageHandler {
           return;
         }
         this.aguardandoAvaliacaoGroq.delete(from);
+      }
+
+      // Lembrete automático: *1* confirma comparecimento (status confirmado), *2* não comparece (cancelado)
+      const agIdLembrete = obterAgendamentoPendenteConfirmacaoLembrete(from);
+      if (agIdLembrete && (body === '1' || body === '2')) {
+        const store = this.agendamentoService.getStore();
+        const ag = store.getById(agIdLembrete);
+        if (!ag) {
+          limparPendenteRespostaLembrete(from);
+          await message.reply('Não encontrámos esse agendamento. Digite *menu* se precisar de ajuda.');
+          return;
+        }
+        if (ag.status === 'cancelado' || ag.status === 'atendido') {
+          limparPendenteRespostaLembrete(from);
+          await message.reply('Este agendamento já foi atualizado no sistema. Digite *menu* para mais opções.');
+          return;
+        }
+        let dataResumo = ag.dataPreferida;
+        if (ag.slotInicio) {
+          try {
+            dataResumo = new Date(ag.slotInicio).toLocaleString('pt-BR', {
+              day: '2-digit',
+              month: '2-digit',
+              year: 'numeric',
+              hour: '2-digit',
+              minute: '2-digit',
+            });
+          } catch {
+            /* mantém dataPreferida */
+          }
+        }
+        if (body === '1') {
+          store.update(agIdLembrete, { status: 'confirmado' });
+          limparPendenteRespostaLembrete(from);
+          await message.reply(
+            `✅ *Obrigado!* Confirmámos o seu comparecimento.\n\n📅 *${dataResumo}*\n📋 *Protocolo:* ${ag.id}\n\n_Digite *menu* para outras opções._`
+          );
+          return;
+        }
+        store.update(agIdLembrete, { status: 'cancelado' });
+        limparPendenteRespostaLembrete(from);
+        await message.reply(
+          'Registámos que *não* poderá comparecer. O protocolo ficou como *cancelado* e esse ' +
+            'horário *volta a ficar livre* na agenda — outra pessoa já pode marcar no mesmo dia e horário.\n\n' +
+            'Para *novo* agendamento seu: *menu* → *4*.\n\n_Obrigado por avisar._'
+        );
+        return;
       }
 
       // Comando atendente: histórico + métricas (apenas número configurado em ADMIN_NUMBER)

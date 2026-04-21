@@ -14,19 +14,21 @@ type Props = {
 
 export function PanelTabList({ active, onChange }: Props) {
   return (
-    <nav className="tabs" role="tablist" aria-label="Seções do painel">
-      {TABS.map(({ id, label }) => (
-        <button
-          key={id}
-          type="button"
-          role="tab"
-          aria-selected={active === id}
-          className={`tab ${active === id ? "tabActive" : ""}`}
-          onClick={() => onChange(id)}
-        >
-          {label}
-        </button>
-      ))}
-    </nav>
+    <div className="tabsWrap">
+      <nav className="tabs" role="tablist" aria-label="Seções do painel">
+        {TABS.map(({ id, label }) => (
+          <button
+            key={id}
+            type="button"
+            role="tab"
+            aria-selected={active === id}
+            className={`tab ${active === id ? "tabActive" : ""}`}
+            onClick={() => onChange(id)}
+          >
+            {label}
+          </button>
+        ))}
+      </nav>
+    </div>
   );
 }

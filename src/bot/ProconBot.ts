@@ -6,6 +6,7 @@ import qrcode from 'qrcode-terminal';
 import winston from 'winston';
 import { MessageHandler } from '../handlers/MessageHandler';
 import { getAuthPath } from '../config/paths';
+import { telefoneParaChatIdWhatsapp } from '../utils/whatsappChatId';
 import { clearStaleChromiumProfileLocks } from './chromiumProfileLocks';
 
 const AUTH_PATH = getAuthPath();
@@ -305,5 +306,27 @@ export class ProconBot {
 
   isReady(): boolean {
     return this.ready;
+  }
+
+  /**
+   * Envia mensagem de texto ao número (formato guardado no agendamento).
+   * Só funciona com a sessão WhatsApp Web ligada e número válido.
+   */
+  async sendWhatsAppText(telefoneRaw: string, text: string): Promise<{ ok: true } | { ok: false; error: string }> {
+    if (!this.ready) {
+      return { ok: false, error: 'Bot ainda não está pronto (WhatsApp desligado ou a conectar).' };
+    }
+    const chatId = telefoneParaChatIdWhatsapp(telefoneRaw);
+    const trimmed = text.trim();
+    if (!trimmed) {
+      return { ok: false, error: 'Mensagem vazia.' };
+    }
+    try {
+      await this.client.sendMessage(chatId, trimmed);
+      return { ok: true };
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      return { ok: false, error: msg };
+    }
   }
 }
