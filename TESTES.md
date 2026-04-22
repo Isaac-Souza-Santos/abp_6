@@ -1,4 +1,4 @@
-# Documento: testes automatizados realizados
+# Documento: testes automatizados realizados xx
 
 Este texto descreve, em linguagem corrida, **quais verificações automatizadas existem no projeto**, **o que cada uma prova** e **como repetir a execução**. Não substitui o código dos testes: ele serve como mapa para quem revisa qualidade ou integração contínua.
 
@@ -71,7 +71,7 @@ Garante que os textos fixos do menu contêm trechos esperados (marca, opções e
 Fluxo textual de agendamento e integração superficial com a camada de persistência em memória/arquivo.
 
 1. **getTextoInicio returns start text** — início do fluxo cita o tema do agendamento e a opção de cancelar.
-2. **getTextoConsentimento returns consent text** — texto de consentimento com opções numéricas (ex.: *1* - Sim).
+2. **getTextoConsentimento returns consent text** — texto de consentimento com opções numéricas (ex.: _1_ - Sim).
 3. **getProximosSlotsLivres returns slots** — retorno é array; se houver itens, possuem `label` e `dataHora`.
 4. **getStore returns AgendamentoStore instance** — `getStore` devolve objeto com `listarTodos` como função.
 
@@ -111,4 +111,4 @@ Fumaça mínima da classe do bot.
 
 ---
 
-*Documento voltado ao estado atual das suítes em `src/**/*.test.ts`. Para números exatos após mudanças no código, rode `npm test` na raiz.*
+_Documento voltado ao estado atual das suítes em `src/\*\*/_.test.ts`. Para números exatos após mudanças no código, rode `npm test` na raiz.\*
