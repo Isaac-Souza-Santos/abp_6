@@ -317,6 +317,9 @@ export class ProconBot {
       return { ok: false, error: 'Bot ainda não está pronto (WhatsApp desligado ou a conectar).' };
     }
     const chatId = telefoneParaChatIdWhatsapp(telefoneRaw);
+    if (!chatId) {
+      return { ok: false, error: `Destinatário inválido para WhatsApp: "${telefoneRaw}".` };
+    }
     const trimmed = text.trim();
     if (!trimmed) {
       return { ok: false, error: 'Mensagem vazia.' };
