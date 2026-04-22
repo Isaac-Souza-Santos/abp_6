@@ -118,7 +118,7 @@ export class MessageHandler {
           store.update(agIdLembrete, { status: 'confirmado' });
           limparPendenteRespostaLembrete(from);
           await message.reply(
-            `✅ *Obrigado!* Confirmámos o seu comparecimento.\n\n📅 *${dataResumo}*\n📋 *Protocolo:* ${ag.id}\n\n_Digite *menu* para outras opções._`
+            `✅ *Obrigado!* Confirmamos o seu comparecimento.\n\n📅 *${dataResumo}*\n📋 *Protocolo:* ${ag.id}\n\n_Digite *menu* para outras opções._`
           );
           return;
         }
