@@ -137,6 +137,7 @@ export class ProconBot {
   private client: Client;
   private messageHandler: MessageHandler;
   private ready = false;
+  private authenticated = false;
 
   constructor() {
     const headless = process.env.HEADLESS !== 'false';
@@ -158,6 +159,65 @@ export class ProconBot {
       },
     });
     this.messageHandler = new MessageHandler();
+  }
+
+  private async waitForReadyWithTimeout(timeoutMs: number): Promise<void> {
+    if (this.ready) return;
+
+    await new Promise<void>((resolve, reject) => {
+      let done = false;
+
+      const cleanup = (): void => {
+        clearTimeout(timer);
+        this.client.off('ready', onReady);
+        this.client.off('auth_failure', onAuthFailure);
+        this.client.off('disconnected', onDisconnected);
+      };
+
+      const settle = (fn: () => void): void => {
+        if (done) return;
+        done = true;
+        cleanup();
+        fn();
+      };
+
+      const onReady = (): void => {
+        this.ready = true;
+        settle(() => resolve());
+      };
+
+      const onAuthFailure = (msg: string): void => {
+        this.ready = false;
+        this.authenticated = false;
+        settle(() => reject(new Error(`Auth failure before ready: ${msg}`)));
+      };
+
+      const onDisconnected = (reason?: string): void => {
+        this.ready = false;
+        settle(() => reject(new Error(`Disconnected before ready: ${reason || 'unknown'}`)));
+      };
+
+      const timer = setTimeout(() => {
+        void (async () => {
+          try {
+            const state = await this.client.getState();
+            if (state === 'CONNECTED') {
+              this.ready = true;
+              settle(() => resolve());
+              return;
+            }
+            settle(() => reject(new Error(`Timed out waiting for WhatsApp ready (state=${state}).`)));
+          } catch (e) {
+            const msg = e instanceof Error ? e.message : String(e);
+            settle(() => reject(new Error(`Timed out waiting for WhatsApp ready (state unavailable: ${msg}).`)));
+          }
+        })();
+      }, timeoutMs);
+
+      this.client.on('ready', onReady);
+      this.client.on('auth_failure', onAuthFailure);
+      this.client.on('disconnected', onDisconnected);
+    });
   }
 
   async start(): Promise<void> {
@@ -194,17 +254,20 @@ export class ProconBot {
 
     this.client.on('ready', () => {
       this.ready = true;
+      this.authenticated = true;
       logger.info('Bot conectado e pronto');
       console.log('✅ Bot Procon Jacareí conectado e pronto! (sessão salva — não precisou de QR)');
     });
 
     this.client.on('authenticated', () => {
+      this.authenticated = true;
       logger.info('Autenticação bem-sucedida');
       console.log('🔐 Autenticado com sucesso.');
     });
 
     this.client.on('auth_failure', (msg) => {
       this.ready = false;
+      this.authenticated = false;
       logger.error('Falha na autenticação', { error: msg });
       console.error('❌ Falha na autenticação:', msg);
     });
@@ -261,6 +324,7 @@ export class ProconBot {
         preemptRemoveChromeSessionDirIfSingletonArtifacts(CHROME_USER_DATA_DIR);
         killChromiumProcessesInContainer();
         await this.client.initialize();
+        await this.waitForReadyWithTimeout(Number(process.env.WA_READY_TIMEOUT_MS || 120000));
         return;
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
@@ -268,8 +332,12 @@ export class ProconBot {
           msg.includes('browser is already running') || msg.includes('Use a different `userDataDir`');
         const transientPuppeteer =
           msg.includes('Execution context was destroyed') || msg.includes('Target closed');
-        const podeTentarDeNovo = (chromeSingleton || transientPuppeteer) && t < maxTentativas;
+        const waitingReadyTimeout = msg.includes('Timed out waiting for WhatsApp ready');
+        const disconnectedBeforeReady = msg.includes('Disconnected before ready');
+        const retryableReadyIssue = waitingReadyTimeout || disconnectedBeforeReady;
+        const podeTentarDeNovo = (chromeSingleton || transientPuppeteer || retryableReadyIssue) && t < maxTentativas;
         if (podeTentarDeNovo) {
+          this.ready = false;
           await closePuppeteerBrowserIfAny(this.client);
           killChromiumProcessesInContainer();
           const postKillMs = wantsAggressiveChromeLockSweep()
@@ -294,6 +362,8 @@ export class ProconBot {
             `\n⚠️ Tentativa ${t} falhou (${msg.slice(0, 80)}...). ` +
               (chromeSingleton
                 ? 'Fechando/pkill Chromium, limpando locks e apagando pasta session no volume (Azure Files) se aplicável; '
+                : retryableReadyIssue
+                ? 'Cliente autenticou mas não ficou pronto; reciclando Chromium/sessão para nova tentativa; '
                 : 'Fechando/pkill Chromium; ') +
               `aguardando ${Math.round(proximaEspera / 1000)}s para tentar de novo...\n`
           );
