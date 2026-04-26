@@ -12,4 +12,4 @@ STATIC_WEB_APP_REGION=westeurope
 
 APP_SERVICE_PLAN_NAME=asp-painel-procon
 APP_SERVICE_NAME=app-painel-procon-interno
-APP_SERVICE_LOCATION=francecentral
+APP_SERVICE_LOCATION=chilecentral

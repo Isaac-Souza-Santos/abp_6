@@ -7,7 +7,7 @@
 param(
   [string]$SubscriptionId,
   [string]$ResourceGroup = "rg-procon-bot-prod",
-  [string]$Location = "francecentral",
+  [string]$Location = "chilecentral",
   [string]$PlanName = "asp-painel-procon",
   [string]$WebAppName = "app-painel-procon-interno",
   [string]$ZipPath = (Join-Path $PSScriptRoot "painel-app-service.zip"),
@@ -86,4 +86,4 @@ if ($LASTEXITCODE -eq 0) {
   Write-Host "Aviso: nao foi possivel atualizar ADMIN_PANEL_ORIGIN no Container App (ajuste manualmente)." -ForegroundColor Yellow
 }
 Write-Host "Autenticacao Microsoft: Portal -> Web App -> Authentication -> Add identity provider -> Microsoft." -ForegroundColor Yellow
-Write-Host "Documentacao (local, nao versionada): local/PAINEL-AZURE-APP-SERVICE.md — ver documentacao/AZURE-CONFIGURACAO.md" -ForegroundColor Yellow
+Write-Host "Documentacao (local, nao versionada): local/PAINEL-AZURE-APP-SERVICE.md - ver documentacao/AZURE-CONFIGURACAO.md" -ForegroundColor Yellow

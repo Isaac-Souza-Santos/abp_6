@@ -2,8 +2,8 @@ Param(
   [string]$SubscriptionId,
   [string]$ResourceGroup = "rg-procon-bot-prod",
   # Região dos recursos (ACR, Storage, Key Vault, Container Apps). Contas institucionais (ex.: Fatec/CPS)
-  # costumam restringir regiões; `francecentral` costuma ser permitida quando `brazilsouth`/`eastus` falham.
-  [string]$Location = "francecentral",
+  # podem restringir regiões; `chilecentral` está permitida na assinatura atual.
+  [string]$Location = "chilecentral",
   [string]$AcrName = "acrproconbotprod",
   [string]$StorageName = "stproconbotprod",
   [string]$FileShareName = "botpersistshare",
