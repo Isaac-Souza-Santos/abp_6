@@ -105,6 +105,23 @@ function trySyncFilesystem(): void {
   }
 }
 
+/** Volume persistente montado em ACA / scripts de deploy (`apply-persist-volume.mjs`). */
+function isAzurePersistMountAuthPath(): boolean {
+  return AUTH_PATH.includes('/mnt/persist');
+}
+
+/**
+ * Em Azure Files, `rm -rf session/` costuma ser lento/incompleto (SMB) e reapagar o perfil piora o loop
+ * "browser is already running". Por defeito em `/mnt/persist` não apagamos o diretório inteiro; só locks + kill.
+ * `SKIP_CHROME_SESSION_RM_ON_SINGLETON=1` força esse comportamento; `=0` força remoção total (legado).
+ */
+function shouldSkipFullSessionRmOnSingleton(): boolean {
+  const v = process.env.SKIP_CHROME_SESSION_RM_ON_SINGLETON?.trim();
+  if (v === '1' || v === 'true') return true;
+  if (v === '0' || v === 'false') return false;
+  return isAzurePersistMountAuthPath();
+}
+
 /**
  * No Azure Files, locks/SingletonLock podem ficar “presos” sem processo real; apagar o userDataDir
  * força um perfil novo no próximo launch. Credenciais LocalAuth ficam em `dataPath` (AUTH_PATH), não
@@ -125,7 +142,7 @@ function forceRemoveChromeSessionDir(sessionDir: string, reason: string): void {
 function removeChromeSessionDirAfterSingletonLock(sessionDir: string): void {
   if (!wantsAggressiveChromeLockSweep()) return;
   const allowSessionRm = process.env.FORCE_CHROME_SESSION_RM !== '0';
-  if (!allowSessionRm || process.env.SKIP_CHROME_SESSION_RM_ON_SINGLETON === '1') return;
+  if (!allowSessionRm || shouldSkipFullSessionRmOnSingleton()) return;
   forceRemoveChromeSessionDir(sessionDir, 'apos erro singleton / Azure Files');
 }
 
@@ -133,7 +150,7 @@ function removeChromeSessionDirAfterSingletonLock(sessionDir: string): void {
 function preemptRemoveChromeSessionDirIfSingletonArtifacts(sessionDir: string): void {
   if (!wantsAggressiveChromeLockSweep()) return;
   const allowSessionRm = process.env.FORCE_CHROME_SESSION_RM !== '0';
-  if (!allowSessionRm || process.env.SKIP_CHROME_SESSION_RM_ON_SINGLETON === '1') return;
+  if (!allowSessionRm || shouldSkipFullSessionRmOnSingleton()) return;
   if (!fs.existsSync(sessionDir)) return;
   const markers = ['SingletonLock', 'SingletonSocket', 'SingletonCookie'].map((name) => path.join(sessionDir, name));
   if (!markers.some((p) => fs.existsSync(p))) return;
@@ -306,8 +323,9 @@ export class ProconBot {
 
     logger.info('Inicializando cliente WhatsApp', {
       aggressive: wantsAggressiveChromeLockSweep(),
-      sessionRmOnSingletonRetry: process.env.SKIP_CHROME_SESSION_RM_ON_SINGLETON !== '1',
+      sessionRmOnSingletonRetry: !shouldSkipFullSessionRmOnSingleton(),
       forceSessionRm: process.env.FORCE_CHROME_SESSION_RM !== '0',
+      azurePersistSkipFullRm: isAzurePersistMountAuthPath(),
       bootMarker: 'procon-chrome-2026-04-postkill-sync',
     });
     const maxTentativas = wantsAggressiveChromeLockSweep() ? 6 : 3;
@@ -328,6 +346,10 @@ export class ProconBot {
           await new Promise((r) => setTimeout(r, retryBackoffMs(t)));
         } else {
           await new Promise((r) => setTimeout(r, primeiraEsperaMs));
+        }
+        killChromiumProcessesBestEffort();
+        if (wantsAggressiveChromeLockSweep()) {
+          await new Promise((r) => setTimeout(r, 1200));
         }
         const preLaunch = clearStaleChromiumProfileLocks(CHROME_USER_DATA_DIR);
         if (preLaunch > 0) logger.info('Locks removidos antes do launch', { removed: preLaunch });
