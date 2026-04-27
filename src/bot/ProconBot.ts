@@ -122,7 +122,7 @@ function forceRemoveChromeSessionDir(sessionDir: string, reason: string): void {
 
 function removeChromeSessionDirAfterSingletonLock(sessionDir: string): void {
   if (!wantsAggressiveChromeLockSweep()) return;
-  const allowSessionRm = process.env.FORCE_CHROME_SESSION_RM === '1';
+  const allowSessionRm = process.env.FORCE_CHROME_SESSION_RM !== '0';
   if (!allowSessionRm || process.env.SKIP_CHROME_SESSION_RM_ON_SINGLETON === '1') return;
   forceRemoveChromeSessionDir(sessionDir, 'apos erro singleton / Azure Files');
 }
@@ -130,7 +130,7 @@ function removeChromeSessionDirAfterSingletonLock(sessionDir: string): void {
 /** Antes de cada launch: se existirem marcas Singleton* (crash/restart), apaga session inteira. */
 function preemptRemoveChromeSessionDirIfSingletonArtifacts(sessionDir: string): void {
   if (!wantsAggressiveChromeLockSweep()) return;
-  const allowSessionRm = process.env.FORCE_CHROME_SESSION_RM === '1';
+  const allowSessionRm = process.env.FORCE_CHROME_SESSION_RM !== '0';
   if (!allowSessionRm || process.env.SKIP_CHROME_SESSION_RM_ON_SINGLETON === '1') return;
   if (!fs.existsSync(sessionDir)) return;
   const markers = ['SingletonLock', 'SingletonSocket', 'SingletonCookie'].map((name) => path.join(sessionDir, name));
@@ -305,7 +305,7 @@ export class ProconBot {
     logger.info('Inicializando cliente WhatsApp', {
       aggressive: wantsAggressiveChromeLockSweep(),
       sessionRmOnSingletonRetry: process.env.SKIP_CHROME_SESSION_RM_ON_SINGLETON !== '1',
-      forceSessionRm: process.env.FORCE_CHROME_SESSION_RM === '1',
+      forceSessionRm: process.env.FORCE_CHROME_SESSION_RM !== '0',
       bootMarker: 'procon-chrome-2026-04-postkill-sync',
     });
     const maxTentativas = wantsAggressiveChromeLockSweep() ? 6 : 3;
@@ -368,7 +368,7 @@ export class ProconBot {
           killChromiumProcessesBestEffort();
           clearStaleChromiumProfileLocks(CHROME_USER_DATA_DIR);
           if (transientPuppeteerFailures >= 2) {
-            if (process.env.FORCE_CHROME_SESSION_RM === '1') {
+            if (process.env.FORCE_CHROME_SESSION_RM !== '0') {
               forceRemoveChromeSessionDir(CHROME_USER_DATA_DIR, 'apos falhas repetidas "Target closed"');
             }
             transientPuppeteerFailures = 0;

@@ -63,6 +63,9 @@ az containerapp update -n "$APP" -g "$RG" \
   "AUTH_PATH=${AUTH_PATH}" \
   "DATA_DIR=${DATA_DIR}" \
   CHROME_SESSION_EMPTYDIR=1 \
+  FORCE_CHROME_SESSION_RM=1 \
+  CHROME_POST_KILL_MS=6000 \
+  CHROME_POST_SESSION_RM_MS=9000 \
   GROQ_API_KEY=secretref:groq-api-key \
   ADMIN_NUMBER=secretref:admin-number
 
