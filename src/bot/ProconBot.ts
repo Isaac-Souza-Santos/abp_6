@@ -122,14 +122,16 @@ function forceRemoveChromeSessionDir(sessionDir: string, reason: string): void {
 
 function removeChromeSessionDirAfterSingletonLock(sessionDir: string): void {
   if (!wantsAggressiveChromeLockSweep()) return;
-  if (process.env.SKIP_CHROME_SESSION_RM_ON_SINGLETON === '1') return;
+  const allowSessionRm = process.env.FORCE_CHROME_SESSION_RM === '1';
+  if (!allowSessionRm || process.env.SKIP_CHROME_SESSION_RM_ON_SINGLETON === '1') return;
   forceRemoveChromeSessionDir(sessionDir, 'apos erro singleton / Azure Files');
 }
 
 /** Antes de cada launch: se existirem marcas Singleton* (crash/restart), apaga session inteira. */
 function preemptRemoveChromeSessionDirIfSingletonArtifacts(sessionDir: string): void {
   if (!wantsAggressiveChromeLockSweep()) return;
-  if (process.env.SKIP_CHROME_SESSION_RM_ON_SINGLETON === '1') return;
+  const allowSessionRm = process.env.FORCE_CHROME_SESSION_RM === '1';
+  if (!allowSessionRm || process.env.SKIP_CHROME_SESSION_RM_ON_SINGLETON === '1') return;
   if (!fs.existsSync(sessionDir)) return;
   const markers = ['SingletonLock', 'SingletonSocket', 'SingletonCookie'].map((name) => path.join(sessionDir, name));
   if (!markers.some((p) => fs.existsSync(p))) return;
@@ -166,13 +168,11 @@ export class ProconBot {
 
   constructor() {
     const hasHeadlessOverride = typeof process.env.HEADLESS === 'string';
-    const headless = hasHeadlessOverride ? process.env.HEADLESS !== 'false' : process.platform !== 'win32';
+    // Default headless=true in all platforms to avoid opening WhatsApp Web UI.
+    const headless = hasHeadlessOverride ? process.env.HEADLESS !== 'false' : true;
     const executablePath =
       process.env.PUPPETEER_EXECUTABLE_PATH?.trim() ||
       process.env.CHROME_PATH?.trim();
-    if (!hasHeadlessOverride && process.platform === 'win32') {
-      console.log('🪟 Windows detectado sem HEADLESS definido: usando HEADLESS=false para estabilizar o boot do Chrome local.');
-    }
     this.client = new Client({
       authStrategy: new LocalAuth({ dataPath: AUTH_PATH }),
       puppeteer: {
@@ -255,47 +255,30 @@ export class ProconBot {
 
   async start(): Promise<void> {
     logger.info('Iniciando bot Procon Jacareí', { authPath: AUTH_PATH, exists: fs.existsSync(AUTH_PATH) });
-    console.log('📂 Sessão em:', AUTH_PATH, fs.existsSync(AUTH_PATH) ? '(pasta existe)' : '(pasta não encontrada — será criada ao escanear QR)');
-    if (process.env.CHROME_SESSION_EMPTYDIR === '1') {
-      console.log(
-        '🔗 CHROME_SESSION_EMPTYDIR: a pasta `session` do Chromium esta num volume EmptyDir (disco local da replica). A sessao WhatsApp Web pode exigir novo QR apos cada novo pod.'
-      );
-    }
+    logger.info('Sessão WhatsApp configurada', { authPath: AUTH_PATH, exists: fs.existsSync(AUTH_PATH) });
     let n = clearStaleChromiumProfileLocks(CHROME_USER_DATA_DIR);
     if (wantsAggressiveChromeLockSweep()) {
       await new Promise((r) => setTimeout(r, 400));
       n += clearStaleChromiumProfileLocks(CHROME_USER_DATA_DIR);
     }
-    console.log(
-      `🧹 Locks Chrome removidos: ${n} (perfil: ${CHROME_USER_DATA_DIR}). ` +
-        'Nos logs deve aparecer a linha "Chrome:" com bootMarker; se nao aparecer, a imagem no ACA ainda e antiga.'
-    );
+    logger.info('Locks de perfil Chrome removidos', { removed: n, profile: CHROME_USER_DATA_DIR });
     let qrJaMostrado = false;
     this.client.on('qr', (qr) => {
-      if (qrJaMostrado) {
-        console.log('\n⏱️ QR anterior expirou. Novo QR abaixo:');
-        console.log('   (Se o celular mostrou "não foi possível conectar", escaneie ESTE QR novo.)\n');
-      } else {
-        console.log('\n📱 Escaneie o QR Code com o WhatsApp (número do Procon):');
-        console.log('   O QR expira em ~60 segundos — escaneie logo.\n');
-      }
+      if (!qrJaMostrado) console.log('\nQR Code WhatsApp:\n');
       qrJaMostrado = true;
       qrcode.generate(qr, { small: true });
-      console.log('\n📲 No celular: WhatsApp → Aparelhos conectados → Conectar um aparelho.');
-      console.log('   Use sempre o QR que está aparecendo AGORA no terminal.\n');
     });
 
     this.client.on('ready', () => {
       this.ready = true;
       this.authenticated = true;
       logger.info('Bot conectado e pronto');
-      console.log('✅ Bot Procon Jacareí conectado e pronto! (sessão salva — não precisou de QR)');
+      console.log('✅ Bot conectado e pronto.');
     });
 
     this.client.on('authenticated', () => {
       this.authenticated = true;
       logger.info('Autenticação bem-sucedida');
-      console.log('🔐 Autenticado com sucesso.');
     });
 
     this.client.on('auth_failure', (msg) => {
@@ -308,7 +291,6 @@ export class ProconBot {
     this.client.on('disconnected', (reason) => {
       this.ready = false;
       console.warn('⚠️ Conexão perdida:', reason || 'desconhecido');
-      console.warn('   Se um novo QR aparecer, escaneie-o para reconectar.\n');
     });
 
     this.client.on('message', async (msg) => {
@@ -320,15 +302,12 @@ export class ProconBot {
       }
     });
 
-    console.log('⏳ Inicializando cliente WhatsApp... (aguarde; se precisar de login, o QR Code aparecerá aqui em seguida)\n');
-    console.log(
-      '🔧 Chrome:',
-      JSON.stringify({
-        aggressive: wantsAggressiveChromeLockSweep(),
-        sessionRmOnSingletonRetry: process.env.SKIP_CHROME_SESSION_RM_ON_SINGLETON !== '1',
-        bootMarker: 'procon-chrome-2026-04-postkill-sync',
-      })
-    );
+    logger.info('Inicializando cliente WhatsApp', {
+      aggressive: wantsAggressiveChromeLockSweep(),
+      sessionRmOnSingletonRetry: process.env.SKIP_CHROME_SESSION_RM_ON_SINGLETON !== '1',
+      forceSessionRm: process.env.FORCE_CHROME_SESSION_RM === '1',
+      bootMarker: 'procon-chrome-2026-04-postkill-sync',
+    });
     const maxTentativas = wantsAggressiveChromeLockSweep() ? 6 : 3;
     const primeiraEsperaMs = wantsAggressiveChromeLockSweep() ? 2500 : 2000;
     const posSweepMs = Number(process.env.CHROME_POST_SWEEP_MS || (wantsAggressiveChromeLockSweep() ? 600 : 0));
@@ -349,9 +328,7 @@ export class ProconBot {
           await new Promise((r) => setTimeout(r, primeiraEsperaMs));
         }
         const preLaunch = clearStaleChromiumProfileLocks(CHROME_USER_DATA_DIR);
-        if (preLaunch > 0) {
-          console.log(`🧹 Locks removidos imediatamente antes do launch: ${preLaunch}`);
-        }
+        if (preLaunch > 0) logger.info('Locks removidos antes do launch', { removed: preLaunch });
         if (posSweepMs > 0) {
           await new Promise((r) => setTimeout(r, posSweepMs));
         }
@@ -391,7 +368,9 @@ export class ProconBot {
           killChromiumProcessesBestEffort();
           clearStaleChromiumProfileLocks(CHROME_USER_DATA_DIR);
           if (transientPuppeteerFailures >= 2) {
-            forceRemoveChromeSessionDir(CHROME_USER_DATA_DIR, 'apos falhas repetidas "Target closed"');
+            if (process.env.FORCE_CHROME_SESSION_RM === '1') {
+              forceRemoveChromeSessionDir(CHROME_USER_DATA_DIR, 'apos falhas repetidas "Target closed"');
+            }
             transientPuppeteerFailures = 0;
           }
           if (chromeSingleton) {
@@ -405,13 +384,7 @@ export class ProconBot {
           }
           const proximaEspera = retryBackoffMs(t + 1);
           console.warn(
-            `\n⚠️ Tentativa ${t} falhou (${msg.slice(0, 80)}...). ` +
-              (chromeSingleton
-                ? 'Fechando/pkill Chromium, limpando locks e apagando pasta session no volume (Azure Files) se aplicável; '
-                : retryableReadyIssue
-                ? 'Cliente autenticou mas não ficou pronto; reciclando Chromium/sessão para nova tentativa; '
-                : 'Fechando/pkill Chromium; ') +
-              `aguardando ${Math.round(proximaEspera / 1000)}s para tentar de novo...\n`
+            `⚠️ Tentativa ${t} falhou (${msg.slice(0, 80)}...). Nova tentativa em ${Math.round(proximaEspera / 1000)}s.`
           );
         } else {
           throw err;
