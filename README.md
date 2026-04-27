@@ -72,6 +72,13 @@ Em outro terminal:
 npm run panel:dev
 ```
 
+### 3) Rodar testes E2E do painel (Playwright)
+
+```bash
+npm run panel:test:e2e:install
+npm run panel:test:e2e
+```
+
 O painel consome `GET /admin/agendamentos` (lista e métricas), `PATCH /admin/agendamentos/:id` (ajustes por protocolo) e `GET`/`PUT /admin/agenda-atendentes` (horário de almoço por linha).
 
 ### Variáveis opcionais para segurança/CORS

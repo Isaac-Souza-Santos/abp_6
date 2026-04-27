@@ -9,6 +9,49 @@ npm install
 npm run dev
 ```
 
+## Testes E2E (Playwright)
+
+Instalar dependências do painel e o navegador Chromium do Playwright:
+
+```bash
+npm install
+npm run test:e2e:install
+```
+
+Executar suíte E2E:
+
+```bash
+npm run test:e2e
+```
+
+Abrir runner interativo:
+
+```bash
+npm run test:e2e:ui
+```
+
+Os testes E2E ficam em `tests/e2e/` e atualmente incluem um smoke test do carregamento do painel com mock de `GET /admin/agendamentos`.
+
+### O que o smoke test atual faz
+
+Arquivo: `tests/e2e/painel-smoke.spec.ts`
+
+Fluxo validado:
+
+1. Intercepta `GET /admin/agendamentos` e devolve uma resposta mockada (sem depender do backend real).
+2. Abre a rota inicial do painel.
+3. Verifica se aparecem elementos essenciais da UI:
+	- título "Painel interno de agendamentos"
+	- aba "Agendamentos"
+	- nome "Maria Silva"
+	- motivo "Cobrança indevida"
+4. Aplica pequenos delays para facilitar visualização no modo headed.
+
+Escopo atual do teste:
+
+- Cobre renderização básica da tela principal com dados válidos.
+- Não cobre ainda login Azure, edição de protocolo, fluxo de almoço e cenários de erro de rede.
+
 Por padrão, a API base é `http://localhost:3000` (endpoints `GET /admin/agendamentos`, `PATCH /admin/agendamentos/:id`, `GET` e `PUT /admin/agenda-atendentes`).
 
 ## Configuração

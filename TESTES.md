@@ -4,7 +4,7 @@ Este texto descreve, em linguagem corrida, **quais verificações automatizadas 
 
 ## Resumo executivo
 
-O backend do bot (pasta `src/`) usa **Jest** com **TypeScript** (`ts-jest`), ambiente **Node**. Hoje há **6 arquivos** de suíte e **25 casos** de teste (`test` / `it`). O aplicativo **painel-interno** não possui suíte de testes configurada no `package.json`.
+O backend do bot (pasta `src/`) usa **Jest** com **TypeScript** (`ts-jest`), ambiente **Node**. Hoje há **6 arquivos** de suíte e **25 casos** de teste (`test` / `it`). O aplicativo **painel-interno** agora possui suíte **E2E com Playwright** (smoke test inicial).
 
 Uma execução bem-sucedida de `npm test` na raiz termina com **6 suites passando** e **25 testes passando** (sem snapshots). A pasta `dist/` é ignorada pelo Jest para não duplicar suítes após `npm run build`.
 
@@ -26,6 +26,13 @@ Cobertura de código (Istanbul via Jest):
 
 ```bash
 npm run test:coverage
+```
+
+Para os testes E2E do painel:
+
+```bash
+npm run panel:test:e2e:install
+npm run panel:test:e2e
 ```
 
 Requisito: **Node.js ≥ 18**.
@@ -105,7 +112,7 @@ Fumaça mínima da classe do bot.
 
 ## Lacunas conhecidas (não coberto por estes testes)
 
-- **Painel React (`painel-interno`):** sem `npm test` nem arquivos de teste integrados ao fluxo atual.
+- **Painel React (`painel-interno`):** há smoke test E2E com Playwright, mas ainda faltam cenários completos (login Azure, edição de protocolo, fluxo de almoço e erros de rede).
 - **Agendamento completo:** por exemplo confirmação e persistência final (`confirmarESalvar`) não têm casos dedicados aqui.
 - **Admin, LLM em produção, sessão WhatsApp real:** exigiriam mocks adicionais ou testes e2e.
 
