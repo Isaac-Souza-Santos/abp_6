@@ -50,6 +50,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   libxss1 \
   libxtst6 \
   procps \
+  rsync \
   xdg-utils \
   && rm -rf /var/lib/apt/lists/*
 
