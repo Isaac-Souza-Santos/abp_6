@@ -132,21 +132,41 @@ jobs:
             echo "::error::Nao foi possivel obter latestRevisionName."
             exit 1
           fi
-          active="$(az containerapp revision show -n "$APP" -g "$RG" --revision "$latest" --query properties.active -o tsv)"
-          running="$(az containerapp revision show -n "$APP" -g "$RG" --revision "$latest" --query properties.runningState -o tsv)"
-          health="$(az containerapp show -n "$APP" -g "$RG" --query properties.runningStatus -o tsv)"
           echo "latestRevisionName=$latest"
-          echo "revision.active=$active"
-          echo "revision.runningState=$running"
-          echo "app.runningStatus=$health"
-          if [ "$active" != "true" ]; then
-            echo "::error::Revisao mais recente nao esta ativa."
-            exit 1
-          fi
-          case "$running" in
-            Running|RunningAtMaxScale|RunningAtMinScale) ;;
-            *)
-              echo "::error::Revisao com runningState inesperado (esperado Running*): $running"
+
+          max_attempts=12
+          sleep_seconds=20
+          attempt=1
+          while [ "$attempt" -le "$max_attempts" ]; do
+            active="$(az containerapp revision show -n "$APP" -g "$RG" --revision "$latest" --query properties.active -o tsv)"
+            running="$(az containerapp revision show -n "$APP" -g "$RG" --revision "$latest" --query properties.runningState -o tsv)"
+            health="$(az containerapp show -n "$APP" -g "$RG" --query properties.runningStatus -o tsv)"
+
+            echo "attempt=$attempt/$max_attempts revision.active=$active revision.runningState=$running app.runningStatus=$health"
+
+            if [ "$active" != "true" ]; then
+              echo "::error::Revisao mais recente nao esta ativa."
               exit 1
-              ;;
-          esac
+            fi
+
+            case "$running" in
+              Running|RunningAtMaxScale|RunningAtMinScale)
+                echo "Smoke check OK: revisao em estado Running*."
+                exit 0
+                ;;
+              Activating|Provisioning)
+                if [ "$attempt" -eq "$max_attempts" ]; then
+                  echo "::error::Revisao ainda em estado transitorio apos espera: $running"
+                  exit 1
+                fi
+                echo "Revisao ainda em transicao ($running). Aguardando ${sleep_seconds}s..."
+                sleep "$sleep_seconds"
+                ;;
+              *)
+                echo "::error::Revisao com runningState inesperado: $running"
+                exit 1
+                ;;
+            esac
+
+            attempt=$((attempt + 1))
+          done
