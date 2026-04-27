@@ -5,7 +5,9 @@
 # Em push para main/master: tag de imagem padrao v1 (igual deploy-containerapp.ps1 -ImageTag v1).
 name: acr-build-push
 # Titulo da execucao na aba Actions: imagem completa ao lado do fluxo
-run-name: acrproconbotprod.azurecr.io/procon-bot:${{ github.event.inputs.image_tag || 'v1' }}
+# Padrao: assinatura 'Azure for Students' + rg-procon-bot-cl (ver deploy-containerapp.ps1).
+# Se usar outro ambiente, defina repository variables: ACR_NAME, AZURE_RG, ACA_ENV, STORAGE, KV, SHARE.
+run-name: ACR build/push procon-bot:${{ github.event.inputs.image_tag || 'v1' }}
 
 on:
   workflow_dispatch:
@@ -39,7 +41,7 @@ jobs:
       upload_coverage: false
 
   build_push:
-    name: Build e push acrproconbotprod.azurecr.io/procon-bot:${{ github.event.inputs.image_tag || 'v1' }}
+    name: Build e push no ACR (procon-bot:${{ github.event.inputs.image_tag || 'v1' }})
     needs: validate
     runs-on: ubuntu-latest
     outputs:
@@ -58,13 +60,15 @@ jobs:
       - name: ACR login, build e push
         id: acr
         env:
-          ACR_NAME: acrproconbotprod
+          # Igual infra/azure/deploy-containerapp.ps1 (CL). Sobrescreva via repo variables se precisar.
+          ACR_NAME: ${{ vars.ACR_NAME || 'acrproconbotcl' }}
+          AZURE_RG: ${{ vars.AZURE_RG || 'rg-procon-bot-cl' }}
           IMAGE_TAG: ${{ github.event.inputs.image_tag || 'v1' }}
         run: |
           set -e
           echo "image_tag=$IMAGE_TAG" >> "$GITHUB_OUTPUT"
           az acr login --name "$ACR_NAME"
-          ACR_SERVER=$(az acr show -n "$ACR_NAME" -g rg-procon-bot-prod --query loginServer -o tsv)
+          ACR_SERVER=$(az acr show -n "$ACR_NAME" -g "$AZURE_RG" --query loginServer -o tsv)
           IMAGE="$ACR_SERVER/procon-bot:$IMAGE_TAG"
           docker build -t "$IMAGE" -f Dockerfile .
           docker push "$IMAGE"
@@ -92,6 +96,13 @@ jobs:
       - name: Deploy Container App (nova revisao com imagem + volume)
         env:
           IMAGE_TAG: ${{ needs.build_push.outputs.image_tag }}
+          # Mesmos nomes default que deploy-containerapp.ps1
+          RG: ${{ vars.AZURE_RG || 'rg-procon-bot-cl' }}
+          ACR: ${{ vars.ACR_NAME || 'acrproconbotcl' }}
+          ENV_NAME: ${{ vars.ACA_ENV || 'acae-procon-bot-cl' }}
+          STORAGE: ${{ vars.ACA_STORAGE || 'stproconbotclprod' }}
+          SHARE: ${{ vars.ACA_FILE_SHARE || 'botpersistshare' }}
+          KV: ${{ vars.ACA_KEYVAULT || 'kv-procon-bot-cl' }}
         run: |
           set -e
           chmod +x infra/azure/gha-deploy-containerapp.sh
@@ -112,7 +123,7 @@ jobs:
 
       - name: Smoke check da revisao mais recente
         env:
-          RG: rg-procon-bot-prod
+          RG: ${{ vars.AZURE_RG || 'rg-procon-bot-cl' }}
           APP: procon-bot
         run: |
           set -euo pipefail

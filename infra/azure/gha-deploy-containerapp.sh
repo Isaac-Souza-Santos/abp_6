@@ -4,13 +4,15 @@
 # Pre-requisito: az logado; Node 18+; Container App ja existente.
 set -euo pipefail
 
-RG="${RG:-rg-procon-bot-prod}"
-ENV_NAME="${ENV_NAME:-acae-procon-bot-prod}"
+# Defaults alinhados a infra/azure/deploy-containerapp.ps1 (rg-procon-bot-cl / Azure for Students).
+# Para o ambiente antigo (prod), exporte: RG, ACR, ENV_NAME, STORAGE, KV, SHARE.
+RG="${RG:-rg-procon-bot-cl}"
+ENV_NAME="${ENV_NAME:-acae-procon-bot-cl}"
 APP="${APP:-procon-bot}"
-ACR="${ACR:-acrproconbotprod}"
-STORAGE="${STORAGE:-stproconbotprod}"
+ACR="${ACR:-acrproconbotcl}"
+STORAGE="${STORAGE:-stproconbotclprod}"
 SHARE="${SHARE:-botpersistshare}"
-KV="${KV:-kv-procon-bot-prod}"
+KV="${KV:-kv-procon-bot-cl}"
 IMAGE_TAG="${IMAGE_TAG:-v1}"
 PERSIST_MOUNT="${PERSIST_MOUNT:-/mnt/persist}"
 VOL_NAME="${VOL_NAME:-persist-vol}"
