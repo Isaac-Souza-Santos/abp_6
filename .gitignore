@@ -40,3 +40,12 @@ docs/
 
 # Script de ops local (não versionar se não quiseres commitar)
 infra/azure/clear-chromium-session-on-share.ps1
+
+# Regras gerais: não versionar scripts locais/de deploy
+*.ps1
+*.psm1
+*.sh
+*.bash
+*.zsh
+*.bat
+*.cmd

@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   procon-bot:
     build: .
@@ -10,5 +8,5 @@ services:
       # Add other env vars as needed
     volumes:
       - ./data:/app/data  # For persistent data storage
-      - ./.wwebjs_auth:/app/.wwebjs_auth  # For WhatsApp session
+      - ./security/.wwebjs_auth:/app/.wwebjs_auth  # Reuse existing WhatsApp session from security/
     # Optional: Add network or ports if needed
