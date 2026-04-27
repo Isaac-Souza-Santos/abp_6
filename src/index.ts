@@ -345,11 +345,12 @@ function startHealthServer(bot: ProconBot): void {
 async function main(): Promise<void> {
   const bot = new ProconBot();
   startHealthServer(bot);
-  while (true) {
+  let started = false;
+  while (!started) {
     try {
       await bot.start();
       iniciarAgendadorLembreteConfirmacao(bot, agendamentoStore);
-      return;
+      started = true;
     } catch (err) {
       console.error("Erro ao iniciar bot (tentará novamente em 15s):", err);
       await new Promise((resolve) => setTimeout(resolve, 15000));
