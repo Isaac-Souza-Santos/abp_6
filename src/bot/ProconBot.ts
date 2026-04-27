@@ -105,6 +105,26 @@ function trySyncFilesystem(): void {
   }
 }
 
+/** SMB / Azure Files: `fs.unlink` por vezes falha; `rm -f` na shell remove Singleton* na raiz do perfil. */
+function shellRmSingletonAtSessionRootLinux(sessionDir: string): void {
+  if (process.platform !== 'linux' || !sessionDir || !fs.existsSync(sessionDir)) return;
+  try {
+    execFileSync(
+      '/bin/sh',
+      [
+        '-c',
+        'chmod -R u+w "$SESSION_DIR" 2>/dev/null || true; ' +
+          'for f in SingletonLock SingletonCookie SingletonSocket DevToolsActivePort lockfile; do ' +
+          'rm -f "$SESSION_DIR/$f" 2>/dev/null || true; ' +
+          'done',
+      ],
+      { env: { ...process.env, SESSION_DIR: sessionDir }, stdio: 'ignore', timeout: 15_000 }
+    );
+  } catch {
+    /* ignore */
+  }
+}
+
 /** Volume persistente montado em ACA / scripts de deploy (`apply-persist-volume.mjs`). */
 function isAzurePersistMountAuthPath(): boolean {
   return AUTH_PATH.includes('/mnt/persist');
@@ -192,6 +212,8 @@ export class ProconBot {
     const executablePath =
       process.env.PUPPETEER_EXECUTABLE_PATH?.trim() ||
       process.env.CHROME_PATH?.trim();
+    const chromeCacheOnTmp =
+      AUTH_PATH.includes('/mnt/persist') || process.env.CHROME_CACHE_IN_TMP === '1';
     this.client = new Client({
       authStrategy: new LocalAuth({ dataPath: AUTH_PATH }),
       puppeteer: {
@@ -207,6 +229,13 @@ export class ProconBot {
           '--disable-background-timer-throttling',
           '--no-first-run',
           '--no-default-browser-check',
+          ...(chromeCacheOnTmp
+            ? ([
+                '--disk-cache-dir=/tmp/chromium-disk-cache',
+                '--media-cache-dir=/tmp/chromium-media-cache',
+                '--crash-dumps-dir=/tmp/chromium-crashes',
+              ] as const)
+            : []),
         ],
       },
     });
@@ -275,6 +304,7 @@ export class ProconBot {
   async start(): Promise<void> {
     logger.info('Iniciando bot Procon Jacareí', { authPath: AUTH_PATH, exists: fs.existsSync(AUTH_PATH) });
     logger.info('Sessão WhatsApp configurada', { authPath: AUTH_PATH, exists: fs.existsSync(AUTH_PATH) });
+    shellRmSingletonAtSessionRootLinux(CHROME_USER_DATA_DIR);
     let n = clearStaleChromiumProfileLocks(CHROME_USER_DATA_DIR);
     if (wantsAggressiveChromeLockSweep()) {
       await new Promise((r) => setTimeout(r, 400));
@@ -351,6 +381,7 @@ export class ProconBot {
         if (wantsAggressiveChromeLockSweep()) {
           await new Promise((r) => setTimeout(r, 1200));
         }
+        shellRmSingletonAtSessionRootLinux(CHROME_USER_DATA_DIR);
         const preLaunch = clearStaleChromiumProfileLocks(CHROME_USER_DATA_DIR);
         if (preLaunch > 0) logger.info('Locks removidos antes do launch', { removed: preLaunch });
         if (posSweepMs > 0) {
@@ -395,6 +426,7 @@ export class ProconBot {
             await new Promise((r) => setTimeout(r, postKillMs));
           }
           killChromiumProcessesBestEffort();
+          shellRmSingletonAtSessionRootLinux(CHROME_USER_DATA_DIR);
           clearStaleChromiumProfileLocks(CHROME_USER_DATA_DIR);
           if (transientPuppeteerFailures >= 2) {
             if (process.env.FORCE_CHROME_SESSION_RM !== '0') {

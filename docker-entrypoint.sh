@@ -36,13 +36,33 @@ clean_locks() {
   if [ ! -d "$dir" ]; then
     return 0
   fi
+  chmod -R u+w "$dir" 2>/dev/null || true
   # ! -type d: remove ficheiros, symlinks e sockets (SingletonSocket); -type f -o -type l falhava em sockets Unix.
   find "$dir" -maxdepth 15 \( \
     -name SingletonLock -o -name SingletonCookie -o -name SingletonSocket -o -name DevToolsActivePort \
   \) ! -type d -exec rm -f {} + 2>/dev/null || true
 }
 
+# Azure Files (SMB): locks na raiz do userDataDir falham por vezes só com find; rm explícito costuma bastar.
+rm_singleton_root() {
+  dir="$1"
+  if [ ! -d "$dir" ]; then
+    return 0
+  fi
+  chmod -R u+w "$dir" 2>/dev/null || true
+  for f in SingletonLock SingletonCookie SingletonSocket DevToolsActivePort lockfile; do
+    rm -f "$dir/$f" 2>/dev/null || true
+  done
+}
+
 clean_locks "$SESSION"
+rm_singleton_root "$SESSION"
+clean_locks "$SESSION"
+rm_singleton_root "$SESSION"
 clean_locks "/app/.wwebjs_auth/session"
+rm_singleton_root "/app/.wwebjs_auth/session"
+
+sync 2>/dev/null || true
+sleep 1
 
 exec "$@"
