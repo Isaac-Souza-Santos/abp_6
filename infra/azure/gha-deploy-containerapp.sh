@@ -47,6 +47,9 @@ az containerapp env storage set \
   --azure-file-share-name "$SHARE" \
   --access-mode ReadWrite
 
+# Garante apenas uma revisão ativa; múltiplas revisões podem abrir o mesmo profile em paralelo.
+az containerapp revision set-mode -n "$APP" -g "$RG" --mode single 2>/dev/null || true
+
 if ! az containerapp show -n "$APP" -g "$RG" &>/dev/null; then
   echo "::error::Container App '$APP' nao existe neste resource group. Crie com infra/azure/deploy-containerapp.ps1 primeiro."
   exit 1

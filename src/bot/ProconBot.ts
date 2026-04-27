@@ -52,7 +52,9 @@ function killChromiumProcessesInContainer(): void {
       [
         '-c',
         'pkill -9 chromium 2>/dev/null || true; pkill -9 chromium-browser 2>/dev/null || true; ' +
-          'pkill -9 chrome 2>/dev/null || true; pkill -9 google-chrome 2>/dev/null || true',
+          'pkill -9 chrome 2>/dev/null || true; pkill -9 google-chrome 2>/dev/null || true; ' +
+          // Best-effort match por comando completo (binários empacotados pelo Puppeteer variam de nome).
+          'pkill -9 -f "(chrome|chromium|headless_shell|puppeteer)" 2>/dev/null || true',
       ],
       { stdio: 'ignore', timeout: 8000 }
     );
@@ -334,6 +336,11 @@ export class ProconBot {
         }
         preemptRemoveChromeSessionDirIfSingletonArtifacts(CHROME_USER_DATA_DIR);
         killChromiumProcessesBestEffort();
+        if (wantsAggressiveChromeLockSweep()) {
+          await new Promise((r) => setTimeout(r, 1200));
+          killChromiumProcessesBestEffort();
+          clearStaleChromiumProfileLocks(CHROME_USER_DATA_DIR);
+        }
         await this.client.initialize();
         await this.waitForReadyWithTimeout(Number(process.env.WA_READY_TIMEOUT_MS || 120000));
         return;
