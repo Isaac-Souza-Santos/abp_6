@@ -6,9 +6,17 @@
 import { readFileSync, writeFileSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 
-function az(args) {
-  const cmd = process.platform === "win32" ? "az.cmd" : "az";
-  return execFileSync(cmd, args, { encoding: "utf8" });
+function runAz(args, options = {}) {
+  const candidates = process.platform === "win32" ? ["az", "az.cmd"] : ["az"];
+  let lastError;
+  for (const cmd of candidates) {
+    try {
+      return execFileSync(cmd, args, options);
+    } catch (e) {
+      lastError = e;
+    }
+  }
+  throw lastError;
 }
 
 function parseArgs(argv) {
@@ -25,6 +33,7 @@ function parseArgs(argv) {
     else if (a === "--auth-path") o.authPath = argv[++i];
     else if (a === "--data-dir") o.dataDir = argv[++i];
     else if (a === "--image") o.image = argv[++i];
+    else if (a === "--chrome-session-emptydir") o.chromeSessionEmptyDir = argv[++i];
   }
   return o;
 }
@@ -43,8 +52,9 @@ const mountPath = opts.mountPath || "/mnt/persist";
 const authPath = (opts.authPath || `${mountPath}/.wwebjs_auth`).replace(/\/$/, "");
 const dataDir = opts.dataDir || `${mountPath}/data`;
 const sessionMountPath = `${authPath}/session`;
-/** EmptyDir sobrepõe só `session/`: locks do Chromium ficam no disco local da réplica (Azure Files não suporta symlink aqui). */
+/** EmptyDir opcional para sobrepor só `session/`: reduz lock no SMB, mas perde persistência nessa pasta. */
 const sessionEmptyVolName = "chrome-session-empty";
+const useSessionEmptyDir = String(opts.chromeSessionEmptyDir || "0") === "1";
 
 let raw = readFileSync(opts.input, "utf8");
 raw = raw.replace(/^\uFEFF/, "").trim();
@@ -61,8 +71,10 @@ delete c.imageType;
 if (opts.image) c.image = opts.image;
 c.volumeMounts = [
   { volumeName, mountPath },
-  { volumeName: sessionEmptyVolName, mountPath: sessionMountPath },
 ];
+if (useSessionEmptyDir) {
+  c.volumeMounts.push({ volumeName: sessionEmptyVolName, mountPath: sessionMountPath });
+}
 for (const e of c.env) {
   if (e.name === "AUTH_PATH" && e.value !== undefined) e.value = authPath;
   if (e.name === "DATA_DIR" && e.value !== undefined) e.value = dataDir;
@@ -71,12 +83,12 @@ for (const e of c.env) {
 const sc = orig.scale;
 const template = {
   containers: [c],
-  volumes: [
-    { name: volumeName, storageType: "AzureFile", storageName: envStorageName },
-    { name: sessionEmptyVolName, storageType: "EmptyDir" },
-  ],
+  volumes: [{ name: volumeName, storageType: "AzureFile", storageName: envStorageName }],
   scale: { minReplicas: sc.minReplicas, maxReplicas: sc.maxReplicas },
 };
+if (useSessionEmptyDir) {
+  template.volumes.push({ name: sessionEmptyVolName, storageType: "EmptyDir" });
+}
 
 const cfg = app.properties.configuration;
 const ing = cfg.ingress;
@@ -138,7 +150,7 @@ writeFileSync(opts.output, JSON.stringify(put));
 
 const url = `https://management.azure.com${id}?api-version=2024-03-01`;
 try {
-  execFileSync(process.platform === "win32" ? "az.cmd" : "az", ["rest", "--method", "put", "--url", url, "--body", `@${opts.output}`], {
+  runAz(["rest", "--method", "put", "--url", url, "--body", `@${opts.output}`], {
     encoding: "utf8",
     stdio: "inherit",
   });

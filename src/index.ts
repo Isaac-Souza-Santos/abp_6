@@ -149,7 +149,7 @@ async function isAdminRequestAuthorized(req: http.IncomingMessage, url: URL): Pr
   return false;
 }
 
-function startHealthServer(bot: ProconBot): void {
+function startHealthServer(bot: ProconBot): Promise<void> {
   const server = http.createServer((req, res) => {
     void (async () => {
       const url = new URL(req.url || "/", `http://${req.headers.host || "localhost"}`);
@@ -189,6 +189,15 @@ function startHealthServer(bot: ProconBot): void {
         setJsonHeaders(res);
         res.writeHead(200);
         res.end(JSON.stringify({ alive: true, ready: bot.isReady() }));
+        return;
+      }
+
+      // Alguns ambientes (ex.: ACA) fazem probe padrão em "/" e exigem 2xx.
+      // Mantemos esta rota simples para evitar falha de startup por 404.
+      if (url.pathname === "/") {
+        setJsonHeaders(res);
+        res.writeHead(200);
+        res.end(JSON.stringify({ status: "ok", alive: true, ready: bot.isReady() }));
         return;
       }
 
@@ -337,14 +346,35 @@ function startHealthServer(bot: ProconBot): void {
     });
   });
 
-  server.listen(healthPort, () => {
-    console.log(`Health server ativo na porta ${healthPort}`);
+  const maxPortTries = Math.max(1, Number(process.env.HEALTH_PORT_TRIES || 10));
+  return new Promise((resolve, reject) => {
+    const tryListen = (attempt: number): void => {
+      const port = healthPort + attempt;
+      const onError = (err: NodeJS.ErrnoException): void => {
+        server.off("listening", onListening);
+        if (err.code === "EADDRINUSE" && attempt + 1 < maxPortTries) {
+          console.warn(`Porta ${port} em uso; tentando ${port + 1}...`);
+          setImmediate(() => tryListen(attempt + 1));
+          return;
+        }
+        reject(err);
+      };
+      const onListening = (): void => {
+        server.off("error", onError);
+        console.log(`Health server ativo na porta ${port}`);
+        resolve();
+      };
+      server.once("error", onError);
+      server.once("listening", onListening);
+      server.listen(port);
+    };
+    tryListen(0);
   });
 }
 
 async function main(): Promise<void> {
   const bot = new ProconBot();
-  startHealthServer(bot);
+  await startHealthServer(bot);
   let started = false;
   while (!started) {
     try {

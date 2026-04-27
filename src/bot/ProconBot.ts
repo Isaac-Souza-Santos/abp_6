@@ -66,6 +66,31 @@ function killChromiumProcessesInContainer(): void {
   }
 }
 
+/** Em Windows/local também podem sobrar processos órfãos entre retries; limpar reduz "Target closed" no boot. */
+function killChromiumProcessesBestEffort(): void {
+  if (process.platform === 'linux') {
+    killChromiumProcessesInContainer();
+    return;
+  }
+  if (process.platform === 'win32') {
+    try {
+      execFileSync(
+        'cmd.exe',
+        [
+          '/c',
+          'taskkill /F /IM chrome.exe /T >NUL 2>&1 & ' +
+            'taskkill /F /IM chromium.exe /T >NUL 2>&1 & ' +
+            'taskkill /F /IM msedge.exe /T >NUL 2>&1',
+        ],
+        { stdio: 'ignore', timeout: 8000 }
+      );
+    } catch {
+      /* ignore */
+    }
+    return;
+  }
+}
+
 function trySyncFilesystem(): void {
   if (process.platform !== 'linux') return;
   for (const bin of ['/bin/sync', '/usr/bin/sync']) {
@@ -140,10 +165,14 @@ export class ProconBot {
   private authenticated = false;
 
   constructor() {
-    const headless = process.env.HEADLESS !== 'false';
+    const hasHeadlessOverride = typeof process.env.HEADLESS === 'string';
+    const headless = hasHeadlessOverride ? process.env.HEADLESS !== 'false' : process.platform !== 'win32';
     const executablePath =
       process.env.PUPPETEER_EXECUTABLE_PATH?.trim() ||
       process.env.CHROME_PATH?.trim();
+    if (!hasHeadlessOverride && process.platform === 'win32') {
+      console.log('🪟 Windows detectado sem HEADLESS definido: usando HEADLESS=false para estabilizar o boot do Chrome local.');
+    }
     this.client = new Client({
       authStrategy: new LocalAuth({ dataPath: AUTH_PATH }),
       puppeteer: {
@@ -154,7 +183,11 @@ export class ProconBot {
           '--disable-setuid-sandbox',
           '--disable-dev-shm-usage',
           '--disable-gpu',
+          '--disable-features=Translate,BackForwardCache',
+          '--disable-background-networking',
+          '--disable-background-timer-throttling',
           '--no-first-run',
+          '--no-default-browser-check',
         ],
       },
     });
@@ -305,6 +338,7 @@ export class ProconBot {
       const seq = [8000, 16000, 25000, 35000, 45000];
       return seq[Math.min(attempt - 2, seq.length - 1)] ?? 45000;
     };
+    let transientPuppeteerFailures = 0;
 
     for (let t = 1; t <= maxTentativas; t++) {
       try {
@@ -322,7 +356,7 @@ export class ProconBot {
           await new Promise((r) => setTimeout(r, posSweepMs));
         }
         preemptRemoveChromeSessionDirIfSingletonArtifacts(CHROME_USER_DATA_DIR);
-        killChromiumProcessesInContainer();
+        killChromiumProcessesBestEffort();
         await this.client.initialize();
         await this.waitForReadyWithTimeout(Number(process.env.WA_READY_TIMEOUT_MS || 120000));
         return;
@@ -331,23 +365,35 @@ export class ProconBot {
         const chromeSingleton =
           msg.includes('browser is already running') || msg.includes('Use a different `userDataDir`');
         const transientPuppeteer =
-          msg.includes('Execution context was destroyed') || msg.includes('Target closed');
+          msg.includes('Execution context was destroyed') ||
+          msg.includes('Target closed') ||
+          msg.includes('Navigating frame was detached') ||
+          msg.includes('LifecycleWatcher disposed');
         const waitingReadyTimeout = msg.includes('Timed out waiting for WhatsApp ready');
         const disconnectedBeforeReady = msg.includes('Disconnected before ready');
         const retryableReadyIssue = waitingReadyTimeout || disconnectedBeforeReady;
         const podeTentarDeNovo = (chromeSingleton || transientPuppeteer || retryableReadyIssue) && t < maxTentativas;
         if (podeTentarDeNovo) {
+          if (transientPuppeteer) {
+            transientPuppeteerFailures += 1;
+          } else {
+            transientPuppeteerFailures = 0;
+          }
           this.ready = false;
           await closePuppeteerBrowserIfAny(this.client);
-          killChromiumProcessesInContainer();
+          killChromiumProcessesBestEffort();
           const postKillMs = wantsAggressiveChromeLockSweep()
             ? Number(process.env.CHROME_POST_KILL_MS || 4000)
             : 600;
           if (postKillMs > 0) {
             await new Promise((r) => setTimeout(r, postKillMs));
           }
-          killChromiumProcessesInContainer();
+          killChromiumProcessesBestEffort();
           clearStaleChromiumProfileLocks(CHROME_USER_DATA_DIR);
+          if (transientPuppeteerFailures >= 2) {
+            forceRemoveChromeSessionDir(CHROME_USER_DATA_DIR, 'apos falhas repetidas "Target closed"');
+            transientPuppeteerFailures = 0;
+          }
           if (chromeSingleton) {
             removeChromeSessionDirAfterSingletonLock(CHROME_USER_DATA_DIR);
             const postRmMs = wantsAggressiveChromeLockSweep()
