@@ -56,17 +56,18 @@ if ! az containerapp show -n "$APP" -g "$RG" &>/dev/null; then
 fi
 
 echo "Atualizando imagem: $IMAGE"
+# --set-env-vars faz merge (nao apaga ADMIN_PANEL_* ja definidos no portal).
 az containerapp update -n "$APP" -g "$RG" \
   --image "$IMAGE" \
   --cpu 0.5 --memory 1.0Gi \
   --min-replicas 1 --max-replicas 1 \
-  --replace-env-vars \
+  --set-env-vars \
   NODE_ENV=production \
   HEALTH_PORT=3000 \
   "AUTH_PATH=${AUTH_PATH}" \
   "DATA_DIR=${DATA_DIR}" \
-  CHROME_SESSION_EMPTYDIR=1 \
-  FORCE_CHROME_SESSION_RM=1 \
+  FORCE_CHROME_SESSION_RM=0 \
+  SKIP_CHROME_SESSION_RM_ON_SINGLETON=1 \
   CHROME_POST_KILL_MS=6000 \
   CHROME_POST_SESSION_RM_MS=9000 \
   GROQ_API_KEY=secretref:groq-api-key \

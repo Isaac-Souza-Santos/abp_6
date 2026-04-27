@@ -1,70 +1,52 @@
 #!/bin/sh
-# Antes de subir o Node: remove locks órfãos do Chromium no perfil (Azure Files / reinício do pod).
-# O Puppeteer falha com "browser is already running" se esses ficheiros sobreviverem no volume.
+# Remove locks órfãos do Chromium antes do Node.
 #
-# Em /mnt/persist (Azure Files / SMB): o Chromium não suporta bem userDataDir em SMB (SingletonLock).
-# Copiamos o perfil para /tmp (disco local), symlink session -> /tmp, e ao sair (SIGTERM/INT) rsync de volta
-# para session.persist no share — mantém a sessão salva no volume sem correr Chrome em cima do SMB.
+# Azure Files (SMB): o Chromium não suporta userDataDir em SMB ("browser is already running").
+# Copiamos TODA a pasta .wwebjs_auth do volume para /tmp, exportamos AUTH_PATH=/tmp/... para o Node,
+# e ao SIGTERM fazemos rsync de volta ao volume. Sem symlink (CIFS muitas vezes não resolve bem).
 set -e
-AUTH="${AUTH_PATH:-/app/.wwebjs_auth}"
-SESSION="${AUTH}/session"
-SEED="${AUTH}/_seed_session"
 
-SESSION_PERSIST="${AUTH}/session.persist"
-SESSION_TMP_LIVE="/tmp/wwebjs-session-live"
-USE_TMP_SESSION=0
-case "$AUTH" in */mnt/persist*) USE_TMP_SESSION=1 ;; esac
-if [ "${WWEB_SESSION_ON_TMP:-}" = "1" ]; then USE_TMP_SESSION=1; fi
-if [ "${WWEB_SESSION_ON_TMP:-}" = "0" ]; then USE_TMP_SESSION=0; fi
+VOLUME_AUTH_ROOT="${AUTH_PATH:-/app/.wwebjs_auth}"
+TMP_AUTH_ROOT="/tmp/wwebjs-auth-runtime"
+PERSIST_MOUNT="${PERSIST_MOUNT:-/mnt/persist}"
 
-persist_merge_back() {
-  [ "$USE_TMP_SESSION" = "1" ] || return 0
-  if [ ! -d "$SESSION_TMP_LIVE" ]; then
+USE_TMP_AUTH=0
+case "${AUTH_PATH:-}" in */mnt/persist*) USE_TMP_AUTH=1 ;; esac
+if [ "${WWEB_SESSION_ON_TMP:-}" = "1" ]; then USE_TMP_AUTH=1; fi
+if [ "${WWEB_SESSION_ON_TMP:-}" = "0" ]; then USE_TMP_AUTH=0; fi
+
+merge_auth_back_to_volume() {
+  [ "$USE_TMP_AUTH" = "1" ] || return 0
+  if [ ! -d "$TMP_AUTH_ROOT" ]; then
     return 0
   fi
-  mkdir -p "$SESSION_PERSIST" 2>/dev/null || true
+  mkdir -p "$VOLUME_AUTH_ROOT" 2>/dev/null || true
   if command -v rsync >/dev/null 2>&1; then
-    rsync -a --delete "$SESSION_TMP_LIVE"/ "$SESSION_PERSIST"/ 2>/dev/null || true
+    rsync -a --delete "$TMP_AUTH_ROOT"/ "$VOLUME_AUTH_ROOT"/ 2>/dev/null || true
   else
-    find "$SESSION_PERSIST" -mindepth 1 -maxdepth 1 -exec rm -rf {} + 2>/dev/null || true
-    mkdir -p "$SESSION_PERSIST"
-    cp -a "$SESSION_TMP_LIVE"/. "$SESSION_PERSIST"/ 2>/dev/null || true
+    find "$VOLUME_AUTH_ROOT" -mindepth 1 -maxdepth 1 -exec rm -rf {} + 2>/dev/null || true
+    mkdir -p "$VOLUME_AUTH_ROOT"
+    cp -a "$TMP_AUTH_ROOT"/. "$VOLUME_AUTH_ROOT"/ 2>/dev/null || true
   fi
   sync 2>/dev/null || true
 }
 
-setup_tmp_session_for_smb() {
-  [ "$USE_TMP_SESSION" = "1" ] || return 0
-  mkdir -p "$AUTH" 2>/dev/null || true
-
-  # session/ real no share -> renomear para session.persist (cópia dourada no Azure Files)
-  if [ -d "$SESSION" ] && [ ! -L "$SESSION" ]; then
-    if [ ! -d "$SESSION_PERSIST" ] || [ -z "$(ls -A "$SESSION_PERSIST" 2>/dev/null)" ]; then
-      mv "$SESSION" "$SESSION_PERSIST" 2>/dev/null || cp -a "$SESSION"/. "$SESSION_PERSIST"/
-    else
-      # Já existe session.persist: esta pasta session/ no share é duplicado — removemos para por o symlink
-      rm -rf "$SESSION" 2>/dev/null || true
-    fi
+if [ "$USE_TMP_AUTH" = "1" ]; then
+  rm -rf "$TMP_AUTH_ROOT" 2>/dev/null || true
+  mkdir -p "$TMP_AUTH_ROOT"
+  if [ -d "$VOLUME_AUTH_ROOT" ] && [ -n "$(ls -A "$VOLUME_AUTH_ROOT" 2>/dev/null)" ]; then
+    cp -a "$VOLUME_AUTH_ROOT"/. "$TMP_AUTH_ROOT"/ 2>/dev/null || true
   fi
+  export AUTH_PATH="$TMP_AUTH_ROOT"
+  echo "docker-entrypoint: AUTH_PATH=${AUTH_PATH} (runtime em /tmp; volume em ${VOLUME_AUTH_ROOT}; rsync ao encerrar)."
+fi
 
-  if [ -L "$SESSION" ]; then
-    rm -f "$SESSION" 2>/dev/null || true
-  fi
+AUTH="${AUTH_PATH}"
+SESSION="${AUTH}/session"
+SEED="${AUTH}/_seed_session"
 
-  mkdir -p "$SESSION_PERSIST" 2>/dev/null || true
-  rm -rf "$SESSION_TMP_LIVE" 2>/dev/null || true
-  mkdir -p "$SESSION_TMP_LIVE"
-  if [ -n "$(ls -A "$SESSION_PERSIST" 2>/dev/null)" ]; then
-    cp -a "$SESSION_PERSIST"/. "$SESSION_TMP_LIVE"/ 2>/dev/null || true
-  fi
-  ln -sfn "$SESSION_TMP_LIVE" "$SESSION"
-  echo "docker-entrypoint: perfil Chromium em /tmp (cópia de session.persist); ao encerrar, grava de volta no volume."
-}
-
-setup_tmp_session_for_smb
-
-# EmptyDir em session/ mantem ficheiros no restart do contentor; novo upload grava .seed-bump e forca nova copia.
-if [ -d "$SEED" ] && [ -n "$(ls -A "$SEED" 2>/dev/null)" ]; then
+# _seed_session: só quando NÃO usamos cópia /tmp (evita find a seguir symlinks ou apagar /tmp errado).
+if [ "$USE_TMP_AUTH" != "1" ] && [ -d "$SEED" ] && [ -n "$(ls -A "$SEED" 2>/dev/null)" ]; then
   mkdir -p "$SESSION" || true
   bump_seed=""
   bump_sess=""
@@ -84,7 +66,7 @@ if [ -d "$SEED" ] && [ -n "$(ls -A "$SEED" 2>/dev/null)" ]; then
     find "$SESSION" -mindepth 1 -delete 2>/dev/null || true
     mkdir -p "$SESSION"
     cp -a "$SEED"/. "$SESSION"/ 2>/dev/null || true
-    echo "docker-entrypoint: _seed_session aplicado ao EmptyDir session/ (vazio ou .seed-bump novo)."
+    echo "docker-entrypoint: _seed_session aplicado."
   fi
 fi
 
@@ -94,13 +76,11 @@ clean_locks() {
     return 0
   fi
   chmod -R u+w "$dir" 2>/dev/null || true
-  # ! -type d: remove ficheiros, symlinks e sockets (SingletonSocket); -type f -o -type l falhava em sockets Unix.
   find "$dir" -maxdepth 15 \( \
     -name SingletonLock -o -name SingletonCookie -o -name SingletonSocket -o -name DevToolsActivePort \
   \) ! -type d -exec rm -f {} + 2>/dev/null || true
 }
 
-# Azure Files (SMB): locks na raiz do userDataDir falham por vezes só com find; rm explícito costuma bastar.
 rm_singleton_root() {
   dir="$1"
   if [ ! -d "$dir" ]; then
@@ -122,12 +102,11 @@ rm_singleton_root "/app/.wwebjs_auth/session"
 sync 2>/dev/null || true
 sleep 1
 
-if [ "$USE_TMP_SESSION" = "1" ]; then
-  # PID 1 = este shell: SIGTERM do ACA tem de gravar session de volta no share antes de sair.
+if [ "$USE_TMP_AUTH" = "1" ]; then
   term_or_int() {
     kill -TERM "$NODE_PID" 2>/dev/null || true
     wait "$NODE_PID" 2>/dev/null || true
-    persist_merge_back
+    merge_auth_back_to_volume
     exit 143
   }
   trap term_or_int TERM INT
@@ -138,7 +117,7 @@ if [ "$USE_TMP_SESSION" = "1" ]; then
   code=$?
   set -e
   trap - TERM INT
-  persist_merge_back || true
+  merge_auth_back_to_volume || true
   exit "$code"
 else
   exec "$@"
