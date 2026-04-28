@@ -64,7 +64,7 @@ Projeto gerenciado em **modo Kanban** com **3 Sprints**. Use este documento como
 |---|--------|------------|---------------------|
 | 3.1 | Tratamento de erros e logs (falha de conexão, auth) | Alta | Erros logados e mensagem amigável ao usuário |
 | 3.2 | Documentação: README, arquitetura e variáveis de ambiente | Alta | README completo + doc de arquitetura |
-| 3.3 | Guia de deploy (ex.: servidor/VPS ou Docker) | Média | Passo a passo para colocar em produção |
+| 3.3 | Guia de deploy (ex.: servidor/VPS ou App Service) | Média | Passo a passo para colocar em produção |
 | 3.4 | Checklist de segurança (não expor sessão, uso de .env) | Alta | .env no .gitignore e orientações no README |
 | 3.5 | Integrar Groq para dúvidas em texto livre (contexto CDC/Procon); métricas satisfatória/não satisfatória | Alta | API Groq (tier gratuito); resposta para texto livre; data/groq-metricas.json; *metricas* inclui totais Groq |
 | 3.6 | Atualizar KANBAN/Projects com status final das tarefas | Média | Todas as issues do Sprint 3 em Done |

@@ -125,7 +125,7 @@ function shellRmSingletonAtSessionRootLinux(sessionDir: string): void {
   }
 }
 
-/** Volume persistente montado em ACA / scripts de deploy (`apply-persist-volume.mjs`). */
+/** Volume persistente montado em path de persistência Azure (ex.: `/mnt/persist`). */
 function isAzurePersistMountAuthPath(): boolean {
   return AUTH_PATH.includes('/mnt/persist');
 }

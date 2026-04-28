@@ -1,17 +1,21 @@
 # Scripts Azure (`infra/azure/`)
 
-Scripts PowerShell e bash para **provisionamento**, **deploy do Container App** e **painel** (App Service).
+Scripts PowerShell para configuração Azure focada no **App Service** do backend e do painel interno.
 
 A documentação **passo a passo** com nomes de recursos e ambientes **não está no Git** — ver [documentacao/AZURE-CONFIGURACAO.md](../documentacao/AZURE-CONFIGURACAO.md) e mantenha cópias em `local/`.
 
 | Ficheiro (exemplos) | Uso |
 |---------------------|-----|
-| `provision-foundation.ps1` | RG, ACR, Storage, Key Vault, ACA environment |
-| `deploy-containerapp.ps1` | Build/imagem + Container App + volumes |
+| `create-painel-entra-spa.ps1` | Cria app registration (Entra ID) para autenticação no painel |
 | `package-painel-app-service.ps1` / `deploy-painel-app-service.ps1` | Painel em App Service |
+| `deploy-backend-app-service` (workflow) | Backend em App Service sem container |
 
-## GitHub Actions (`acr-build-push`)
+## GitHub Actions (App Service)
 
-O workflow usa por defeito o mesmo ambiente que `deploy-containerapp.ps1` (**`rg-procon-bot-cl`**, **`acrproconbotcl`**, etc.). Se o CI apontar para um ACR que não existe na subscrição do `AZURE_CREDENTIALS`, o `az acr login` falha.
+Workflows principais em `.github/workflows/`:
+- `azure-backend-app-service.yml`
+- `azure-painel-app-service.yml`
 
-Para outro ambiente (ex.: `rg-procon-bot-prod`), defina **Repository variables** em GitHub: **Settings → Secrets and variables → Actions → Variables**: `ACR_NAME`, `AZURE_RG`, e opcionalmente `ACA_ENV`, `ACA_STORAGE`, `ACA_FILE_SHARE`, `ACA_KEYVAULT`.
+Variáveis recomendadas em GitHub Actions:
+- Secrets: `AZURE_CREDENTIALS`, `AZURE_WEBAPP_NAME_BACKEND`, `AZURE_WEBAPP_NAME_PAINEL`
+- Variables: `AZURE_SUBSCRIPTION_ID`, `AZURE_RG`, `AZURE_WEBAPP_RG` (e opcionalmente `AZURE_WEBAPP_RG_BACKEND`)

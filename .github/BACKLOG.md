@@ -38,7 +38,7 @@ Como o sistema **deve se comportar** – qualidade, segurança, documentação e
 | RNF04 | (Opcional) Persistir sessão em ambiente de produção com instruções ou código para deploy | Baixa | 2.8 |
 | RNF05 | Tratamento de erros e logs (falha de conexão, auth); mensagem amigável ao usuário quando aplicável | Alta | 3.3 |
 | RNF06 | Documentação: README completo, arquitetura e variáveis de ambiente (ex.: docs/ARQUITETURA.md) | Alta | 3.4 |
-| RNF07 | Guia de deploy (ex.: servidor/VPS ou Docker) em docs (ex.: docs/PASSO-A-PASSO.md) | Média | 3.5 |
+| RNF07 | Guia de deploy (ex.: servidor/VPS ou App Service) em docs (ex.: docs/PASSO-A-PASSO.md) | Média | 3.5 |
 | RNF08 | Segurança: `.env` e `data/` no .gitignore; sessão não commitada; orientações no README | Alta | 3.6 |
 | RNF09 | Atualizar Projects/Kanban com status final das tarefas do sprint | Média | 3.8 |
 
@@ -93,7 +93,7 @@ Como o sistema **deve se comportar** – qualidade, segurança, documentação e
 | 3.2 | Métricas do protocolo: vira dado, vira processo, gestão pública | Alta | Contagem por eixo; comandos *processo [ID]* e *gestao [ID]* atualizam agendamento |
 | 3.3 | Tratamento de erros e logs (falha de conexão, auth) | Alta | Erros logados e mensagem amigável ao usuário quando aplicável |
 | 3.4 | Documentação: README, arquitetura e variáveis de ambiente | Alta | README completo + doc de arquitetura (docs/ARQUITETURA.md) |
-| 3.5 | Guia de deploy (ex.: servidor/VPS ou Docker) | Média | Passo a passo para colocar em produção (ex.: docs/PASSO-A-PASSO.md) |
+| 3.5 | Guia de deploy (ex.: servidor/VPS ou App Service) | Média | Passo a passo para colocar em produção (ex.: docs/PASSO-A-PASSO.md) |
 | 3.6 | Checklist de segurança (.env, sessão não commitada) | Alta | .env e data/ no .gitignore; orientações no README |
 | 3.7 | (Opcional) Integração Outlook: criar evento no calendário ao confirmar agendamento | Baixa | Variáveis Microsoft Graph; evento criado conforme docs/OUTLOOK-AGENDAMENTO.md |
 | 3.8 | Atualizar Projects/Kanban com status final das tarefas | Média | Todas as issues do Sprint 3 em Done |

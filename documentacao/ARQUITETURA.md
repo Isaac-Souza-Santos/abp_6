@@ -70,3 +70,4 @@ Isso permite ao atendente acompanhar demandas e usar os dados para métricas de 
 - **Evolution API:** Migrar para Evolution API (REST + webhooks) para separar conexão WhatsApp do código do bot e facilitar deploy em servidor.
 - **Banco de dados:** Migrar `data/agendamentos.json` para banco (ex.: SQLite/PostgreSQL) para maior escala e consultas.
 - **Painel admin:** Interface para atualizar textos (contato, horário) e visualizar/editar status dos agendamentos.
+- **Infra Azure atual:** Backend e painel publicados em App Service, com workflows em `.github/workflows/azure-backend-app-service.yml` e `.github/workflows/azure-painel-app-service.yml`.

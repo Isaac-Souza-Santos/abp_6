@@ -400,15 +400,15 @@ Prioridade: Alta. Relação: RNF06.
 
 ---
 
-### Issue 3.5 – Guia de deploy (servidor/VPS ou Docker)
+### Issue 3.5 – Guia de deploy (servidor/VPS ou App Service)
 
-**Título:** `[Sprint 3] 3.5 Guia de deploy (ex.: servidor/VPS ou Docker)`
+**Título:** `[Sprint 3] 3.5 Guia de deploy (ex.: servidor/VPS ou App Service)`
 
 **Corpo:**
 
 ```markdown
 ## Descrição
-Guia de deploy para colocar o bot em produção (servidor/VPS ou Docker).
+Guia de deploy para colocar o bot em produção (servidor/VPS ou App Service).
 
 ## Critério de aceite
 - [ ] Passo a passo para colocar em produção (ex.: docs/PASSO-A-PASSO.md)

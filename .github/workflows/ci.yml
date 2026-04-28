@@ -6,10 +6,6 @@ on:
   pull_request:
     branches: [main, master, develop]
 
-concurrency:
-  group: ci-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
-
 jobs:
   validate:
     uses: ./.github/workflows/reusable-node-validate.yml

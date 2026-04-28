@@ -6,8 +6,9 @@ Os **guias completos** de configuração e arquitetura Azure **não são version
 
 1. Copie ou crie ficheiros **apenas na tua máquina**, na pasta `local/` (ignorada pelo Git), por exemplo:
    - `local/PAINEL-AZURE-SWA.md` — Static Web Apps + painel  
-   - `local/PAINEL-AZURE-APP-SERVICE.md` — App Service (plano B)  
-   - `local/ARQUITETURA-AZURE.md` — arquitetura ACA / ACR / Key Vault  
+   - `local/PAINEL-AZURE-APP-SERVICE.md` — painel no App Service  
+   - `local/BACKEND-AZURE-APP-SERVICE.md` — backend no App Service  
+   - `local/ARQUITETURA-AZURE.md` — arquitetura App Service / Key Vault / observabilidade  
    - `local/azure-contexto.txt` — IDs e URLs (ver `local/azure-contexto.EXEMPLO.txt`)
 
 2. Partilhe esses ficheiros pela equipa por **canal privado** (não pelo repositório público).

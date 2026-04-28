@@ -125,7 +125,7 @@ Se todas as respostas aparecerem corretamente, o passo a passo foi concluído co
 ### Passo 12 – Rodar em servidor (produção)
 
 1. No servidor, instale Node.js 18+.
-2. Copie a pasta do projeto (incluindo `node_modules` ou rode `npm install` no servidor).
+2. Copie a pasta do projeto e rode `npm install` no servidor.
 3. **Primeira vez no servidor:** você precisará ver o QR Code (por SSH com suporte a interface, ou rodando uma vez na sua máquina e copiando a pasta `.wwebjs_auth` para o servidor – com cuidado para não expor essa pasta).
 4. Use **pm2** ou **systemd** para manter o bot rodando e reiniciar em caso de queda (ex.: `pm2 start dist/index.js --name procon-bot`).
 

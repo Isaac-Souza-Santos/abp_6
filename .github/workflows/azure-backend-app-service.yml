@@ -1,0 +1,95 @@
+name: Deploy backend App Service
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, master]
+    paths:
+      - "src/**"
+      - "package.json"
+      - "package-lock.json"
+      - "tsconfig.json"
+      - ".github/workflows/azure-backend-app-service.yml"
+
+concurrency:
+  group: deploy-backend-appservice-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build_and_deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Build backend e empacotar para App Service
+        run: |
+          set -euo pipefail
+          npm ci
+          npm run build
+          npm ci --omit=dev
+          zip -r "$GITHUB_WORKSPACE/backend-app-service.zip" \
+            dist \
+            node_modules \
+            package.json \
+            package-lock.json
+
+      - name: Azure login
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Selecionar subscricao (opcional)
+        env:
+          AZURE_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+        run: |
+          set -euo pipefail
+          if [ -n "${AZURE_SUBSCRIPTION_ID:-}" ]; then
+            az account set --subscription "$AZURE_SUBSCRIPTION_ID"
+          fi
+
+      - name: ZIP deploy backend via Azure CLI
+        env:
+          RG: ${{ vars.AZURE_WEBAPP_RG_BACKEND || vars.AZURE_WEBAPP_RG || vars.AZURE_RG || 'rg-procon-bot-prod' }}
+        run: |
+          set -euo pipefail
+          az webapp deploy \
+            --resource-group "$RG" \
+            --name "${{ secrets.AZURE_WEBAPP_NAME_BACKEND }}" \
+            --src-path "$GITHUB_WORKSPACE/backend-app-service.zip" \
+            --type zip \
+            --timeout 600000
+
+      - name: Smoke test do backend
+        env:
+          RG: ${{ vars.AZURE_WEBAPP_RG_BACKEND || vars.AZURE_WEBAPP_RG || vars.AZURE_RG || 'rg-procon-bot-prod' }}
+        run: |
+          set -euo pipefail
+          HOST=$(az webapp show -g "$RG" -n "${{ secrets.AZURE_WEBAPP_NAME_BACKEND }}" --query defaultHostName -o tsv)
+          if [ -z "${HOST:-}" ]; then
+            echo "::error::Nao foi possivel obter defaultHostName do backend."
+            exit 1
+          fi
+          URL="https://${HOST}/healthz"
+          echo "A validar endpoint: $URL"
+          for i in {1..30}; do
+            CODE=$(curl -s -o /tmp/healthz.json -w "%{http_code}" "$URL" || true)
+            if [ "$CODE" = "200" ]; then
+              echo "Smoke test OK (HTTP 200)."
+              exit 0
+            fi
+            echo "Tentativa $i/30: HTTP $CODE. Aguardando 10s..."
+            sleep 10
+          done
+          echo "::error::Smoke test falhou para $URL"
+          echo "Ultima resposta:"
+          cat /tmp/healthz.json || true
+          exit 1

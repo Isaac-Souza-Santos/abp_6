@@ -15,8 +15,7 @@ on:
         default: false
 
 jobs:
-  lint:
-    name: Lint
+  validate:
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -31,27 +30,10 @@ jobs:
       - name: Instalar dependencias
         run: npm ci
 
-      - name: Rodar lint
+      - name: Lint
         run: npm run lint
 
-  test:
-    name: Test
-    needs: lint
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    steps:
-      - uses: actions/checkout@v5
-
-      - uses: actions/setup-node@v5
-        with:
-          node-version: ${{ inputs.node_version }}
-          cache: npm
-
-      - name: Instalar dependencias
-        run: npm ci
-
-      - name: Rodar testes
+      - name: Test
         run: npm test
 
       - name: Upload coverage reports
@@ -61,22 +43,5 @@ jobs:
           files: ./coverage/lcov.info
           fail_ci_if_error: false
 
-  build:
-    name: Build
-    needs: test
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    steps:
-      - uses: actions/checkout@v5
-
-      - uses: actions/setup-node@v5
-        with:
-          node-version: ${{ inputs.node_version }}
-          cache: npm
-
-      - name: Instalar dependencias
-        run: npm ci
-
-      - name: Build project
+      - name: Build
         run: npm run build

@@ -48,15 +48,14 @@ Se no futuro quiser **API REST** (webhooks, múltiplas instâncias, integração
 | Aspecto | whatsapp-web.js (atual) | Evolution API |
 |---------|-------------------------|---------------|
 | **Custo** | Gratuito | Gratuito (self-hosted) |
-| **Forma de uso** | Biblioteca dentro do seu Node/TS | Serviço separado (Docker) que expõe REST + webhooks |
-| **Requisitos extras** | Nenhum | Docker, servidor para rodar a API |
+| **Forma de uso** | Biblioteca dentro do seu Node/TS | Serviço separado que expõe REST + webhooks |
+| **Requisitos extras** | Nenhum | Servidor para rodar a API |
 | **Múltiplos números** | Uma instância por número | Várias instâncias via API |
 | **Integração** | Código direto no bot | Seu bot chama HTTP e recebe webhooks |
 
 **O que precisa para Evolution API:**
 
-- Servidor (VPS, cloud ou máquina com Docker).
-- Docker e Docker Compose.
+- Servidor (VPS ou cloud).
 - Seguir a documentação oficial: [Evolution API](https://github.com/EvolutionAPI/evolution-api).
 - Ajustar o bot para enviar/receber mensagens via HTTP em vez de usar whatsapp-web.js direto.
 
@@ -74,7 +73,7 @@ O projeto atual **não depende** da Evolution; é uma opção de evolução futu
 
 ### 3.2 Produção (servidor)
 
-- **Servidor** (Linux recomendado) com Node 18+ ou container (Docker) com Node.
+- **Servidor** (Linux recomendado) com Node 18+.
 - **Processo sempre rodando:** use `pm2`, `systemd` ou similar para manter o bot ativo e reiniciar em caso de queda.
 - **Rede:** porta de saída liberada (o bot não precisa abrir porta de entrada para o WhatsApp).
 - **Primeira conexão no servidor:** você precisará ver o QR Code uma vez (SSH com X11, VNC, ou rodar localmente e depois copiar a pasta `.wwebjs_auth` para o servidor com cuidado de segurança).
@@ -124,8 +123,8 @@ Isso evita informação desatualizada no bot.
 | **API paga?** | Não. whatsapp-web.js é gratuita. |
 | **Preciso de API Key?** | Não. |
 | **Preciso de quê para rodar?** | Node 18+, npm, conta WhatsApp, escanear QR na primeira vez. |
-| **Posso usar em produção?** | Sim, com servidor ou container e processo gerenciado (pm2/systemd). |
-| **E se quiser API REST?** | Considerar Evolution API (gratuita, self-hosted, Docker). |
+| **Posso usar em produção?** | Sim, com servidor e processo gerenciado (pm2/systemd). |
+| **E se quiser API REST?** | Considerar Evolution API (gratuita, self-hosted). |
 | **O que não colocar no Git?** | `.wwebjs_auth`, `.env`, `node_modules`. |
 | **Onde mudar contato/horário?** | `src/services/MenuService.ts`. |
 
