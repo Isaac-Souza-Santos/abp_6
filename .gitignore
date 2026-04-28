@@ -37,6 +37,7 @@ scripts/create-github-issues.mjs
 scripts/create-github-project.mjs
 scripts/backlog-tasks.json
 scripts/README.md
+infra/
 docs/
 
 # Script de ops local (não versionar se não quiseres commitar)
