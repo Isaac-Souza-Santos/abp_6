@@ -33,12 +33,14 @@ jobs:
       - name: Build backend e empacotar para App Service
         run: |
           set -euo pipefail
+          export PUPPETEER_CACHE_DIR="$PWD/.cache/puppeteer"
           npm ci
           npm run build
           npm ci --omit=dev
           zip -r "$GITHUB_WORKSPACE/backend-app-service.zip" \
             dist \
             node_modules \
+            .cache \
             package.json \
             package-lock.json
 
@@ -67,6 +69,16 @@ jobs:
             --src-path "$GITHUB_WORKSPACE/backend-app-service.zip" \
             --type zip \
             --timeout 600000
+
+      - name: Configurar cache do Puppeteer no App Service
+        env:
+          RG: ${{ vars.AZURE_WEBAPP_RG_BACKEND || vars.AZURE_WEBAPP_RG || vars.AZURE_RG || 'rg-procon-bot-prod' }}
+        run: |
+          set -euo pipefail
+          az webapp config appsettings set \
+            --resource-group "$RG" \
+            --name "${{ secrets.AZURE_WEBAPP_NAME_BACKEND }}" \
+            --settings PUPPETEER_CACHE_DIR=/home/site/wwwroot/.cache/puppeteer
 
       - name: Smoke test do backend
         env:
