@@ -16,7 +16,7 @@ jobs:
       - name: Validar variaveis obrigatorias
         env:
           VM_HOST: ${{ secrets.AZURE_VM_HOST || vars.AZURE_VM_HOST }}
-          VM_USER: ${{ vars.AZURE_VM_USER }}
+          VM_USER: ${{ vars.AZURE_VM_USER || secrets.AZURE_VM_USER }}
           VM_SSH_KEY: ${{ secrets.AZURE_VM_SSH_PRIVATE_KEY }}
         run: |
           set -euo pipefail
@@ -64,7 +64,7 @@ jobs:
       - name: Upload e deploy na VM
         env:
           VM_HOST: ${{ secrets.AZURE_VM_HOST || vars.AZURE_VM_HOST }}
-          VM_USER: ${{ vars.AZURE_VM_USER }}
+          VM_USER: ${{ vars.AZURE_VM_USER || secrets.AZURE_VM_USER }}
           PAINEL_VITE_ADMIN_PANEL_TOKEN: ${{ secrets.PAINEL_VITE_ADMIN_PANEL_TOKEN }}
           PAINEL_VITE_AZURE_CLIENT_ID: ${{ secrets.PAINEL_VITE_AZURE_CLIENT_ID }}
           PAINEL_VITE_AZURE_TENANT_ID: ${{ secrets.PAINEL_VITE_AZURE_TENANT_ID }}
@@ -97,7 +97,7 @@ jobs:
 
       - name: Smoke test pos-deploy
         env:
-          PUBLIC_BASE_URL: ${{ vars.PUBLIC_BASE_URL || 'https://proconbotdockcl0428.chilecentral.cloudapp.azure.com' }}
+          PUBLIC_BASE_URL: ${{ vars.PUBLIC_BASE_URL || secrets.PUBLIC_BASE_URL || 'https://proconbotdockcl0428.chilecentral.cloudapp.azure.com' }}
         run: |
           set -euo pipefail
           API_URL="${PUBLIC_BASE_URL}/api/healthz"
