@@ -152,7 +152,8 @@ jobs:
             echo "Web Apps neste RG (ajuste AZURE_WEBAPP_NAME ao Name listado):"
             az webapp list -g "$RG" --query "[].name" -o table 2>&1 || true
             if echo "$OUT" | grep -qi AuthorizationFailed; then
-              echo "::error::RBAC: o service principal de AZURE_CREDENTIALS nao tem Microsoft.Web/sites/read no RG '$RG'. No Azure: Resource group -> IAM -> Add role assignment -> Website Contributor (ou Contributor) -> assign ao mesmo principal que usa o deploy do Container App. Exemplo CLI (substitua OBJECT_ID pelo objectId do erro): az role assignment create --assignee OBJECT_ID --role \"Website Contributor\" --resource-group \"$RG\""
+              SUB="$(az account show --query id -o tsv 2>/dev/null || true)"
+              echo "::error::RBAC: o service principal de AZURE_CREDENTIALS nao tem Microsoft.Web/sites/read no RG '$RG'. Portal: RG -> IAM -> Website Contributor (ou Contributor) no principal do deploy. CLI: az role assignment create --assignee-object-id OBJECT_ID --assignee-principal-type ServicePrincipal --role \"Website Contributor\" --scope \"/subscriptions/${SUB}/resourceGroups/${RG}\""
             else
               echo "::error::Ajuste AZURE_WEBAPP_NAME ao Name listado; se vazio, verifique AZURE_SUBSCRIPTION_ID e permissoes no RG."
             fi
