@@ -51,3 +51,12 @@ infra/azure/clear-chromium-session-on-share.ps1
 *.zsh
 *.bat
 *.cmd
+
+# Exceções: scripts oficiais de deploy em VM Docker
+!infra/
+!infra/azure/
+!infra/azure/bootstrap-vm-docker.ps1
+!infra/azure/deploy-vm-docker.ps1
+
+# Artefatos temporários de empacotamento/deploy
+tmp/

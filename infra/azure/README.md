@@ -1,21 +1,22 @@
 # Scripts Azure (`infra/azure/`)
 
-Scripts PowerShell para configuração Azure focada no **App Service** do backend e do painel interno.
+Scripts utilitários para operação Azure e publicação em VM.
 
-A documentação **passo a passo** com nomes de recursos e ambientes **não está no Git** — ver [documentacao/AZURE-CONFIGURACAO.md](../documentacao/AZURE-CONFIGURACAO.md) e mantenha cópias em `local/`.
+A documentação de ambiente (IDs, nomes reais e segredos) deve ficar fora do Git: ver [documentacao/AZURE-CONFIGURACAO.md](../../documentacao/AZURE-CONFIGURACAO.md).
 
-| Ficheiro (exemplos) | Uso |
-|---------------------|-----|
+| Ficheiro | Uso |
+|----------|-----|
+| `bootstrap-vm-docker.ps1` | Instala Docker Engine + Compose plugin na VM via `az vm run-command` |
+| `deploy-vm-docker.ps1` | Empacota o projeto local, envia por SSH/SCP e sobe `docker compose` na VM |
 | `create-painel-entra-spa.ps1` | Cria app registration (Entra ID) para autenticação no painel |
-| `package-painel-app-service.ps1` / `deploy-painel-app-service.ps1` | Painel em App Service |
-| `deploy-backend-app-service` (workflow) | Backend em App Service sem container |
+| `package-painel-app-service.ps1` / `deploy-painel-app-service.ps1` | Legado de App Service (manter somente se ainda houver ambiente antigo) |
 
-## GitHub Actions (App Service)
+## Fluxo recomendado (VM Docker)
 
-Workflows principais em `.github/workflows/`:
-- `azure-backend-app-service.yml`
-- `azure-painel-app-service.yml`
+1. Preparar VM: `bootstrap-vm-docker.ps1`
+2. Publicar aplicação: `deploy-vm-docker.ps1`
+3. Validar:
+   - API: `http://<vm-host>:3000/healthz`
+   - Painel: `http://<vm-host>:80`
 
-Variáveis recomendadas em GitHub Actions:
-- Secrets: `AZURE_CREDENTIALS`, `AZURE_WEBAPP_NAME_BACKEND`, `AZURE_WEBAPP_NAME_PAINEL`
-- Variables: `AZURE_SUBSCRIPTION_ID`, `AZURE_RG`, `AZURE_WEBAPP_RG` (e opcionalmente `AZURE_WEBAPP_RG_BACKEND`)
+Guia completo: [documentacao/DEPLOY-VM-DOCKER.md](../../documentacao/DEPLOY-VM-DOCKER.md)

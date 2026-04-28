@@ -1,4 +1,4 @@
-name: Deploy painel App Service
+name: Deploy painel VM Docker
 
 on:
   workflow_dispatch:
@@ -13,79 +13,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build_and_deploy:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      id-token: write
-    steps:
-      - uses: actions/checkout@v5
-
-      - uses: actions/setup-node@v5
-        with:
-          node-version: "24"
-          cache: npm
-          cache-dependency-path: painel-interno/package-lock.json
-
-      - name: Build Vite e empacotar para App Service
-        env:
-          VITE_API_BASE_URL: ${{ secrets.PAINEL_VITE_API_BASE_URL }}
-          VITE_ADMIN_PANEL_TOKEN: ${{ secrets.PAINEL_VITE_ADMIN_PANEL_TOKEN }}
-          VITE_AZURE_CLIENT_ID: ${{ secrets.PAINEL_VITE_AZURE_CLIENT_ID }}
-          VITE_AZURE_TENANT_ID: ${{ secrets.PAINEL_VITE_AZURE_TENANT_ID }}
-          VITE_AZURE_REDIRECT_URI: ${{ secrets.PAINEL_VITE_AZURE_REDIRECT_URI }}
-        run: |
-          set -euo pipefail
-          if [ -z "${VITE_API_BASE_URL:-}" ]; then
-            echo "::error::PAINEL_VITE_API_BASE_URL está vazio."
-            exit 1
-          fi
-          echo "VITE_API_BASE_URL usado no build: $VITE_API_BASE_URL"
-          cd painel-interno
-          npm ci
-          npm run build
-          if rg -n "azurecontainerapps\\.io|mangograss" dist >/dev/null; then
-            echo "::error::Build contém URL antiga de Container Apps. Verifique PAINEL_VITE_API_BASE_URL."
-            exit 1
-          fi
-          mkdir -p _deploy/dist
-          cp -r dist/* _deploy/dist/
-          cp azure-app-service-host/package.json azure-app-service-host/server.mjs _deploy/
-          cd _deploy
-          npm install --omit=dev
-          zip -r "$GITHUB_WORKSPACE/painel-app-service.zip" .
-
-      - name: Azure login
-        uses: azure/login@v2
-        with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
-
-      - name: Selecionar subscricao (opcional)
-        env:
-          AZURE_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
-        run: |
-          set -euo pipefail
-          if [ -n "${AZURE_SUBSCRIPTION_ID:-}" ]; then
-            az account set --subscription "$AZURE_SUBSCRIPTION_ID"
-          fi
-
-      - name: ZIP deploy via Azure CLI
-        env:
-          RG: ${{ vars.AZURE_WEBAPP_RG || vars.AZURE_RG || 'rg-procon-bot-prod' }}
-          WEBAPP_NAME: ${{ secrets.AZURE_WEBAPP_NAME_PAINEL }}
-        run: |
-          set -euo pipefail
-          if [ -z "${WEBAPP_NAME:-}" ]; then
-            echo "::error::Defina o secret AZURE_WEBAPP_NAME_PAINEL com o nome do App Service do painel."
-            exit 1
-          fi
-          az webapp deploy \
-            --resource-group "$RG" \
-            --name "$WEBAPP_NAME" \
-            --src-path "$GITHUB_WORKSPACE/painel-app-service.zip" \
-            --type zip \
-            --timeout 600000
-          az webapp update \
-            --resource-group "$RG" \
-            --name "$WEBAPP_NAME" \
-            --https-only true >/dev/null
+  deploy_vm_docker_painel:
+    uses: ./.github/workflows/reusable-deploy-vm-docker.yml
+    with:
+      deploy_scope: "painel"

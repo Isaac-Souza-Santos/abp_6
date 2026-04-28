@@ -1,0 +1,34 @@
+services:
+  bot:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: procon-bot
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: production
+      HEALTH_PORT: "3000"
+      AUTH_PATH: /app/security/.wwebjs_auth
+      ADMIN_PANEL_ORIGIN: https://proconbotdockcl0428.chilecentral.cloudapp.azure.com
+    volumes:
+      - ./security/.wwebjs_auth:/app/security/.wwebjs_auth
+      - ./security/.env:/app/security/.env:ro
+
+  painel:
+    build:
+      context: ./painel-interno
+      dockerfile: Dockerfile
+      args:
+        VITE_API_BASE_URL: https://proconbotdockcl0428.chilecentral.cloudapp.azure.com/api
+        VITE_ADMIN_PANEL_TOKEN: ${PAINEL_VITE_ADMIN_PANEL_TOKEN:-}
+        VITE_AZURE_CLIENT_ID: ${PAINEL_VITE_AZURE_CLIENT_ID:-}
+        VITE_AZURE_TENANT_ID: ${PAINEL_VITE_AZURE_TENANT_ID:-}
+        VITE_AZURE_REDIRECT_URI: ${PAINEL_VITE_AZURE_REDIRECT_URI:-}
+    container_name: procon-painel
+    restart: unless-stopped
+    depends_on:
+      - bot
+    ports:
+      - "127.0.0.1:5174:80"

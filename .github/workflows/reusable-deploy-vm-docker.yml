@@ -1,0 +1,109 @@
+name: Reusable deploy VM Docker
+
+on:
+  workflow_call:
+    inputs:
+      deploy_scope:
+        required: true
+        type: string
+
+jobs:
+  deploy_vm_docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Validar variaveis obrigatorias
+        env:
+          VM_HOST: ${{ secrets.AZURE_VM_HOST || vars.AZURE_VM_HOST }}
+          VM_USER: ${{ vars.AZURE_VM_USER }}
+          VM_SSH_KEY: ${{ secrets.AZURE_VM_SSH_PRIVATE_KEY }}
+        run: |
+          set -euo pipefail
+          if [ -z "${VM_HOST:-}" ]; then
+            echo "::error::Defina AZURE_VM_HOST (secret ou variable) com o IP/DNS publico da VM."
+            exit 1
+          fi
+          if [ -z "${VM_SSH_KEY:-}" ]; then
+            echo "::error::Defina AZURE_VM_SSH_PRIVATE_KEY (secret) com a chave privada SSH da VM."
+            exit 1
+          fi
+          if [ -z "${VM_USER:-}" ]; then
+            echo "AZURE_VM_USER nao informado; usando 'azureuser'."
+          fi
+
+      - name: Preparar chave SSH
+        env:
+          VM_HOST: ${{ secrets.AZURE_VM_HOST || vars.AZURE_VM_HOST }}
+          VM_SSH_KEY: ${{ secrets.AZURE_VM_SSH_PRIVATE_KEY }}
+        run: |
+          set -euo pipefail
+          mkdir -p ~/.ssh
+          printf '%s\n' "$VM_SSH_KEY" > ~/.ssh/id_vm_deploy
+          chmod 600 ~/.ssh/id_vm_deploy
+          ssh-keyscan -H "$VM_HOST" >> ~/.ssh/known_hosts
+
+      - name: Empacotar projeto para deploy
+        run: |
+          set -euo pipefail
+          rm -f vm-docker-deploy.tgz
+          rm -f security/.wwebjs_auth/session/SingletonLock || true
+          rm -f security/.wwebjs_auth/session/SingletonCookie || true
+          rm -f security/.wwebjs_auth/session/SingletonSocket || true
+          rm -f security/.wwebjs_auth/session/DevToolsActivePort || true
+          tar -czf vm-docker-deploy.tgz \
+            --exclude=.git \
+            --exclude=.cursor \
+            --exclude=node_modules \
+            --exclude=dist \
+            --exclude=painel-interno/node_modules \
+            --exclude=painel-interno/dist \
+            --exclude=tmp \
+            .
+
+      - name: Upload e deploy na VM
+        env:
+          VM_HOST: ${{ secrets.AZURE_VM_HOST || vars.AZURE_VM_HOST }}
+          VM_USER: ${{ vars.AZURE_VM_USER }}
+          PAINEL_VITE_ADMIN_PANEL_TOKEN: ${{ secrets.PAINEL_VITE_ADMIN_PANEL_TOKEN }}
+          PAINEL_VITE_AZURE_CLIENT_ID: ${{ secrets.PAINEL_VITE_AZURE_CLIENT_ID }}
+          PAINEL_VITE_AZURE_TENANT_ID: ${{ secrets.PAINEL_VITE_AZURE_TENANT_ID }}
+          PAINEL_VITE_AZURE_REDIRECT_URI: ${{ secrets.PAINEL_VITE_AZURE_REDIRECT_URI }}
+        run: |
+          set -euo pipefail
+          VM_USER="${VM_USER:-azureuser}"
+          REMOTE="${VM_USER}@${VM_HOST}"
+
+          scp -i ~/.ssh/id_vm_deploy -o StrictHostKeyChecking=accept-new vm-docker-deploy.tgz "$REMOTE:/tmp/vm-docker-deploy.tgz"
+
+          ssh -i ~/.ssh/id_vm_deploy -o StrictHostKeyChecking=accept-new "$REMOTE" <<EOF
+          set -euo pipefail
+          sudo mkdir -p /opt/procon-bot
+          sudo tar -xzf /tmp/vm-docker-deploy.tgz -C /opt/procon-bot
+          sudo chown -R \$USER:\$USER /opt/procon-bot
+          cd /opt/procon-bot
+          printf '%s\n' \
+            "PAINEL_VITE_ADMIN_PANEL_TOKEN=${PAINEL_VITE_ADMIN_PANEL_TOKEN}" \
+            "PAINEL_VITE_AZURE_CLIENT_ID=${PAINEL_VITE_AZURE_CLIENT_ID}" \
+            "PAINEL_VITE_AZURE_TENANT_ID=${PAINEL_VITE_AZURE_TENANT_ID}" \
+            "PAINEL_VITE_AZURE_REDIRECT_URI=${PAINEL_VITE_AZURE_REDIRECT_URI}" \
+            > .deploy.env
+          set -a
+          . ./.deploy.env
+          set +a
+          sudo docker compose up -d --build
+          sudo docker compose ps
+          EOF
+
+      - name: Smoke test pos-deploy
+        env:
+          PUBLIC_BASE_URL: ${{ vars.PUBLIC_BASE_URL || 'https://proconbotdockcl0428.chilecentral.cloudapp.azure.com' }}
+        run: |
+          set -euo pipefail
+          API_URL="${PUBLIC_BASE_URL}/api/healthz"
+          UI_URL="${PUBLIC_BASE_URL}/"
+          echo "Validando API: ${API_URL}"
+          curl -fsS "$API_URL" >/tmp/api-healthz.json
+          echo "Validando painel: ${UI_URL}"
+          curl -I -fsS "$UI_URL" >/tmp/ui-head.txt
+          echo "Deploy '${{ inputs.deploy_scope }}' finalizado com sucesso."
