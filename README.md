@@ -146,6 +146,7 @@ Ver [documentacao/METRICAS-PROTOCOLO.md](documentacao/METRICAS-PROTOCOLO.md).
 | [documentacao/SPRINT-2-PAINEL-INTERNO.md](documentacao/SPRINT-2-PAINEL-INTERNO.md) | Tarefas Sprint 2 – evolução do painel interno.                         |
 | [documentacao/METRICAS-PROTOCOLO.md](documentacao/METRICAS-PROTOCOLO.md)  | Métricas: vira dado, vira processo, gestão pública.                  |
 | [documentacao/AZURE-CONFIGURACAO.md](documentacao/AZURE-CONFIGURACAO.md) | Onde guardar guias Azure (fora do Git); pasta `local/`. |
+| [documentacao/DEPLOY-AZURE-ETAPAS.md](documentacao/DEPLOY-AZURE-ETAPAS.md) | Guia único de deploy Azure em etapas (backend e painel). |
 | [documentacao/ROLL_OUT-AZURE-APP-SERVICE.md](documentacao/ROLL_OUT-AZURE-APP-SERVICE.md) | Ordem de rollout Azure (backend e painel em App Service). |
 | [infra/azure/README.md](infra/azure/README.md) | Índice dos scripts/workflows Azure (backend e painel em App Service). |
 | [Apresentação Sprint 1 (YouTube)](https://www.youtube.com/watch?v=91aUjvrli_g) | Vídeo da apresentação / demo da Sprint 1.                           |
