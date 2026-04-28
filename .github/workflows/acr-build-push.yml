@@ -37,7 +37,7 @@ jobs:
   validate:
     uses: ./.github/workflows/reusable-node-validate.yml
     with:
-      node_version: "20"
+      node_version: "24"
       upload_coverage: false
 
   build_push:
@@ -50,7 +50,7 @@ jobs:
       contents: read
       id-token: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Azure login
         uses: azure/login@v2
@@ -82,11 +82,11 @@ jobs:
       contents: read
       id-token: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
-          node-version: "20"
+          node-version: "24"
 
       - name: Azure login
         uses: azure/login@v2
@@ -112,6 +112,7 @@ jobs:
     needs: deploy
     name: Verificar revisao ativa no Azure
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     permissions:
       contents: read
       id-token: write
@@ -125,6 +126,8 @@ jobs:
         env:
           RG: ${{ vars.AZURE_RG || 'rg-procon-bot-cl' }}
           APP: procon-bot
+          SMOKE_MAX_ATTEMPTS: ${{ vars.SMOKE_MAX_ATTEMPTS || '100' }}
+          SMOKE_SLEEP_SECONDS: ${{ vars.SMOKE_SLEEP_SECONDS || '20' }}
         run: |
           set -euo pipefail
           latest="$(az containerapp show -n "$APP" -g "$RG" --query properties.latestRevisionName -o tsv)"
@@ -134,8 +137,10 @@ jobs:
           fi
           echo "latestRevisionName=$latest"
 
-          max_attempts=12
-          sleep_seconds=20
+          # Startup TCP :3000 + copia grande Azure Files->/tmp pode manter Activating por muitos minutos
+          # (alinhar com startup probe: ate ~20min apos comecar a escutar).
+          max_attempts="${SMOKE_MAX_ATTEMPTS:-100}"
+          sleep_seconds="${SMOKE_SLEEP_SECONDS:-20}"
           attempt=1
           while [ "$attempt" -le "$max_attempts" ]; do
             active="$(az containerapp revision show -n "$APP" -g "$RG" --revision "$latest" --query properties.active -o tsv)"

@@ -7,7 +7,7 @@ on:
         description: "Versao do Node.js para validacao"
         required: false
         type: string
-        default: "20"
+        default: "24"
       upload_coverage:
         description: "Publica lcov no Codecov ao fim dos testes"
         required: false
@@ -21,9 +21,9 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: ${{ inputs.node_version }}
           cache: npm
@@ -41,9 +41,9 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: ${{ inputs.node_version }}
           cache: npm
@@ -56,9 +56,9 @@ jobs:
 
       - name: Upload coverage reports
         if: ${{ inputs.upload_coverage }}
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v6
         with:
-          file: ./coverage/lcov.info
+          files: ./coverage/lcov.info
           fail_ci_if_error: false
 
   build:
@@ -68,9 +68,9 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: ${{ inputs.node_version }}
           cache: npm

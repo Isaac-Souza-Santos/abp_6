@@ -14,5 +14,5 @@ jobs:
   validate:
     uses: ./.github/workflows/reusable-node-validate.yml
     with:
-      node_version: "20"
+      node_version: "24"
       upload_coverage: true
