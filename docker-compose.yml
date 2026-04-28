@@ -13,6 +13,7 @@ services:
       AUTH_PATH: /app/security/.wwebjs_auth
       ADMIN_PANEL_ORIGIN: https://proconbotdockcl0428.chilecentral.cloudapp.azure.com
     volumes:
+      - procon_data:/app/data
       - ./security/.wwebjs_auth:/app/security/.wwebjs_auth
       - ./security/.env:/app/security/.env:ro
 
@@ -32,3 +33,6 @@ services:
       - bot
     ports:
       - "127.0.0.1:5174:80"
+
+volumes:
+  procon_data:
