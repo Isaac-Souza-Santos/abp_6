@@ -220,6 +220,7 @@ export function AtendentesAgendaConfigEditor({ getAuthHeaders }: Props) {
           const almoco = at.almoco ?? almocoPadrao();
           return (
             <div key={at.id} className="agendaConfigAtendente">
+              <p className="agendaConfigAtendenteNome">Atendente {ai + 1}</p>
               <div className="agendaConfigBlocoRow">
                 <label className="agendaField">
                   <span className="agendaFieldLabel">Nome do atendente</span>
@@ -261,7 +262,7 @@ export function AtendentesAgendaConfigEditor({ getAuthHeaders }: Props) {
               <p className="agendaConfigSub">Agenda de atendimento</p>
               <ul className="agendaConfigBlocos">
                 {at.blocos.map((bloco, bi) => (
-                  <li key={`${at.id}-bloco-${bi}`} className="agendaConfigBlocoRow">
+                  <li key={`${at.id}-bloco-${bi}`} className="agendaConfigBlocoRow agendaConfigBlocoItem">
                     <label className="agendaField">
                       <span className="agendaFieldLabel">Início</span>
                       <input
@@ -302,7 +303,7 @@ export function AtendentesAgendaConfigEditor({ getAuthHeaders }: Props) {
               </ul>
               <button
                 type="button"
-                className="btn btnSecondary btnSmall"
+                className="btn btnSecondary btnSmall agendaConfigAddButton"
                 onClick={() => {
                   atualizarAtendente(ai, {
                     blocos: [...at.blocos, { inicioH: 9, inicioM: 0, fimH: 12, fimM: 0 }],

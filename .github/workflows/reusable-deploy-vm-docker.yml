@@ -111,7 +111,37 @@ jobs:
           API_URL="${BASE_URL}/api/healthz"
           UI_URL="${BASE_URL}/"
           echo "Validando API: ${API_URL}"
-          curl -fsS "$API_URL" >/tmp/api-healthz.json
+          ok_api=0
+          for i in {1..20}; do
+            code="$(curl -sS -o /tmp/api-healthz.json -w '%{http_code}' "$API_URL" || true)"
+            if [ "$code" = "200" ]; then
+              ok_api=1
+              break
+            fi
+            echo "API tentativa $i/20 retornou HTTP $code; aguardando 6s..."
+            sleep 6
+          done
+          if [ "$ok_api" -ne 1 ]; then
+            echo "::error::API nao ficou saudavel em tempo habil."
+            echo "Ultima resposta API:"
+            cat /tmp/api-healthz.json || true
+            exit 1
+          fi
           echo "Validando painel: ${UI_URL}"
-          curl -I -fsS "$UI_URL" >/tmp/ui-head.txt
+          ok_ui=0
+          for i in {1..20}; do
+            code="$(curl -I -sS -o /tmp/ui-head.txt -w '%{http_code}' "$UI_URL" || true)"
+            if [ "$code" = "200" ] || [ "$code" = "301" ] || [ "$code" = "302" ]; then
+              ok_ui=1
+              break
+            fi
+            echo "UI tentativa $i/20 retornou HTTP $code; aguardando 6s..."
+            sleep 6
+          done
+          if [ "$ok_ui" -ne 1 ]; then
+            echo "::error::Painel nao respondeu com sucesso em tempo habil."
+            echo "Ultimos headers UI:"
+            cat /tmp/ui-head.txt || true
+            exit 1
+          fi
           echo "Deploy '${{ inputs.deploy_scope }}' finalizado com sucesso."
