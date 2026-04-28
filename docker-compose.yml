@@ -3,10 +3,18 @@ services:
     build: .
     container_name: procon-jacarei-bot
     restart: unless-stopped
+    ports:
+      - "3000:3000"
     environment:
-      - NODE_ENV=production
-      # Add other env vars as needed
+      NODE_ENV: production
+      HEALTH_PORT: "3000"
+      # Mesma sessão WhatsApp que em `npm run dev` (pasta host security/.wwebjs_auth).
+      AUTH_PATH: /app/.wwebjs_auth
+      DATA_DIR: /app/data
+      # Docker local: perfil em disco local (bind), não SMB — não precisa rm agressivo da pasta session.
+      FORCE_CHROME_SESSION_RM: "0"
+      SKIP_CHROME_SESSION_RM_ON_SINGLETON: "1"
     volumes:
-      - ./data:/app/data  # For persistent data storage
-      - ./security/.wwebjs_auth:/app/.wwebjs_auth  # Reuse existing WhatsApp session from security/
-    # Optional: Add network or ports if needed
+      # Host: security/.wwebjs_auth — reutiliza a conexão já autenticada no PC (LocalAuth).
+      - ./security/.wwebjs_auth:/app/.wwebjs_auth
+      - ./data:/app/data

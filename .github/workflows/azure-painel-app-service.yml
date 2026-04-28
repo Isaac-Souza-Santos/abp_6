@@ -81,9 +81,29 @@ jobs:
             exit 1
           fi
 
+      # Espacos ou newline no segredo geram hostname invalido → getaddrinfo ENOTFOUND *.scm.azurewebsites.net
+      - name: Normalizar nome do Web App e testar DNS
+        env:
+          AZURE_WEBAPP_NAME: ${{ secrets.AZURE_WEBAPP_NAME }}
+        run: |
+          set -euo pipefail
+          APP=$(printf '%s' "$AZURE_WEBAPP_NAME" | tr -d '\r\n' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+          if [ -z "$APP" ]; then
+            echo "::error::AZURE_WEBAPP_NAME ficou vazio apos trim. Corrija o segredo no GitHub (so o nome, sem URL)."
+            exit 1
+          fi
+          echo "AZURE_WEBAPP_NAME_TRIMMED=$APP" >> "$GITHUB_ENV"
+          echo "A verificar DNS de ${APP}.scm.azurewebsites.net ..."
+          if ! getent hosts "${APP}.scm.azurewebsites.net" >/dev/null 2>&1; then
+            getent hosts "${APP}.scm.azurewebsites.net" || true
+            nslookup "${APP}.scm.azurewebsites.net" || true
+            echo "::error::DNS falhou. Confirme no Portal o nome do App Service (sem .azurewebsites.net), que o recurso existe e que o segredo nao tem typo."
+            exit 1
+          fi
+
       - name: Deploy para Azure Web App
         uses: azure/webapps-deploy@v2
         with:
-          app-name: ${{ secrets.AZURE_WEBAPP_NAME }}
+          app-name: ${{ env.AZURE_WEBAPP_NAME_TRIMMED }}
           publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
           package: painel-app-service.zip
