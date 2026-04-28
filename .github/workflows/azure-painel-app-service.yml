@@ -63,11 +63,16 @@ jobs:
       - name: ZIP deploy via Azure CLI
         env:
           RG: ${{ vars.AZURE_WEBAPP_RG || vars.AZURE_RG || 'rg-procon-bot-prod' }}
+          WEBAPP_NAME: ${{ secrets.AZURE_WEBAPP_NAME_PAINEL }}
         run: |
           set -euo pipefail
+          if [ -z "${WEBAPP_NAME:-}" ]; then
+            echo "::error::Defina o secret AZURE_WEBAPP_NAME_PAINEL com o nome do App Service do painel."
+            exit 1
+          fi
           az webapp deploy \
             --resource-group "$RG" \
-            --name "${{ secrets.AZURE_WEBAPP_NAME_PAINEL }}" \
+            --name "$WEBAPP_NAME" \
             --src-path "$GITHUB_WORKSPACE/painel-app-service.zip" \
             --type zip \
             --timeout 600000
