@@ -46,8 +46,14 @@ jobs:
       - name: Check painel e API
         run: |
           set -euo pipefail
-          curl -I -fsS "${PUBLIC_BASE_URL}/" >/tmp/painel-head.txt
-          curl -fsS "${PUBLIC_BASE_URL}/api/healthz" >/tmp/api-healthz.json
+          BASE_URL="$(printf '%s' "${PUBLIC_BASE_URL}" | tr -d '\r\n' | sed 's/[[:space:]]*$//')"
+          BASE_URL="${BASE_URL%/}"
+          if [ -z "${BASE_URL}" ]; then
+            echo "::error::PUBLIC_BASE_URL ficou vazio após sanitização."
+            exit 1
+          fi
+          curl -I -fsS "${BASE_URL}/" >/tmp/painel-head.txt
+          curl -fsS "${BASE_URL}/api/healthz" >/tmp/api-healthz.json
           echo "Checks OK"
 
   notify_results:
