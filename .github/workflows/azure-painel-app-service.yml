@@ -13,7 +13,7 @@
 #
 # Variáveis de repositório (opcional):
 #   AZURE_WEBAPP_RG — resource group onde está o App Service do painel (prioridade sobre AZURE_RG)
-#   AZURE_RG         — fallback se AZURE_WEBAPP_RG não existir; default rg-procon-bot-cl
+#   AZURE_RG         — fallback se AZURE_WEBAPP_RG não existir; default rg-procon-bot-prod (Web App do painel)
 #
 # Nota: `azure/webapps-deploy` (publish profile) falhava com ENOTFOUND / DNS em alguns runners; o deploy
 # passa a ser `az webapp deploy` após `azure/login`, sem depender do hostname scm no Node.
@@ -124,7 +124,7 @@ jobs:
 
       - name: Validar Web App (RG + nome)
         env:
-          RG: ${{ vars.AZURE_WEBAPP_RG || vars.AZURE_RG || 'rg-procon-bot-cl' }}
+          RG: ${{ vars.AZURE_WEBAPP_RG || vars.AZURE_RG || 'rg-procon-bot-prod' }}
         run: |
           set -euo pipefail
           echo "Resource group do deploy: $RG"
@@ -135,7 +135,7 @@ jobs:
 
       - name: ZIP deploy via Azure CLI
         env:
-          RG: ${{ vars.AZURE_WEBAPP_RG || vars.AZURE_RG || 'rg-procon-bot-cl' }}
+          RG: ${{ vars.AZURE_WEBAPP_RG || vars.AZURE_RG || 'rg-procon-bot-prod' }}
         run: |
           set -euo pipefail
           az webapp deploy \
