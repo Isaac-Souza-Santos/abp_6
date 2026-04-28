@@ -102,8 +102,14 @@ jobs:
           PUBLIC_BASE_URL: ${{ vars.PUBLIC_BASE_URL || secrets.PUBLIC_BASE_URL || 'https://proconbotdockcl0428.chilecentral.cloudapp.azure.com' }}
         run: |
           set -euo pipefail
-          API_URL="${PUBLIC_BASE_URL}/api/healthz"
-          UI_URL="${PUBLIC_BASE_URL}/"
+          BASE_URL="$(printf '%s' "${PUBLIC_BASE_URL}" | tr -d '\r\n' | sed 's/[[:space:]]*$//')"
+          BASE_URL="${BASE_URL%/}"
+          if [ -z "${BASE_URL}" ]; then
+            echo "::error::PUBLIC_BASE_URL ficou vazio após sanitização."
+            exit 1
+          fi
+          API_URL="${BASE_URL}/api/healthz"
+          UI_URL="${BASE_URL}/"
           echo "Validando API: ${API_URL}"
           curl -fsS "$API_URL" >/tmp/api-healthz.json
           echo "Validando painel: ${UI_URL}"
