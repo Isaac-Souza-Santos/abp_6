@@ -2,8 +2,10 @@
 # Pré-requisito: App Service já criado (ex.: infra/azure/deploy-painel-app-service.ps1 uma vez).
 #
 # Segredos (igual ao fluxo acr-build-push):
-#   AZURE_CREDENTIALS   — JSON de `az ad sp create-for-rbac --sdk-auth` (service principal com permissão
-#                         no Web App / RG, ex. Website Contributor ou Contributor)
+#   AZURE_CREDENTIALS   — JSON do service principal. Tem de ter RBAC no RG do painel (ex. rg-procon-bot-prod):
+#                         Portal -> RG -> Access control (IAM) -> Add role assignment -> Website Contributor
+#                         (ou Contributor) no principal usado pelo GitHub. Se o SP so tiver acesso a rg-procon-bot-cl,
+#                         AuthorizationFailed em Microsoft.Web/sites/read no deploy do painel.
 #   AZURE_WEBAPP_NAME   — nome do App Service (Overview → Name), uma linha, sem URL
 #   PAINEL_VITE_API_BASE_URL
 #   PAINEL_VITE_ADMIN_PANEL_TOKEN — opcional
@@ -149,7 +151,11 @@ jobs:
             echo "::error::az webapp show falhou (exit $RC). Resposta: $OUT"
             echo "Web Apps neste RG (ajuste AZURE_WEBAPP_NAME ao Name listado):"
             az webapp list -g "$RG" --query "[].name" -o table 2>&1 || true
-            echo "::error::Se a listagem acima falhar ou vier vazia, o service principal pode nao ter acesso a esta subscricao/RG — conceda Contributor ou Website Contributor no rg ou defina AZURE_SUBSCRIPTION_ID se o painel estiver noutra subscricao."
+            if echo "$OUT" | grep -qi AuthorizationFailed; then
+              echo "::error::RBAC: o service principal de AZURE_CREDENTIALS nao tem Microsoft.Web/sites/read no RG '$RG'. No Azure: Resource group -> IAM -> Add role assignment -> Website Contributor (ou Contributor) -> assign ao mesmo principal que usa o deploy do Container App. Exemplo CLI (substitua OBJECT_ID pelo objectId do erro): az role assignment create --assignee OBJECT_ID --role \"Website Contributor\" --resource-group \"$RG\""
+            else
+              echo "::error::Ajuste AZURE_WEBAPP_NAME ao Name listado; se vazio, verifique AZURE_SUBSCRIPTION_ID e permissoes no RG."
+            fi
             exit 1
           fi
           echo "Web App encontrado."
