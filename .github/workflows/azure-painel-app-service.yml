@@ -81,23 +81,40 @@ jobs:
             exit 1
           fi
 
-      # Espacos ou newline no segredo geram hostname invalido → getaddrinfo ENOTFOUND *.scm.azurewebsites.net
+      # NXDOMAIN em *.scm.azurewebsites.net = nome errado, app apagado, ou URL colada no segredo em vez do "Resource name".
       - name: Normalizar nome do Web App e testar DNS
         env:
           AZURE_WEBAPP_NAME: ${{ secrets.AZURE_WEBAPP_NAME }}
         run: |
           set -euo pipefail
-          APP=$(printf '%s' "$AZURE_WEBAPP_NAME" | tr -d '\r\n' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+          RAW=$(printf '%s' "$AZURE_WEBAPP_NAME" | tr -d '\r\n' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+          APP="${RAW#https://}"
+          APP="${APP#http://}"
+          APP="${APP%%/*}"
+          APP="${APP%%\?*}"
+          case "$APP" in
+            *.scm.azurewebsites.net) APP="${APP%.scm.azurewebsites.net}" ;;
+          esac
+          case "$APP" in
+            *.azurewebsites.net) APP="${APP%.azurewebsites.net}" ;;
+          esac
+          APP=$(printf '%s' "$APP" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
           if [ -z "$APP" ]; then
-            echo "::error::AZURE_WEBAPP_NAME ficou vazio apos trim. Corrija o segredo no GitHub (so o nome, sem URL)."
+            echo "::error::AZURE_WEBAPP_NAME ficou vazio apos normalizar. Use o nome do recurso (Overview → Name), ex. app-painel-xyz."
             exit 1
           fi
+          if printf '%s' "$APP" | grep -q '[.]'; then
+            echo "::error::O nome ainda contem '.' — no GitHub Actions use apenas o Resource name do App Service (sem dominio). Portal → App Service → Overview → copiar o campo Name."
+            exit 1
+          fi
+          echo "Nome normalizado: comprimento ${#APP} caracteres (valor mascarado nos logs)."
           echo "AZURE_WEBAPP_NAME_TRIMMED=$APP" >> "$GITHUB_ENV"
-          echo "A verificar DNS de ${APP}.scm.azurewebsites.net ..."
-          if ! getent hosts "${APP}.scm.azurewebsites.net" >/dev/null 2>&1; then
-            getent hosts "${APP}.scm.azurewebsites.net" || true
-            nslookup "${APP}.scm.azurewebsites.net" || true
-            echo "::error::DNS falhou. Confirme no Portal o nome do App Service (sem .azurewebsites.net), que o recurso existe e que o segredo nao tem typo."
+          SCM="${APP}.scm.azurewebsites.net"
+          echo "A verificar DNS de ${SCM} ..."
+          if ! getent hosts "$SCM" >/dev/null 2>&1; then
+            getent hosts "$SCM" || true
+            nslookup "$SCM" || true
+            echo "::error::NXDOMAIN — este hostname nao existe na DNS publica. Possiveis causas: (1) typo no segredo AZURE_WEBAPP_NAME; (2) Web App apagado ou noutra subscricao; (3) nao e um App Service (ex.: Static Web App / Container Apps tem outro fluxo). Confirme no Azure Portal o nome exacto em Overview e rode localmente: nslookup NOME.scm.azurewebsites.net"
             exit 1
           fi
 
