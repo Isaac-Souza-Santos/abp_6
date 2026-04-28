@@ -153,7 +153,9 @@ jobs:
             az webapp list -g "$RG" --query "[].name" -o table 2>&1 || true
             if echo "$OUT" | grep -qi AuthorizationFailed; then
               SUB="$(az account show --query id -o tsv 2>/dev/null || true)"
-              echo "::error::RBAC: o service principal de AZURE_CREDENTIALS nao tem Microsoft.Web/sites/read no RG '$RG'. Portal: RG -> IAM -> Website Contributor (ou Contributor) no principal do deploy. CLI: az role assignment create --assignee-object-id OBJECT_ID --assignee-principal-type ServicePrincipal --role \"Website Contributor\" --scope \"/subscriptions/${SUB}/resourceGroups/${RG}\""
+              SCOPE="/subscriptions/${SUB}/resourceGroups/${RG}"
+              echo "::error::RBAC: o SP do AZURE_CREDENTIALS ainda nao tem Microsoft.Web/sites/read em '$SCOPE'. Ver roles atribuidos (use o object id da mensagem acima como --assignee): az role assignment list --assignee OBJECT_ID --scope \"$SCOPE\" -o table"
+              echo "::error::Para criar (substitua OBJECT_ID): az role assignment create --assignee-object-id OBJECT_ID --assignee-principal-type ServicePrincipal --role \"Contributor\" --scope \"$SCOPE\""
             else
               echo "::error::Ajuste AZURE_WEBAPP_NAME ao Name listado; se vazio, verifique AZURE_SUBSCRIPTION_ID e permissoes no RG."
             fi
