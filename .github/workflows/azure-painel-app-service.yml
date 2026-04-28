@@ -119,50 +119,63 @@ jobs:
           def host_from(raw: str) -> str:
               return raw.replace("https://", "").split("/", 1)[0].split(":")[0].strip()
 
-          xml = os.environ.get("AZURE_WEBAPP_PUBLISH_PROFILE") or ""
-          preferred = []
-          fallback = []
-          for m in re.finditer(r"<publishProfile\s+([^>]+)/>", xml):
-              attrs = m.group(1)
-              um = re.search(r'publishUrl="([^"]+)"', attrs)
-              if not um:
+          xml = (os.environ.get("AZURE_WEBAPP_PUBLISH_PROFILE") or "").lstrip("\ufeff")
+          if not xml.strip():
+              sys.exit(0)
+          preferred: list[str] = []
+          fallback: list[str] = []
+          for m in re.finditer(r'publishUrl\s*=\s*"([^"]+)"', xml, flags=re.IGNORECASE):
+              raw = m.group(1)
+              h = host_from(raw)
+              if ".scm." not in h.lower():
                   continue
-              h = host_from(um.group(1))
-              if ".scm." not in h:
-                  continue
+              lo = max(0, m.start() - 2000)
+              hi = min(len(xml), m.end() + 400)
+              ctx = xml[lo:hi]
+              ctx_l = ctx.lower()
               fallback.append(h)
-              if any(
-                  x in attrs
-                  for x in (
-                      'publishMethod="MSDeploy"',
-                      'publishMethod="ZipDeploy"',
-                  )
-              ):
+              if re.search(
+                  r'publishMethod\s*=\s*"(?:MSDeploy|ZipDeploy|WMSVC|MSBuild)"',
+                  ctx,
+                  flags=re.IGNORECASE,
+              ) or "msdeploy" in ctx_l or "zipdeploy" in ctx_l:
                   preferred.append(h)
-          pick = preferred[0] if preferred else (fallback[0] if fallback else None)
-          if not pick:
-              print(
-                  "::error::Publish profile sem publishUrl Kudu (scm.) num perfil MSDeploy/ZipDeploy ou equivalente. Descarregue de novo em App Service -> Get publish profile.",
-                  file=sys.stderr,
-              )
-              sys.exit(1)
-          print(pick)
+          seen: set[str] = set()
+
+          def uniq(xs: list[str]) -> list[str]:
+              out = []
+              for x in xs:
+                  if x not in seen:
+                      seen.add(x)
+                      out.append(x)
+              return out
+
+          pick = None
+          for cand in uniq(preferred) + uniq(fallback):
+              pick = cand
+              break
+          if pick:
+              print(pick)
           PY
           )
-          echo "Verificacao DNS opcional (nao bloqueia o job se falhar aqui)."
-          dns_ok=0
-          if command -v dig >/dev/null 2>&1; then
-            if dig +short "$SCM_HOST" @8.8.8.8 2>/dev/null | head -1 | grep -qE '^[0-9a-fA-F:.]+$'; then
+          if [ -z "$SCM_HOST" ]; then
+            echo "::warning::Nao foi encontrado publishUrl com scm. no XML (formato inesperado ou segredo truncado). A saltar DNS pre-deploy. Confirme que o segredo e o ficheiro .PublishSettings completo de App Service -> Get publish profile."
+          else
+            echo "Verificacao DNS opcional (nao bloqueia o job se falhar aqui)."
+            dns_ok=0
+            if command -v dig >/dev/null 2>&1; then
+              if dig +short "$SCM_HOST" @8.8.8.8 2>/dev/null | head -1 | grep -qE '^[0-9a-fA-F:.]+$'; then
+                dns_ok=1
+              fi
+            fi
+            if [ "$dns_ok" != "1" ] && getent hosts "$SCM_HOST" >/dev/null 2>&1; then
               dns_ok=1
             fi
-          fi
-          if [ "$dns_ok" != "1" ] && getent hosts "$SCM_HOST" >/dev/null 2>&1; then
-            dns_ok=1
-          fi
-          if [ "$dns_ok" != "1" ]; then
-            echo "::warning::DNS pre-deploy nao resolveu o SCM (dig @8.8.8.8 / getent). O passo seguinte tenta ZIP Deploy mesmo assim — se falhar, valide no Portal que o Web App existe e que o publish profile e recente."
-          else
-            echo "DNS OK para host SCM."
+            if [ "$dns_ok" != "1" ]; then
+              echo "::warning::DNS pre-deploy nao resolveu o SCM (dig @8.8.8.8 / getent). O passo seguinte tenta ZIP Deploy mesmo assim — se falhar, valide no Portal que o Web App existe e que o publish profile e recente."
+            else
+              echo "DNS OK para host SCM."
+            fi
           fi
 
       - name: Deploy para Azure Web App
