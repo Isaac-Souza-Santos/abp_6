@@ -81,10 +81,11 @@ jobs:
             exit 1
           fi
 
-      # NXDOMAIN em *.scm.azurewebsites.net = nome errado, app apagado, ou URL colada no segredo em vez do "Resource name".
-      - name: Normalizar nome do Web App e testar DNS
+      # DNS: nao assumir sempre *.scm.azurewebsites.net — Azure Government usa *.scm.azurewebsites.us; o publish profile tem o host Kudu certo em publishUrl.
+      - name: Normalizar nome do Web App e testar DNS (SCM via publish profile)
         env:
           AZURE_WEBAPP_NAME: ${{ secrets.AZURE_WEBAPP_NAME }}
+          AZURE_WEBAPP_PUBLISH_PROFILE: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
         run: |
           set -euo pipefail
           RAW=$(printf '%s' "$AZURE_WEBAPP_NAME" | tr -d '\r\n' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
@@ -93,9 +94,11 @@ jobs:
           APP="${APP%%/*}"
           APP="${APP%%\?*}"
           case "$APP" in
+            *.scm.azurewebsites.us) APP="${APP%.scm.azurewebsites.us}" ;;
             *.scm.azurewebsites.net) APP="${APP%.scm.azurewebsites.net}" ;;
           esac
           case "$APP" in
+            *.azurewebsites.us) APP="${APP%.azurewebsites.us}" ;;
             *.azurewebsites.net) APP="${APP%.azurewebsites.net}" ;;
           esac
           APP=$(printf '%s' "$APP" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
@@ -104,17 +107,31 @@ jobs:
             exit 1
           fi
           if printf '%s' "$APP" | grep -q '[.]'; then
-            echo "::error::O nome ainda contem '.' — no GitHub Actions use apenas o Resource name do App Service (sem dominio). Portal → App Service → Overview → copiar o campo Name."
+            echo "::error::O nome ainda contem '.' — use apenas o Resource name do App Service (sem dominio). Portal → Overview → Name."
             exit 1
           fi
-          echo "Nome normalizado: comprimento ${#APP} caracteres (valor mascarado nos logs)."
+          echo "Nome normalizado: comprimento ${#APP} caracteres."
           echo "AZURE_WEBAPP_NAME_TRIMMED=$APP" >> "$GITHUB_ENV"
-          SCM="${APP}.scm.azurewebsites.net"
-          echo "A verificar DNS de ${SCM} ..."
-          if ! getent hosts "$SCM" >/dev/null 2>&1; then
-            getent hosts "$SCM" || true
-            nslookup "$SCM" || true
-            echo "::error::NXDOMAIN — este hostname nao existe na DNS publica. Possiveis causas: (1) typo no segredo AZURE_WEBAPP_NAME; (2) Web App apagado ou noutra subscricao; (3) nao e um App Service (ex.: Static Web App / Container Apps tem outro fluxo). Confirme no Azure Portal o nome exacto em Overview e rode localmente: nslookup NOME.scm.azurewebsites.net"
+          SCM_HOST=$(python3 << 'PY'
+          import os, re, sys
+          xml = os.environ.get("AZURE_WEBAPP_PUBLISH_PROFILE") or ""
+          hosts = []
+          for m in re.finditer(r'publishUrl="([^"]+)"', xml):
+              raw = m.group(1)
+              h = raw.replace("https://", "").split("/", 1)[0].split(":")[0].strip()
+              if ".scm." in h:
+                  hosts.append(h)
+          if not hosts:
+              print("::error::Publish profile sem publishUrl Kudu (contem scm.). Descarregue de novo: App Service → Overview → Download publish profile.", file=sys.stderr)
+              sys.exit(1)
+          print(hosts[0])
+          PY
+          )
+          echo "A verificar DNS do host SCM do publish profile (cloud correta: public, Gov, etc.) ..."
+          if ! getent hosts "$SCM_HOST" >/dev/null 2>&1; then
+            getent hosts "$SCM_HOST" || true
+            nslookup "$SCM_HOST" || true
+            echo "::error::NXDOMAIN no host SCM do publish profile. O XML pode ser de outro recurso, expirado ou corrompido; ou o App Service foi apagado. Descarregue um publish profile novo deste Web App e confira AZURE_WEBAPP_NAME (Overview → Name)."
             exit 1
           fi
 
