@@ -77,7 +77,7 @@ O painel consome `GET /admin/agendamentos` (lista e métricas), `PATCH /admin/ag
 ### Variáveis opcionais para segurança/CORS
 
 - `ADMIN_PANEL_TOKEN`: se definido, a API exige token em `x-admin-token` ou `?token=`.
-- `ADMIN_PANEL_ORIGIN`: origem permitida para o painel (ex.: `http://localhost:5173`). Padrão: `*`.
+- `ADMIN_PANEL_ORIGIN`: origem permitida para o painel (ex.: `http://localhost:5173` ou `https://painel.exemplo.com`). Aceita lista separada por vírgula e normaliza barra final automaticamente. Padrão: `*`.
 - `ADMIN_PANEL_AZURE_TENANT_ID` e `ADMIN_PANEL_AZURE_CLIENT_ID` (opcional): quando ambos estão definidos, a API aceita também o cabeçalho `Authorization: Bearer` com o **ID token** do Entra ID para essa app registration (mesmo *Application (client) ID* do painel). Pode coexistir com `ADMIN_PANEL_TOKEN` (aceita um ou outro).
 
 No painel (`painel-interno/.env`):

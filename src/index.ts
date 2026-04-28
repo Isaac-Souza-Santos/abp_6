@@ -17,7 +17,7 @@ import { iniciarAgendadorLembreteConfirmacao } from "./services/lembreteConfirma
 import { GroqMetricasStore } from "./services/GroqMetricasStore";
 
 const healthPort = Number(process.env.HEALTH_PORT || 3000);
-const adminPanelOrigin = process.env.ADMIN_PANEL_ORIGIN || "*";
+const adminPanelOriginRaw = process.env.ADMIN_PANEL_ORIGIN || "*";
 const adminPanelToken = process.env.ADMIN_PANEL_TOKEN?.trim();
 
 const agendamentoStore = new AgendamentoStore();
@@ -27,10 +27,39 @@ function setJsonHeaders(res: http.ServerResponse): void {
   res.setHeader("Content-Type", "application/json");
 }
 
-function setAdminCorsHeaders(res: http.ServerResponse): void {
-  res.setHeader("Access-Control-Allow-Origin", adminPanelOrigin);
+function normalizeOrigin(value: string): string {
+  const trimmed = value.trim();
+  if (!trimmed || trimmed === "*") return "*";
+  try {
+    return new URL(trimmed).origin;
+  } catch {
+    // Se vier sem protocolo por engano, mantemos o valor bruto para não quebrar em runtime.
+    return trimmed.replace(/\/+$/, "");
+  }
+}
+
+const adminPanelAllowedOrigins = adminPanelOriginRaw
+  .split(",")
+  .map((o) => normalizeOrigin(o))
+  .filter(Boolean);
+
+function resolveCorsOrigin(req: http.IncomingMessage): string {
+  if (adminPanelAllowedOrigins.length === 0) return "*";
+  if (adminPanelAllowedOrigins.includes("*")) return "*";
+
+  const requestOrigin = typeof req.headers.origin === "string" ? normalizeOrigin(req.headers.origin) : "";
+  if (requestOrigin && adminPanelAllowedOrigins.includes(requestOrigin)) {
+    return requestOrigin;
+  }
+
+  return adminPanelAllowedOrigins[0];
+}
+
+function setAdminCorsHeaders(req: http.IncomingMessage, res: http.ServerResponse): void {
+  res.setHeader("Access-Control-Allow-Origin", resolveCorsOrigin(req));
   res.setHeader("Access-Control-Allow-Methods", "GET,PATCH,PUT,OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type,x-admin-token,Authorization");
+  res.setHeader("Vary", "Origin");
 }
 
 const MAX_ADMIN_JSON_BYTES = 65536;
@@ -155,7 +184,7 @@ function startHealthServer(bot: ProconBot): Promise<void> {
       const url = new URL(req.url || "/", `http://${req.headers.host || "localhost"}`);
 
       if (url.pathname.startsWith("/admin/")) {
-        setAdminCorsHeaders(res);
+        setAdminCorsHeaders(req, res);
         if (req.method === "OPTIONS") {
           res.writeHead(204);
           res.end();
