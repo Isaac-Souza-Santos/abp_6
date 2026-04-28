@@ -36,9 +36,18 @@ jobs:
           VITE_AZURE_REDIRECT_URI: ${{ secrets.PAINEL_VITE_AZURE_REDIRECT_URI }}
         run: |
           set -euo pipefail
+          if [ -z "${VITE_API_BASE_URL:-}" ]; then
+            echo "::error::PAINEL_VITE_API_BASE_URL está vazio."
+            exit 1
+          fi
+          echo "VITE_API_BASE_URL usado no build: $VITE_API_BASE_URL"
           cd painel-interno
           npm ci
           npm run build
+          if rg -n "azurecontainerapps\\.io|mangograss" dist >/dev/null; then
+            echo "::error::Build contém URL antiga de Container Apps. Verifique PAINEL_VITE_API_BASE_URL."
+            exit 1
+          fi
           mkdir -p _deploy/dist
           cp -r dist/* _deploy/dist/
           cp azure-app-service-host/package.json azure-app-service-host/server.mjs _deploy/
@@ -76,3 +85,7 @@ jobs:
             --src-path "$GITHUB_WORKSPACE/painel-app-service.zip" \
             --type zip \
             --timeout 600000
+          az webapp update \
+            --resource-group "$RG" \
+            --name "$WEBAPP_NAME" \
+            --https-only true >/dev/null
