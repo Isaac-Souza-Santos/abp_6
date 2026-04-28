@@ -12,8 +12,9 @@
 #   PAINEL_VITE_AZURE_REDIRECT_URI  — opcional (ex.: https://app-painel-xxx.azurewebsites.net/)
 #
 # Variáveis de repositório (opcional):
-#   AZURE_WEBAPP_RG — resource group onde está o App Service do painel (prioridade sobre AZURE_RG)
-#   AZURE_RG         — fallback se AZURE_WEBAPP_RG não existir; default rg-procon-bot-prod (Web App do painel)
+#   AZURE_WEBAPP_RG      — resource group do App Service do painel (prioridade sobre AZURE_RG)
+#   AZURE_RG             — fallback; default rg-procon-bot-prod
+#   AZURE_SUBSCRIPTION_ID — GUID da subscrição onde está o RG (se o SP tiver varias e a default nao for a do painel)
 #
 # Nota: `azure/webapps-deploy` (publish profile) falhava com ENOTFOUND / DNS em alguns runners; o deploy
 # passa a ser `az webapp deploy` após `azure/login`, sem depender do hostname scm no Node.
@@ -122,16 +123,36 @@ jobs:
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
+      - name: Selecionar subscricao (opcional)
+        env:
+          AZURE_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+        run: |
+          set -euo pipefail
+          if [ -n "${AZURE_SUBSCRIPTION_ID:-}" ]; then
+            echo "A usar variavel AZURE_SUBSCRIPTION_ID para az account set."
+            az account set --subscription "$AZURE_SUBSCRIPTION_ID"
+          fi
+          echo "Subscricao ativa:"
+          az account show --query "{name:name, id:id}" -o table
+
       - name: Validar Web App (RG + nome)
         env:
           RG: ${{ vars.AZURE_WEBAPP_RG || vars.AZURE_RG || 'rg-procon-bot-prod' }}
         run: |
           set -euo pipefail
           echo "Resource group do deploy: $RG"
-          if ! az webapp show -g "$RG" -n "$AZURE_WEBAPP_NAME_TRIMMED" --query id -o tsv >/dev/null 2>&1; then
-            echo "::error::Web App nao encontrado neste resource group. Confirme AZURE_WEBAPP_NAME (Portal -> App Service -> Overview -> Name). Se o painel estiver noutro RG, crie a repository variable AZURE_WEBAPP_RG com o nome exacto do resource group (ou ajuste AZURE_RG)."
+          set +e
+          OUT=$(az webapp show -g "$RG" -n "$AZURE_WEBAPP_NAME_TRIMMED" --query id -o tsv 2>&1)
+          RC=$?
+          set -e
+          if [ "$RC" -ne 0 ] || [ -z "$OUT" ]; then
+            echo "::error::az webapp show falhou (exit $RC). Resposta: $OUT"
+            echo "Web Apps neste RG (ajuste AZURE_WEBAPP_NAME ao Name listado):"
+            az webapp list -g "$RG" --query "[].name" -o table 2>&1 || true
+            echo "::error::Se a listagem acima falhar ou vier vazia, o service principal pode nao ter acesso a esta subscricao/RG — conceda Contributor ou Website Contributor no rg ou defina AZURE_SUBSCRIPTION_ID se o painel estiver noutra subscricao."
             exit 1
           fi
+          echo "Web App encontrado."
 
       - name: ZIP deploy via Azure CLI
         env:
