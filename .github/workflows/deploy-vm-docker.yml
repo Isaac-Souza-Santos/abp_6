@@ -1,0 +1,73 @@
+name: Deploy VM Docker (full stack)
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, master]
+    paths:
+      - "src/**"
+      - "painel-interno/**"
+      - "Dockerfile"
+      - "docker-compose.yml"
+      - "docker-entrypoint.sh"
+      - "package.json"
+      - "package-lock.json"
+      - "tsconfig.json"
+      - ".github/workflows/deploy-vm-docker.yml"
+      - ".github/workflows/reusable-deploy-vm-docker.yml"
+
+concurrency:
+  group: deploy-vm-docker-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  code_analysis_testing:
+    name: Code Analysis & Testing
+    uses: ./.github/workflows/reusable-node-validate.yml
+    with:
+      node_version: "24"
+      upload_coverage: false
+
+  deploy_full_stack:
+    name: Deploy VM Docker
+    needs: code_analysis_testing
+    uses: ./.github/workflows/reusable-deploy-vm-docker.yml
+    secrets: inherit
+    with:
+      deploy_scope: "full-stack"
+
+  post_deploy_checks:
+    name: Post Deploy Checks
+    runs-on: ubuntu-latest
+    needs: deploy_full_stack
+    env:
+      PUBLIC_BASE_URL: ${{ vars.PUBLIC_BASE_URL || secrets.PUBLIC_BASE_URL || 'https://proconbotdockcl0428.chilecentral.cloudapp.azure.com' }}
+    steps:
+      - name: Check painel e API
+        run: |
+          set -euo pipefail
+          curl -I -fsS "${PUBLIC_BASE_URL}/" >/tmp/painel-head.txt
+          curl -fsS "${PUBLIC_BASE_URL}/api/healthz" >/tmp/api-healthz.json
+          echo "Checks OK"
+
+  notify_results:
+    name: Notify Results
+    runs-on: ubuntu-latest
+    if: always()
+    needs:
+      - code_analysis_testing
+      - deploy_full_stack
+      - post_deploy_checks
+    steps:
+      - name: Summary
+        run: |
+          echo "code_analysis_testing=${{ needs.code_analysis_testing.result }}"
+          echo "deploy_full_stack=${{ needs.deploy_full_stack.result }}"
+          echo "post_deploy_checks=${{ needs.post_deploy_checks.result }}"
+          if [ "${{ needs.code_analysis_testing.result }}" != "success" ] || \
+             [ "${{ needs.deploy_full_stack.result }}" != "success" ] || \
+             [ "${{ needs.post_deploy_checks.result }}" != "success" ]; then
+            echo "Pipeline finalizou com falha em pelo menos uma etapa."
+            exit 1
+          fi
+          echo "Pipeline completo com sucesso."
