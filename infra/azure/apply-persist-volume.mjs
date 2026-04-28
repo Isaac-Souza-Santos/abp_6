@@ -4,19 +4,26 @@
  * Pré-requisito: `az containerapp env storage set` já ter registrado o share com o mesmo --storage-name.
  */
 import { readFileSync, writeFileSync } from "node:fs";
-import { execFileSync } from "node:child_process";
+import { execFileSync, spawnSync } from "node:child_process";
 
 function runAz(args, options = {}) {
-  const candidates = process.platform === "win32" ? ["az", "az.cmd"] : ["az"];
-  let lastError;
-  for (const cmd of candidates) {
-    try {
-      return execFileSync(cmd, args, options);
-    } catch (e) {
-      lastError = e;
+  if (process.platform === "win32") {
+    /** execFileSync("az.cmd") pode falhar com EINVAL no Node no Windows; cmd /c é estável. */
+    const r = spawnSync(process.env.ComSpec || "cmd.exe", ["/d", "/c", "az", ...args], {
+      encoding: "utf8",
+      stdio: options.stdio ?? "inherit",
+      env: options.env ?? process.env,
+      windowsHide: true,
+    });
+    if (r.error) throw r.error;
+    if (r.status !== 0) {
+      const err = new Error(`az exited with code ${r.status}`);
+      err.status = r.status;
+      throw err;
     }
+    return r.stdout;
   }
-  throw lastError;
+  return execFileSync("az", args, options);
 }
 
 function parseArgs(argv) {
@@ -68,6 +75,9 @@ if (!id || !id.includes("/subscriptions/")) {
 const orig = app.properties.template;
 const c = JSON.parse(JSON.stringify(orig.containers[0]));
 delete c.imageType;
+/** command/args no ACA sobrescrevem ENTRYPOINT+CMD da imagem — docker-entrypoint.sh nunca corre e AUTH fica em SMB. */
+delete c.command;
+delete c.args;
 if (opts.image) c.image = opts.image;
 c.volumeMounts = [
   { volumeName, mountPath },
@@ -79,6 +89,19 @@ for (const e of c.env) {
   if (e.name === "AUTH_PATH" && e.value !== undefined) e.value = authPath;
   if (e.name === "DATA_DIR" && e.value !== undefined) e.value = dataDir;
 }
+
+/** Copia grande volume→/tmp no entrypoint atrasa o bind à porta 3000; probe curta falha com "ActivationFailed". */
+c.probes = [
+  {
+    type: "Startup",
+    tcpSocket: { port: 3000 },
+    initialDelaySeconds: 30,
+    periodSeconds: 10,
+    timeoutSeconds: 5,
+    failureThreshold: 120,
+    successThreshold: 1,
+  },
+];
 
 const sc = orig.scale;
 const template = {

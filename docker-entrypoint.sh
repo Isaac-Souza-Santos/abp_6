@@ -32,11 +32,13 @@ merge_auth_back_to_volume() {
 }
 
 if [ "$USE_TMP_AUTH" = "1" ]; then
+  echo "docker-entrypoint: a copiar ${VOLUME_AUTH_ROOT} para ${TMP_AUTH_ROOT} (Azure Files pode demorar)..."
   rm -rf "$TMP_AUTH_ROOT" 2>/dev/null || true
   mkdir -p "$TMP_AUTH_ROOT"
   if [ -d "$VOLUME_AUTH_ROOT" ] && [ -n "$(ls -A "$VOLUME_AUTH_ROOT" 2>/dev/null)" ]; then
     cp -a "$VOLUME_AUTH_ROOT"/. "$TMP_AUTH_ROOT"/ 2>/dev/null || true
   fi
+  echo "docker-entrypoint: cópia concluída; a iniciar Node."
   export AUTH_PATH="$TMP_AUTH_ROOT"
   echo "docker-entrypoint: AUTH_PATH=${AUTH_PATH} (runtime em /tmp; volume em ${VOLUME_AUTH_ROOT}; rsync ao encerrar)."
 fi

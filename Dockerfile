@@ -71,7 +71,8 @@ RUN mkdir -p /app/.wwebjs_auth /app/data /app/logs
 
 EXPOSE 3000
 
-HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+# start-period alto: entrypoint copia .wwebjs_auth do Azure Files para /tmp antes de arrancar o Node.
+HEALTHCHECK --interval=60s --timeout=15s --start-period=960s --retries=5 \
   CMD pgrep -f "node dist/index.js" || exit 1
 
 ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
