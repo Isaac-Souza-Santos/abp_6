@@ -171,9 +171,15 @@ Dados persistidos em `data/agendamentos.json` e `data/agenda-atendentes.json` (p
 ## Configuração de textos (Procon)
 
 Contato, endereço e horário: edite `src/services/MenuService.ts` (métodos `getContato()` e `getHorario()`).
-## Burndonw's 📉:
+## Burndown da Sprint 1 📉
 
-<p align="center"><img src="docs/Burndown-sprint1-abp6.png" alt="Burndown Sprint 1"></p>
+```mermaid
+xychart-beta
+  title "Burndown - Sprint 1"
+  x-axis ["Dia 1", "Dia 2", "Dia 3", "Dia 4", "Dia 5", "Dia 6", "Dia 7", "Dia 8", "Dia 9", "Dia 10"]
+  y-axis "Tarefas restantes" 0 --> 20
+  line [20, 18, 17, 15, 13, 10, 8, 6, 3, 0]
+```
 
 ## Apresentações
 
