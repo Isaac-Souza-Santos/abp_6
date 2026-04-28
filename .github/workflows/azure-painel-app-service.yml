@@ -1,17 +1,20 @@
 # Publica o painel interno num Azure App Service (Linux + Node).
 # Pré-requisito: App Service já criado (ex.: infra/azure/deploy-painel-app-service.ps1 uma vez).
 #
-# Segredos:
-#   AZURE_WEBAPP_PUBLISH_PROFILE  — XML completo de "Download publish profile" (App Service → Overview)
-#   AZURE_WEBAPP_NAME              — nome do App Service (ex.: app-painel-procon-xyz)
-#
-# Nota: azure/webapps-deploy@v3 pode falhar com "No credentials found" mesmo com publish profile;
-# este workflow usa @v2, que continua a aceitar só publish profile + app-name.
+# Segredos (igual ao fluxo acr-build-push):
+#   AZURE_CREDENTIALS   — JSON de `az ad sp create-for-rbac --sdk-auth` (service principal com permissão
+#                         no Web App / RG, ex. Website Contributor ou Contributor no rg-procon-bot-cl)
+#   AZURE_WEBAPP_NAME   — nome do App Service (Overview → Name), uma linha, sem URL
 #   PAINEL_VITE_API_BASE_URL
-#   PAINEL_VITE_ADMIN_PANEL_TOKEN  — opcional
-#   PAINEL_VITE_AZURE_CLIENT_ID    — opcional (login MSAL no painel)
-#   PAINEL_VITE_AZURE_TENANT_ID    — opcional
-#   PAINEL_VITE_AZURE_REDIRECT_URI — opcional (ex.: https://app-painel-xxx.azurewebsites.net/)
+#   PAINEL_VITE_ADMIN_PANEL_TOKEN — opcional
+#   PAINEL_VITE_AZURE_CLIENT_ID     — opcional (login MSAL no painel)
+#   PAINEL_VITE_AZURE_TENANT_ID     — opcional
+#   PAINEL_VITE_AZURE_REDIRECT_URI  — opcional (ex.: https://app-painel-xxx.azurewebsites.net/)
+#
+# Variável de repositório (opcional): AZURE_RG — default rg-procon-bot-cl
+#
+# Nota: `azure/webapps-deploy` (publish profile) falhava com ENOTFOUND / DNS em alguns runners; o deploy
+# passa a ser `az webapp deploy` após `azure/login`, sem depender do hostname scm no Node.
 
 name: Deploy painel App Service
 
@@ -33,6 +36,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+      id-token: write
     steps:
       - uses: actions/checkout@v5
 
@@ -65,28 +69,25 @@ jobs:
           npm install --omit=dev
           zip -r "$GITHUB_WORKSPACE/painel-app-service.zip" .
 
-      - name: Verificar segredos do App Service
+      - name: Verificar segredos Azure (CLI deploy)
         shell: bash
         env:
-          AZURE_WEBAPP_PUBLISH_PROFILE: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+          AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
           AZURE_WEBAPP_NAME: ${{ secrets.AZURE_WEBAPP_NAME }}
         run: |
           set -euo pipefail
-          if [ -z "${AZURE_WEBAPP_PUBLISH_PROFILE:-}" ]; then
-            echo "::error::Segredo AZURE_WEBAPP_PUBLISH_PROFILE vazio ou inexistente. Portal → App Service → Get publish profile → copie o ficheiro .PublishSettings (XML) inteiro para GitHub → Settings → Secrets."
+          if [ -z "${AZURE_CREDENTIALS:-}" ]; then
+            echo "::error::Segredo AZURE_CREDENTIALS vazio. Use o mesmo JSON que no workflow acr-build-push (service principal com acesso ao RG / Web App)."
             exit 1
           fi
           if [ -z "${AZURE_WEBAPP_NAME:-}" ]; then
-            echo "::error::Segredo AZURE_WEBAPP_NAME vazio. Use o nome exacto do Web App (ex. app-painel-procon-abp6-0420)."
+            echo "::error::Segredo AZURE_WEBAPP_NAME vazio. Nome exacto do App Service (Overview → Name)."
             exit 1
           fi
 
-      # Host SCM vem do publish profile (Gov: *.scm.azurewebsites.us). Preferimos MSDeploy/ZipDeploy.
-      # DNS no runner (127.0.0.53) por vezes da NXDOMAIN mesmo com app valido — nao bloqueamos o deploy.
-      - name: Normalizar nome do Web App e extrair host SCM (publish profile)
+      - name: Normalizar nome do Web App
         env:
           AZURE_WEBAPP_NAME: ${{ secrets.AZURE_WEBAPP_NAME }}
-          AZURE_WEBAPP_PUBLISH_PROFILE: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
         run: |
           set -euo pipefail
           RAW=$(printf '%s' "$AZURE_WEBAPP_NAME" | tr -d '\r\n' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
@@ -104,83 +105,29 @@ jobs:
           esac
           APP=$(printf '%s' "$APP" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
           if [ -z "$APP" ]; then
-            echo "::error::AZURE_WEBAPP_NAME ficou vazio apos normalizar. Use o nome do recurso (Overview → Name), ex. app-painel-xyz."
+            echo "::error::AZURE_WEBAPP_NAME ficou vazio apos normalizar."
             exit 1
           fi
           if printf '%s' "$APP" | grep -q '[.]'; then
-            echo "::error::O nome ainda contem '.' — use apenas o Resource name do App Service (sem dominio). Portal → Overview → Name."
+            echo "::error::Use apenas o Resource name do App Service (sem dominio)."
             exit 1
           fi
           echo "Nome normalizado: comprimento ${#APP} caracteres."
           echo "AZURE_WEBAPP_NAME_TRIMMED=$APP" >> "$GITHUB_ENV"
-          SCM_HOST=$(python3 << 'PY'
-          import os, re, sys
 
-          def host_from(raw: str) -> str:
-              return raw.replace("https://", "").split("/", 1)[0].split(":")[0].strip()
-
-          xml = (os.environ.get("AZURE_WEBAPP_PUBLISH_PROFILE") or "").lstrip("\ufeff")
-          if not xml.strip():
-              sys.exit(0)
-          preferred: list[str] = []
-          fallback: list[str] = []
-          for m in re.finditer(r'publishUrl\s*=\s*"([^"]+)"', xml, flags=re.IGNORECASE):
-              raw = m.group(1)
-              h = host_from(raw)
-              if ".scm." not in h.lower():
-                  continue
-              lo = max(0, m.start() - 2000)
-              hi = min(len(xml), m.end() + 400)
-              ctx = xml[lo:hi]
-              ctx_l = ctx.lower()
-              fallback.append(h)
-              if re.search(
-                  r'publishMethod\s*=\s*"(?:MSDeploy|ZipDeploy|WMSVC|MSBuild)"',
-                  ctx,
-                  flags=re.IGNORECASE,
-              ) or "msdeploy" in ctx_l or "zipdeploy" in ctx_l:
-                  preferred.append(h)
-          seen: set[str] = set()
-
-          def uniq(xs: list[str]) -> list[str]:
-              out = []
-              for x in xs:
-                  if x not in seen:
-                      seen.add(x)
-                      out.append(x)
-              return out
-
-          pick = None
-          for cand in uniq(preferred) + uniq(fallback):
-              pick = cand
-              break
-          if pick:
-              print(pick)
-          PY
-          )
-          if [ -z "$SCM_HOST" ]; then
-            echo "::warning::Nao foi encontrado publishUrl com scm. no XML (formato inesperado ou segredo truncado). A saltar DNS pre-deploy. Confirme que o segredo e o ficheiro .PublishSettings completo de App Service -> Get publish profile."
-          else
-            echo "Verificacao DNS opcional (nao bloqueia o job se falhar aqui)."
-            dns_ok=0
-            if command -v dig >/dev/null 2>&1; then
-              if dig +short "$SCM_HOST" @8.8.8.8 2>/dev/null | head -1 | grep -qE '^[0-9a-fA-F:.]+$'; then
-                dns_ok=1
-              fi
-            fi
-            if [ "$dns_ok" != "1" ] && getent hosts "$SCM_HOST" >/dev/null 2>&1; then
-              dns_ok=1
-            fi
-            if [ "$dns_ok" != "1" ]; then
-              echo "::warning::DNS pre-deploy nao resolveu o SCM (dig @8.8.8.8 / getent). O passo seguinte tenta ZIP Deploy mesmo assim — se falhar, valide no Portal que o Web App existe e que o publish profile e recente."
-            else
-              echo "DNS OK para host SCM."
-            fi
-          fi
-
-      - name: Deploy para Azure Web App
-        uses: azure/webapps-deploy@v2
+      - name: Azure login
+        uses: azure/login@v2
         with:
-          app-name: ${{ env.AZURE_WEBAPP_NAME_TRIMMED }}
-          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
-          package: painel-app-service.zip
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: ZIP deploy via Azure CLI
+        env:
+          RG: ${{ vars.AZURE_RG || 'rg-procon-bot-cl' }}
+        run: |
+          set -euo pipefail
+          az webapp deploy \
+            --resource-group "$RG" \
+            --name "$AZURE_WEBAPP_NAME_TRIMMED" \
+            --src-path "$GITHUB_WORKSPACE/painel-app-service.zip" \
+            --type zip \
+            --timeout 600000
