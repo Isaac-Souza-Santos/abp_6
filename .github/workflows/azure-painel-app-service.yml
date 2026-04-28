@@ -3,7 +3,7 @@
 #
 # Segredos (igual ao fluxo acr-build-push):
 #   AZURE_CREDENTIALS   — JSON de `az ad sp create-for-rbac --sdk-auth` (service principal com permissão
-#                         no Web App / RG, ex. Website Contributor ou Contributor no rg-procon-bot-cl)
+#                         no Web App / RG, ex. Website Contributor ou Contributor)
 #   AZURE_WEBAPP_NAME   — nome do App Service (Overview → Name), uma linha, sem URL
 #   PAINEL_VITE_API_BASE_URL
 #   PAINEL_VITE_ADMIN_PANEL_TOKEN — opcional
@@ -11,7 +11,9 @@
 #   PAINEL_VITE_AZURE_TENANT_ID     — opcional
 #   PAINEL_VITE_AZURE_REDIRECT_URI  — opcional (ex.: https://app-painel-xxx.azurewebsites.net/)
 #
-# Variável de repositório (opcional): AZURE_RG — default rg-procon-bot-cl
+# Variáveis de repositório (opcional):
+#   AZURE_WEBAPP_RG — resource group onde está o App Service do painel (prioridade sobre AZURE_RG)
+#   AZURE_RG         — fallback se AZURE_WEBAPP_RG não existir; default rg-procon-bot-cl
 #
 # Nota: `azure/webapps-deploy` (publish profile) falhava com ENOTFOUND / DNS em alguns runners; o deploy
 # passa a ser `az webapp deploy` após `azure/login`, sem depender do hostname scm no Node.
@@ -120,9 +122,20 @@ jobs:
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
+      - name: Validar Web App (RG + nome)
+        env:
+          RG: ${{ vars.AZURE_WEBAPP_RG || vars.AZURE_RG || 'rg-procon-bot-cl' }}
+        run: |
+          set -euo pipefail
+          echo "Resource group do deploy: $RG"
+          if ! az webapp show -g "$RG" -n "$AZURE_WEBAPP_NAME_TRIMMED" --query id -o tsv >/dev/null 2>&1; then
+            echo "::error::Web App nao encontrado neste resource group. Confirme AZURE_WEBAPP_NAME (Portal -> App Service -> Overview -> Name). Se o painel estiver noutro RG, crie a repository variable AZURE_WEBAPP_RG com o nome exacto do resource group (ou ajuste AZURE_RG)."
+            exit 1
+          fi
+
       - name: ZIP deploy via Azure CLI
         env:
-          RG: ${{ vars.AZURE_RG || 'rg-procon-bot-cl' }}
+          RG: ${{ vars.AZURE_WEBAPP_RG || vars.AZURE_RG || 'rg-procon-bot-cl' }}
         run: |
           set -euo pipefail
           az webapp deploy \
