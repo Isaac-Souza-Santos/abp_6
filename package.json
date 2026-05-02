@@ -16,7 +16,8 @@
     "lint": "eslint src --ext .ts",
     "test": "jest",
     "test:watch": "jest --watch",
-    "test:coverage": "jest --coverage"
+    "test:coverage": "jest --coverage",
+    "test:groq-e2e": "jest --runInBand --testTimeout=90000 \"src/services/groqFlow.llm-e2e.test.ts\""
   },
   "keywords": [
     "whatsapp",

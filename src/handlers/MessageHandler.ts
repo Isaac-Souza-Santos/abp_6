@@ -3,6 +3,8 @@ import { MenuService } from '../services/MenuService';
 import { AgendamentoService } from '../services/AgendamentoService';
 import { criarEventoOutlook } from '../services/OutlookCalendarService';
 import { GroqService } from '../services/GroqService';
+import { montarRespostaGroqWhatsApp } from '../messages/groqReplyComposer';
+import { sanitizarRespostaGroq } from '../services/groqResponseSanitizer';
 import { GroqMetricasStore } from '../services/GroqMetricasStore';
 import {
   limparPendenteRespostaLembrete,
@@ -208,13 +210,14 @@ export class MessageHandler {
       if (this.groqService.estaDisponivel() && body.length >= 3) {
         const respostaGroq = await this.groqService.perguntar(body);
         if (respostaGroq) {
-          const texto = respostaGroq.length > 3500 ? respostaGroq.slice(0, 3500) + '…' : respostaGroq;
+          const textoCorpo = sanitizarRespostaGroq(respostaGroq);
+          if (!textoCorpo.trim()) {
+            await message.reply(this.menuService.getDefaultReply());
+            return;
+          }
+          const textoCompleto = montarRespostaGroqWhatsApp(textoCorpo);
           this.aguardandoAvaliacaoGroq.set(from, true);
-          await message.reply(
-            texto +
-              '\n\n_Isso ajudou? Responda *1* para sim ou *2* para não._' +
-              '\n\n_Agendamento: *4*. Menu: *menu*._'
-          );
+          await message.reply(textoCompleto);
           return;
         }
       }

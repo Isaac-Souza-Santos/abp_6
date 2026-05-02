@@ -1,6 +1,7 @@
 import Groq from 'groq-sdk';
 import * as fs from 'fs';
 import * as path from 'path';
+import { sanitizarRespostaGroq } from './groqResponseSanitizer';
 
 const DUVIDAS_PATH = path.join(__dirname, '../../.github/DUVIDAS.TXT');
 const GROQ_MODEL = process.env.GROQ_MODEL || 'llama-3.1-8b-instant';
@@ -9,7 +10,7 @@ const MAX_CONTEXTO_CHARS = 7000;
 
 /**
  * Serviço para consultar a API Groq com contexto do Procon (CDC e dúvidas frequentes).
- * Usado quando o usuário envia uma mensagem que não é comando do menu.
+ * Groq tier gratuito; variáveis `GROQ_API_KEY` ou `GROQ`.
  */
 export class GroqService {
   private client: Groq | null = null;
@@ -46,9 +47,14 @@ export class GroqService {
       return '';
     }
 
-    const systemPrompt = `Você é um assistente do Procon de Jacareí/SP. Responda em português, de forma clara e objetiva, em poucos parágrafos curtos (adequado a WhatsApp).
-Baseie-se no Código de Defesa do Consumidor (CDC) e nas orientações abaixo. Se a dúvida não estiver coberta, oriente a pessoa a comparecer ao Procon ou digitar *menu* para ver opções.
-Não invente artigos de lei; use apenas o contexto fornecido.`;
+    const systemPrompt = `Você é um assistente do Procon de Jacareí/SP no WhatsApp. Responda em português, clara e objetivamente, em poucos parágrafos curtos.
+Baseie-se no CDC e no contexto fornecido. Se a dúvida não estiver coberta, oriente comparecer ao Procon ou digitar *menu*.
+Não invente artigos de lei; só use o que consta no contexto.
+
+IMPORTANTE sobre o formato da resposta:
+- Ao final do chat o sistema pergunta *1* ou *2* se a ajuda foi suficiente, e outros números são do menu principal. Por isso: NÃO ofereça opções numeradas (1-, 2-, 3-) nem “digite A ou B”; isso confunde quem está no canal.
+- NÃO diga confirmado, protocolo finalizado/registrado, solicitação concluída, cadastro gravado nem similares: você apenas orienta; não há protocolo nem confirmação oficial gerada só por esta conversa automatizada.
+- Se faltar algum detalhe, peça UMA nova mensagem em texto livre (ex.: nome da empresa, cidade, o que aparece na fatura) ou indique comparecer ao Procon ou *menu* para agendamento. Não feche perguntando “quer enviar mais detalhes?” com alternativas.`;
 
     const contexto = this.contextoDuvidas.length > MAX_CONTEXTO_CHARS
       ? this.contextoDuvidas.slice(0, MAX_CONTEXTO_CHARS) + '\n\n[... texto resumido para caber no limite da API ...]'
@@ -68,8 +74,8 @@ Não invente artigos de lei; use apenas o contexto fornecido.`;
         temperature: 0.3,
       });
 
-      const text = completion.choices[0]?.message?.content?.trim();
-      return text || '';
+      const raw = completion.choices[0]?.message?.content?.trim() || '';
+      return raw ? sanitizarRespostaGroq(raw) : '';
     } catch (err) {
       console.error('Erro ao consultar Groq:', err);
       return '';
