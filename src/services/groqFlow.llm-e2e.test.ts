@@ -66,8 +66,8 @@ async function garantirFluxoOutbound(
       .split('\n')
       .filter(
         l =>
-          /^\s*[12][\).\-\–]/.test(l.trim()) ||
-          (/^\*\s*[12]\s*\*\s*[:\.\-\–]/.test(l.trim()) && !l.includes('menu'))
+          /^\s*[12][).–-]/.test(l.trim()) ||
+          (/^\*\s*[12]\s*\*\s*[:.–-]/.test(l.trim()) && !l.includes('menu'))
       );
     expect(linhasSuspeitas.length).toBe(0);
   });

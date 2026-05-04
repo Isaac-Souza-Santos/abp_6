@@ -5,7 +5,7 @@
  */
 export function sanitizarRespostaGroq(raw: string): string {
   const fraseConfirmacaoLinha =
-    /^[✓✅📌⭐️]?\s*(confirmado|confirmada|confirmamos|(?:seu\s+)?pedido\s+foi\s+confirmado|(?:foi\s+)?registrad[oa](?:\s+com\s+sucesso)?|(?:protocolo\s+)?(?:finalizado|encerrado|registrado)|solicita[çc][aã]o\s+conclu[ií]da)[\s!.…]*$/i;
+    /^(?:(?:✓|✅|📌|⭐️)\s*)?(confirmado|confirmada|confirmamos|(?:seu\s+)?pedido\s+foi\s+confirmado|(?:foi\s+)?registrad[oa](?:\s+com\s+sucesso)?|(?:protocolo\s+)?(?:finalizado|encerrado|registrado)|solicita[çc][aã]o\s+conclu[ií]da)[\s!.…]*$/iu;
 
   function linhaEhOpcao12(linha: string): boolean {
     const t = linha.trim();
@@ -13,9 +13,9 @@ export function sanitizarRespostaGroq(raw: string): string {
     /** Lista “1.” / “2.” em texto normativo não é menu do WhatsApp — não remover. */
     if (/^[12]\.\s+\S/.test(t)) return false;
     return (
-      /^[\*_]*\s*[12]\s*[\*_]*\s*[)\-\–\—\:]\s+\S/.test(t) ||
+      /^[*_]*\s*[12]\s*[*_]*\s*[)–—:-]\s+\S/.test(t) ||
       /^[12]\)\s+\S/.test(t) ||
-      /^\*\s*[12]\s*\*\s*[:\-\–]/.test(t)
+      /^\*\s*[12]\s*\*\s*[:–-]/.test(t)
     );
   }
 
@@ -92,7 +92,7 @@ export function corpoGroqTemOpcoesConflitantes12(corpo: string): boolean {
   return linhas.some(l => {
     if (/^[12]\.\s+\S/.test(l)) return false;
     return (
-      /^[\*_]*\s*[12]\s*[\*_]*\s*[)\-\–\—\:]\s+\S/.test(l) || /^[12]\)\s+\S/.test(l)
+      /^[*_]*\s*[12]\s*[*_]*\s*[)–—:-]\s+\S/.test(l) || /^[12]\)\s+\S/.test(l)
     );
   });
 }
