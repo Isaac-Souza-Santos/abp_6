@@ -17,82 +17,6 @@ Chat bot em **TypeScript** para atendimento do **Procon de Jacareí/SP** via **W
 
 **Número usado no projeto:** (12) 99207-4513 — para contato exibido ao consumidor (opção 3) e, se desejar, como `ADMIN_NUMBER` no `.env`.
 
-## Instalação
-
-```bash
-cd ABP6
-npm install
-npm run build
-```
-
-## Como rodar
-
-**Desenvolvimento (reload automático):**
-
-```bash
-npm run dev
-```
-
-**Produção:**
-
-```bash
-npm run build
-npm start
-```
-
-## Mini painel interno (React)
-
-Foi adicionado um painel em pasta separada: `painel-interno/`. Permite consultar agendamentos, métricas e, na aba **Ajustes da agenda**, editar protocolos e **guardar horário de almoço por linha de atendimento** (configuração persistida em `data/agenda-atendentes.json`).
-
-### Dados em `data/`
-
-| Ficheiro | Conteúdo |
-|----------|----------|
-| `data/agendamentos.json` | Todos os pedidos de agendamento (`slotInicio`, `status`, `atendenteId` / `atendenteNome` quando aplicável). |
-| `data/agenda-atendentes.json` | Linhas de atendimento: `id`, `nome`, `intervaloMinutos`, `blocos` (expediente); opcionalmente `almoco` (intervalo sem slots). |
-
-A API expõe:
-
-- `GET /admin/agendamentos` — lista + métricas (usado pelo painel).
-- `GET` e `PUT /admin/agenda-atendentes` — lê e grava a configuração da agenda (mesma autenticação que o resto do admin: `x-admin-token`, `?token=` ou Bearer Azure, conforme `.env`).
-
-Tarefas planeadas para evolução do painel: [documentacao/SPRINT-2-PAINEL-INTERNO.md](documentacao/SPRINT-2-PAINEL-INTERNO.md).
-
-### 1) Subir o bot/API (porta 3000)
-
-```bash
-npm run dev
-```
-
-### 2) Subir o painel React
-
-Em outro terminal:
-
-```bash
-npm run panel:dev
-```
-
-O painel consome `GET /admin/agendamentos` (lista e métricas), `PATCH /admin/agendamentos/:id` (ajustes por protocolo) e `GET`/`PUT /admin/agenda-atendentes` (horário de almoço por linha).
-
-### Variáveis opcionais para segurança/CORS
-
-- `ADMIN_PANEL_TOKEN`: se definido, a API exige token em `x-admin-token` ou `?token=`.
-- `ADMIN_PANEL_ORIGIN`: origem permitida para o painel (ex.: `http://localhost:5173` ou `https://painel.exemplo.com`). Aceita lista separada por vírgula e normaliza barra final automaticamente. Padrão: `*`.
-- `ADMIN_PANEL_AZURE_TENANT_ID` e `ADMIN_PANEL_AZURE_CLIENT_ID` (opcional): quando ambos estão definidos, a API aceita também o cabeçalho `Authorization: Bearer` com o **ID token** do Entra ID para essa app registration (mesmo *Application (client) ID* do painel). Pode coexistir com `ADMIN_PANEL_TOKEN` (aceita um ou outro).
-
-No painel (`painel-interno/.env`):
-
-```env
-VITE_API_BASE_URL=http://localhost:3000
-VITE_ADMIN_PANEL_TOKEN=
-```
-
-Configuração Azure (guias completos **não** estão no Git): [documentacao/AZURE-CONFIGURACAO.md](documentacao/AZURE-CONFIGURACAO.md). Scripts: [infra/azure/README.md](infra/azure/README.md).
-
-**Primeira conexão:** o terminal exibe um **QR Code**. No WhatsApp (celular): **Aparelhos conectados** → **Conectar um aparelho** → escanear o QR. A sessão fica em `.wwebjs_auth`.
-
-**Erro "Execution context was destroyed" ao iniciar:** (1) O bot tenta de novo sozinho após 4 segundos. (2) No `.env` adicione `HEADLESS=false`, rode `npm run dev` e escaneie o QR na janela do Chrome que abrir — muitas vezes resolve sem apagar nada.
-
 ## Menu do bot (opções)
 
 | Opção | Conteúdo                                                                                     |
@@ -116,40 +40,11 @@ O usuário pode digitar **oi**, **menu** ou **início** para ver o menu a qualqu
 
 Os agendamentos são salvos em `data/agendamentos.json`. Se o Outlook estiver configurado, um evento é criado no calendário. Ver [documentacao/AGENDA-LIVRE-OCUPADA.md](documentacao/AGENDA-LIVRE-OCUPADA.md).
 
-## Painel do atendente
 
-Quem estiver com o número configurado em `ADMIN_NUMBER` pode:
-
-- Enviar **atendente**, **historico** ou **metricas** → recebe o painel com:
-  - **Ciclo do protocolo:** Vira dado, Vira processo, Gestão pública.
-  - Métricas (total, hoje, últimos 7 dias, por status).
-  - Lista dos últimos agendamentos (com ID).
-- Marcar protocolo como **virou processo:** `processo ag-1234567890-abc123`
-- Marcar protocolo como **gestão pública:** `gestao ag-1234567890-abc123`
-
-Ver [documentacao/METRICAS-PROTOCOLO.md](documentacao/METRICAS-PROTOCOLO.md).
 
 ## API utilizada (gratuita)
 
 - **[whatsapp-web.js](https://github.com/pedroslopez/whatsapp-web.js)** – conexão via WhatsApp Web (multidevice), sem custo de API.
-
-## Documentação
-
-| Documento                                                      | Conteúdo                                                             |
-| -------------------------------------------------------------- | -------------------------------------------------------------------- |
-| [.github/BACKLOG.md](.github/BACKLOG.md)                       | Backlog do produto e tarefas em 3 sprints (uso com GitHub Projects). |
-| [documentacao/ARQUITETURA.md](documentacao/ARQUITETURA.md)                 | Visão geral, stack, fluxo, agendamento, Outlook, LGPD, métricas.     |
-| [documentacao/PASSO-A-PASSO.md](documentacao/PASSO-A-PASSO.md)             | Guia do zero até o bot funcionando.                                  |
-| [documentacao/REQUISITOS-API-E-MAIS.md](documentacao/REQUISITOS-API-E-MAIS.md) | API, ambiente, segurança, Evolution API.                             |
-| [documentacao/OUTLOOK-AGENDAMENTO.md](documentacao/OUTLOOK-AGENDAMENTO.md) | Integração gratuita com Outlook (Microsoft Graph).                   |
-| [documentacao/AGENDA-LIVRE-OCUPADA.md](documentacao/AGENDA-LIVRE-OCUPADA.md) | Gerenciamento de horários livres x ocupados.                         |
-| [documentacao/SPRINT-2-PAINEL-INTERNO.md](documentacao/SPRINT-2-PAINEL-INTERNO.md) | Tarefas Sprint 2 – evolução do painel interno.                         |
-| [documentacao/METRICAS-PROTOCOLO.md](documentacao/METRICAS-PROTOCOLO.md)  | Métricas: vira dado, vira processo, gestão pública.                  |
-| [documentacao/AZURE-CONFIGURACAO.md](documentacao/AZURE-CONFIGURACAO.md) | Onde guardar guias Azure (fora do Git); pasta `local/`. |
-| [documentacao/DEPLOY-AZURE-ETAPAS.md](documentacao/DEPLOY-AZURE-ETAPAS.md) | Referência histórica do deploy Azure em App Service. |
-| [documentacao/DEPLOY-VM-DOCKER.md](documentacao/DEPLOY-VM-DOCKER.md) | Guia atual de deploy em Azure VM com Docker (bot + painel). |
-| [infra/azure/README.md](infra/azure/README.md) | Índice dos scripts/workflows Azure (backend e painel em App Service). |
-| [Apresentação Sprint 1 (YouTube)](https://www.youtube.com/watch?v=91aUjvrli_g) | Vídeo da apresentação / demo da Sprint 1.                           |
 
 ## Estrutura do projeto
 
@@ -166,12 +61,36 @@ src/
 └── types/agendamento.ts
 ```
 
+
+## Instalação
+
+```bash
+cd ABP6
+npm install
+npm run build
+```
+
+## Como rodar
+
+**Desenvolvimento (reload automático):**
+
+```bash
+npm run dev
+```
+
+**Produção:**
+
+```bash
+npm run build
+npm start
+```
+
 Dados persistidos em `data/agendamentos.json` e `data/agenda-atendentes.json` (pasta `data/` no `.gitignore`).
 
 ## Configuração de textos (Procon)
 
 Contato, endereço e horário: edite `src/services/MenuService.ts` (métodos `getContato()` e `getHorario()`).
-## Burndown da Sprint 1 📉
+## Burndown das Sprints 📉
 
 ```mermaid
 xychart-beta
@@ -180,6 +99,24 @@ xychart-beta
   y-axis "Tarefas restantes" 0 --> 20
   line [20, 18, 17, 15, 13, 10, 8, 6, 3, 0]
 ```
+
+## Documentação das funcionalidades implementadas:
+
+| Documento                                                      | Conteúdo                                                             |
+| -------------------------------------------------------------- | -------------------------------------------------------------------- |
+| [.github/BACKLOG.md](.github/BACKLOG.md)                       | Backlog do produto e tarefas em 3 sprints (uso com GitHub Projects). |
+| [documentacao/ARQUITETURA.md](documentacao/ARQUITETURA.md)                 | Visão geral, stack, fluxo, agendamento, Outlook, LGPD, métricas.     |
+| [documentacao/PASSO-A-PASSO.md](documentacao/PASSO-A-PASSO.md)             | Guia do zero até o bot funcionando.                                  |
+| [documentacao/REQUISITOS-API-E-MAIS.md](documentacao/REQUISITOS-API-E-MAIS.md) | API, ambiente, segurança, Evolution API.                             |
+| [documentacao/OUTLOOK-AGENDAMENTO.md](documentacao/OUTLOOK-AGENDAMENTO.md) | Integração gratuita com Outlook (Microsoft Graph).                   |
+| [documentacao/AGENDA-LIVRE-OCUPADA.md](documentacao/AGENDA-LIVRE-OCUPADA.md) | Gerenciamento de horários livres x ocupados.                         |
+| [documentacao/SPRINT-2-PAINEL-INTERNO.md](documentacao/SPRINT-2-PAINEL-INTERNO.md) | Tarefas Sprint 2 – evolução do painel interno.                         |
+| [documentacao/METRICAS-PROTOCOLO.md](documentacao/METRICAS-PROTOCOLO.md)  | Métricas: vira dado, vira processo, gestão pública.                  |
+| [documentacao/AZURE-CONFIGURACAO.md](documentacao/AZURE-CONFIGURACAO.md) | Onde guardar guias Azure (fora do Git); pasta `local/`. |
+| [documentacao/DEPLOY-AZURE-ETAPAS.md](documentacao/DEPLOY-AZURE-ETAPAS.md) | Referência histórica do deploy Azure em App Service. |
+| [documentacao/DEPLOY-VM-DOCKER.md](documentacao/DEPLOY-VM-DOCKER.md) | Guia atual de deploy em Azure VM com Docker (bot + painel). |
+| [infra/azure/README.md](infra/azure/README.md) | Índice dos scripts/workflows Azure (backend e painel em App Service). |
+| [Apresentação Sprint 1 (YouTube)](https://www.youtube.com/watch?v=91aUjvrli_g) | Vídeo da apresentação / demo da Sprint 1.                           |
 
 ## Apresentações
 
