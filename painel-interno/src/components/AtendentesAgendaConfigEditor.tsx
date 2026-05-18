@@ -87,11 +87,11 @@ export function AtendentesAgendaConfigEditor({ getAuthHeaders }: Props) {
   }, [getAuthHeaders]);
 
   useEffect(() => {
-    const timer = window.setTimeout(() => {
+    const frame = window.requestAnimationFrame(() => {
       void load();
-    }, 0);
+    });
     return () => {
-      window.clearTimeout(timer);
+      window.cancelAnimationFrame(frame);
     };
   }, [load, reloadTick]);
 
