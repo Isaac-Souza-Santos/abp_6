@@ -21,6 +21,12 @@ export function MetricsTabPanel({ data, loading }: Props) {
       )}
       {data?.metricas && (
         <div className="panelCard">
+          <div className="metricsLead" style={{ marginBottom: "12px" }}>
+            <strong>Ciclo do protocolo:</strong>{" "}
+            <span>dado {data.metricas.viraDado}</span>{" "}
+            <span>| processo {data.metricas.viraProcesso}</span>{" "}
+            <span>| gestão pública {data.metricas.gestaoPublica}</span>
+          </div>
           <p className="metricsLead">
             Apenas os gráficos solicitados: avaliação do chat e agendamentos.
           </p>
