@@ -121,6 +121,7 @@ xychart-beta
 ## Apresentações
 
 - [Apresentação Sprint 1 (YouTube)](https://www.youtube.com/watch?v=91aUjvrli_g)
+- [Apresentação Sprint 2 (YouTube)](https://www.youtube.com/watch?v=t9qXJUcBCzI)
 
 ## Licença
 
