@@ -40,7 +40,12 @@ export function LembreteConfirmacaoBlock({ getAuthHeaders }: Props) {
   }, [getAuthHeaders]);
 
   useEffect(() => {
-    void load();
+    const frame = window.requestAnimationFrame(() => {
+      void load();
+    });
+    return () => {
+      window.cancelAnimationFrame(frame);
+    };
   }, [load]);
 
   const salvar = async () => {

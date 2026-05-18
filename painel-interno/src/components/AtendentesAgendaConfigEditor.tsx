@@ -60,6 +60,7 @@ export function AtendentesAgendaConfigEditor({ getAuthHeaders }: Props) {
   const [saveError, setSaveError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [reloadTick, setReloadTick] = useState(0);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -86,8 +87,13 @@ export function AtendentesAgendaConfigEditor({ getAuthHeaders }: Props) {
   }, [getAuthHeaders]);
 
   useEffect(() => {
-    void load();
-  }, [load]);
+    const frame = window.requestAnimationFrame(() => {
+      void load();
+    });
+    return () => {
+      window.cancelAnimationFrame(frame);
+    };
+  }, [load, reloadTick]);
 
   const salvar = async () => {
     if (!config) return;
@@ -182,7 +188,7 @@ export function AtendentesAgendaConfigEditor({ getAuthHeaders }: Props) {
         <p className="agendaConfigError" role="alert">
           {loadError || "Sem dados."}
         </p>
-        <button type="button" className="btn btnSecondary" onClick={() => void load()}>
+        <button type="button" className="btn btnSecondary" onClick={() => setReloadTick((v) => v + 1)}>
           Tentar de novo
         </button>
       </div>

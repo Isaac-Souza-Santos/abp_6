@@ -102,6 +102,76 @@ export default function Dashboard({ getIdToken, nomeUtilizadorSessao, onSignOut 
     });
   }, [data, dateFilter, searchTerm, statusFilter]);
 
+  const buildExportFileName = useCallback((ext: "csv" | "json"): string => {
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = String(now.getMonth() + 1).padStart(2, "0");
+    const d = String(now.getDate()).padStart(2, "0");
+    const hh = String(now.getHours()).padStart(2, "0");
+    const mm = String(now.getMinutes()).padStart(2, "0");
+    return `agendamentos-filtrados-${y}${m}${d}-${hh}${mm}.${ext}`;
+  }, []);
+
+  const downloadTextFile = useCallback((filename: string, content: string, mimeType: string) => {
+    const blob = new Blob([content], { type: mimeType });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }, []);
+
+  const exportFilteredAsJson = useCallback(() => {
+    const payload = {
+      exportedAt: new Date().toISOString(),
+      filters: { searchTerm, statusFilter, dateFilter },
+      total: filteredAgendamentos.length,
+      agendamentos: filteredAgendamentos,
+    };
+    downloadTextFile(buildExportFileName("json"), JSON.stringify(payload, null, 2), "application/json;charset=utf-8");
+  }, [buildExportFileName, dateFilter, downloadTextFile, filteredAgendamentos, searchTerm, statusFilter]);
+
+  const exportFilteredAsCsv = useCallback(() => {
+    const headers = [
+      "id",
+      "status",
+      "nome",
+      "telefone",
+      "slotInicio",
+      "dataPreferida",
+      "motivo",
+      "atendenteNome",
+      "atendenteId",
+      "virouProcesso",
+      "gestaoPublica",
+    ];
+    const esc = (v: unknown): string => `"${String(v ?? "").replace(/"/g, '""')}"`;
+    const lines = [headers.join(",")];
+    for (const ag of filteredAgendamentos) {
+      lines.push(
+        [
+          ag.id,
+          ag.status,
+          ag.nome,
+          ag.telefone,
+          ag.slotInicio ?? "",
+          ag.dataPreferida,
+          ag.motivo,
+          ag.atendenteNome ?? "",
+          ag.atendenteId ?? "",
+          ag.virouProcesso ? "sim" : "nao",
+          ag.gestaoPublica ? "sim" : "nao",
+        ]
+          .map(esc)
+          .join(",")
+      );
+    }
+    downloadTextFile(buildExportFileName("csv"), `${lines.join("\n")}\n`, "text/csv;charset=utf-8");
+  }, [buildExportFileName, downloadTextFile, filteredAgendamentos]);
+
   return (
     <div className="appShell">
       <main className="container">
@@ -116,9 +186,12 @@ export default function Dashboard({ getIdToken, nomeUtilizadorSessao, onSignOut 
             searchTerm={searchTerm}
             statusFilter={statusFilter}
             dateFilter={dateFilter}
+            exportDisabled={filteredAgendamentos.length === 0}
             onSearchChange={setSearchTerm}
             onStatusChange={setStatusFilter}
             onDateChange={setDateFilter}
+            onExportCsv={exportFilteredAsCsv}
+            onExportJson={exportFilteredAsJson}
           />
         )}
 
