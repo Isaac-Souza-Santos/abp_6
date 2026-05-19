@@ -36,6 +36,7 @@
     "firebase-admin": "^13.7.0",
     "groq-sdk": "^0.5.0",
     "jose": "^6.2.2",
+    "pg": "^8.21.0",
     "qrcode-terminal": "^0.12.0",
     "whatsapp-web.js": "^1.23.0",
     "winston": "^3.19.0"
@@ -43,6 +44,7 @@
   "devDependencies": {
     "@types/jest": "^30.0.0",
     "@types/node": "^20.10.0",
+    "@types/pg": "^8.20.0",
     "@types/qrcode-terminal": "^0.12.2",
     "@typescript-eslint/eslint-plugin": "^6.13.0",
     "@typescript-eslint/parser": "^6.13.0",
@@ -55,6 +57,9 @@
   "jest": {
     "preset": "ts-jest",
     "testEnvironment": "node",
-    "testPathIgnorePatterns": ["/node_modules/", "<rootDir>/dist/"]
+    "testPathIgnorePatterns": [
+      "/node_modules/",
+      "<rootDir>/dist/"
+    ]
   }
 }
