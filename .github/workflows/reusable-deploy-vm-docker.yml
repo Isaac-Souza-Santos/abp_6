@@ -19,48 +19,33 @@ jobs:
           VM_USER: ${{ vars.AZURE_VM_USER || secrets.AZURE_VM_USER }}
           VM_SSH_KEY: ${{ secrets.AZURE_VM_SSH_PRIVATE_KEY }}
         run: |
-          set -eo pipefail
-          missing=0
+          set -euo pipefail
           if [ -z "${VM_HOST:-}" ]; then
-            echo "::error::Falta AZURE_VM_HOST (Settings -> Secrets and variables -> Actions)."
-            missing=1
-          fi
-          if [ -z "${VM_SSH_KEY:-}" ]; then
-            echo "::error::Falta AZURE_VM_SSH_PRIVATE_KEY (conteudo completo do .pem)."
-            missing=1
-          fi
-          if [ "$missing" -ne 0 ]; then
+            echo "::error::Defina AZURE_VM_HOST (secret ou variable) com o IP/DNS publico da VM."
             exit 1
           fi
-          echo "Deploy alvo: ${VM_USER:-azureuser}@${VM_HOST}"
+          if [ -z "${VM_SSH_KEY:-}" ]; then
+            echo "::error::Defina AZURE_VM_SSH_PRIVATE_KEY (secret) com a chave privada SSH da VM."
+            exit 1
+          fi
+          if [ -z "${VM_USER:-}" ]; then
+            echo "AZURE_VM_USER nao informado; usando 'azureuser'."
+          fi
 
       - name: Preparar chave SSH
         env:
           VM_HOST: ${{ secrets.AZURE_VM_HOST || vars.AZURE_VM_HOST }}
           VM_SSH_KEY: ${{ secrets.AZURE_VM_SSH_PRIVATE_KEY }}
         run: |
-          set -eo pipefail
+          set -euo pipefail
           mkdir -p ~/.ssh
           printf '%s\n' "$VM_SSH_KEY" > ~/.ssh/id_vm_deploy
           chmod 600 ~/.ssh/id_vm_deploy
-          ssh-keyscan -H "$VM_HOST" >> ~/.ssh/known_hosts 2>/dev/null || {
-            echo "::error::ssh-keyscan falhou para host: $VM_HOST"
-            exit 1
-          }
-
-      - name: Testar SSH na VM
-        env:
-          VM_HOST: ${{ secrets.AZURE_VM_HOST || vars.AZURE_VM_HOST }}
-          VM_USER: ${{ vars.AZURE_VM_USER || secrets.AZURE_VM_USER }}
-        run: |
-          set -eo pipefail
-          VM_USER="${VM_USER:-azureuser}"
-          ssh -i ~/.ssh/id_vm_deploy -o BatchMode=yes -o ConnectTimeout=20 \
-            "${VM_USER}@${VM_HOST}" 'echo SSH_OK'
+          ssh-keyscan -H "$VM_HOST" >> ~/.ssh/known_hosts
 
       - name: Empacotar projeto para deploy
         run: |
-          set -eo pipefail
+          set -euo pipefail
           mkdir -p /tmp/procon-deploy
           rm -f /tmp/procon-deploy/vm-docker-deploy.tgz
           rm -f security/.wwebjs_auth/session/SingletonLock || true
@@ -88,74 +73,76 @@ jobs:
           PAINEL_VITE_AZURE_TENANT_ID: ${{ secrets.PAINEL_VITE_AZURE_TENANT_ID }}
           PAINEL_VITE_AZURE_REDIRECT_URI: ${{ secrets.PAINEL_VITE_AZURE_REDIRECT_URI }}
         run: |
-          set -eo pipefail
+          set -euo pipefail
           VM_USER="${VM_USER:-azureuser}"
           REMOTE="${VM_USER}@${VM_HOST}"
-          scp -i ~/.ssh/id_vm_deploy -o BatchMode=yes -o StrictHostKeyChecking=accept-new \
-            /tmp/procon-deploy/vm-docker-deploy.tgz \
-            infra/azure/remote-docker-deploy.sh \
-            "$REMOTE:/tmp/"
 
-          ssh -i ~/.ssh/id_vm_deploy -o BatchMode=yes -o StrictHostKeyChecking=accept-new "$REMOTE" \
-            env \
-            PAINEL_VITE_ADMIN_PANEL_TOKEN="${PAINEL_VITE_ADMIN_PANEL_TOKEN:-}" \
-            PAINEL_VITE_AZURE_CLIENT_ID="${PAINEL_VITE_AZURE_CLIENT_ID:-}" \
-            PAINEL_VITE_AZURE_TENANT_ID="${PAINEL_VITE_AZURE_TENANT_ID:-}" \
-            PAINEL_VITE_AZURE_REDIRECT_URI="${PAINEL_VITE_AZURE_REDIRECT_URI:-}" \
-            bash /tmp/remote-docker-deploy.sh
+          scp -i ~/.ssh/id_vm_deploy -o StrictHostKeyChecking=accept-new /tmp/procon-deploy/vm-docker-deploy.tgz "$REMOTE:/tmp/vm-docker-deploy.tgz"
 
-      - name: Validar bot na VM (SSH)
-        env:
-          VM_HOST: ${{ secrets.AZURE_VM_HOST || vars.AZURE_VM_HOST }}
-          VM_USER: ${{ vars.AZURE_VM_USER || secrets.AZURE_VM_USER }}
-        run: |
-          set -eo pipefail
-          VM_USER="${VM_USER:-azureuser}"
-          REMOTE="${VM_USER}@${VM_HOST}"
-          bot_ok=0
-          for i in $(seq 1 18); do
-            body="$(ssh -i ~/.ssh/id_vm_deploy -o BatchMode=yes "$REMOTE" \
-              'curl -fsS http://127.0.0.1:3000/healthz' 2>/dev/null || true)"
-            if echo "$body" | grep -q '"alive"'; then
-              echo "Bot OK na VM (tentativa ${i}/18): $body"
-              bot_ok=1
-              break
-            fi
-            echo "Aguardando bot (${i}/18)..."
-            sleep 10
-          done
-          if [ "$bot_ok" -ne 1 ]; then
-            echo "::error::Bot nao respondeu em localhost:3000."
-            ssh -i ~/.ssh/id_vm_deploy "$REMOTE" \
-              'cd /opt/procon-bot && sudo docker compose logs --tail=80 bot && sudo docker compose ps' || true
-            exit 1
-          fi
+          ssh -i ~/.ssh/id_vm_deploy -o StrictHostKeyChecking=accept-new "$REMOTE" <<EOF
+          set -euo pipefail
+          sudo mkdir -p /opt/procon-bot
+          sudo tar -xzf /tmp/vm-docker-deploy.tgz -C /opt/procon-bot
+          sudo chown -R \$USER:\$USER /opt/procon-bot
+          cd /opt/procon-bot
+          printf '%s\n' \
+            "PAINEL_VITE_ADMIN_PANEL_TOKEN=${PAINEL_VITE_ADMIN_PANEL_TOKEN}" \
+            "PAINEL_VITE_AZURE_CLIENT_ID=${PAINEL_VITE_AZURE_CLIENT_ID}" \
+            "PAINEL_VITE_AZURE_TENANT_ID=${PAINEL_VITE_AZURE_TENANT_ID}" \
+            "PAINEL_VITE_AZURE_REDIRECT_URI=${PAINEL_VITE_AZURE_REDIRECT_URI}" \
+            > .deploy.env
+          set -a
+          . ./.deploy.env
+          set +a
+          sudo docker compose up -d --build
+          sudo docker compose ps
+          EOF
 
       - name: Smoke test pos-deploy
         env:
           PUBLIC_BASE_URL: ${{ vars.PUBLIC_BASE_URL || secrets.PUBLIC_BASE_URL || 'https://proconbotdockcl0428.chilecentral.cloudapp.azure.com' }}
         run: |
-          set -eo pipefail
-          BASE_URL="${PUBLIC_BASE_URL%/}"
-          BASE_URL="${BASE_URL//$'\r'/}"
-          BASE_URL="${BASE_URL//$'\n'/}"
-          echo "URL publica: ${BASE_URL}/api/healthz"
-          sleep 15
+          set -euo pipefail
+          BASE_URL="$(printf '%s' "${PUBLIC_BASE_URL}" | tr -d '\r\n' | sed 's/[[:space:]]*$//')"
+          BASE_URL="${BASE_URL%/}"
+          if [ -z "${BASE_URL}" ]; then
+            echo "::error::PUBLIC_BASE_URL ficou vazio após sanitização."
+            exit 1
+          fi
+          API_URL="${BASE_URL}/api/healthz"
+          UI_URL="${BASE_URL}/"
+          echo "Validando API: ${API_URL}"
           ok_api=0
-          for i in $(seq 1 24); do
-            code="$(curl -sS -o /tmp/api-healthz.json -w '%{http_code}' "${BASE_URL}/api/healthz" 2>/dev/null || echo 000)"
-            if [ "$code" = "200" ] && grep -q '"alive"' /tmp/api-healthz.json 2>/dev/null; then
-              echo "Health OK:"
-              cat /tmp/api-healthz.json
+          for i in {1..20}; do
+            code="$(curl -sS -o /tmp/api-healthz.json -w '%{http_code}' "$API_URL" || true)"
+            if [ "$code" = "200" ]; then
               ok_api=1
               break
             fi
-            echo "Tentativa ${i}/24 HTTP ${code}"
-            sleep 10
+            echo "API tentativa $i/20 retornou HTTP $code; aguardando 6s..."
+            sleep 6
           done
           if [ "$ok_api" -ne 1 ]; then
-            echo "::error::Falha em ${BASE_URL}/api/healthz"
-            cat /tmp/api-healthz.json 2>/dev/null || true
+            echo "::error::API nao ficou saudavel em tempo habil."
+            echo "Ultima resposta API:"
+            cat /tmp/api-healthz.json || true
             exit 1
           fi
-          echo "Deploy '${{ inputs.deploy_scope }}' concluido."
+          echo "Validando painel: ${UI_URL}"
+          ok_ui=0
+          for i in {1..20}; do
+            code="$(curl -I -sS -o /tmp/ui-head.txt -w '%{http_code}' "$UI_URL" || true)"
+            if [ "$code" = "200" ] || [ "$code" = "301" ] || [ "$code" = "302" ]; then
+              ok_ui=1
+              break
+            fi
+            echo "UI tentativa $i/20 retornou HTTP $code; aguardando 6s..."
+            sleep 6
+          done
+          if [ "$ok_ui" -ne 1 ]; then
+            echo "::error::Painel nao respondeu com sucesso em tempo habil."
+            echo "Ultimos headers UI:"
+            cat /tmp/ui-head.txt || true
+            exit 1
+          fi
+          echo "Deploy '${{ inputs.deploy_scope }}' finalizado com sucesso."

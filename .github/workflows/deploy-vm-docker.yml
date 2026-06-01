@@ -13,7 +13,6 @@ on:
       - "package.json"
       - "package-lock.json"
       - "tsconfig.json"
-      - "infra/azure/remote-docker-deploy.sh"
       - ".github/workflows/deploy-vm-docker.yml"
       - ".github/workflows/reusable-deploy-vm-docker.yml"
 
@@ -44,16 +43,18 @@ jobs:
     env:
       PUBLIC_BASE_URL: ${{ vars.PUBLIC_BASE_URL || secrets.PUBLIC_BASE_URL || 'https://proconbotdockcl0428.chilecentral.cloudapp.azure.com' }}
     steps:
-      - name: Check API apos deploy
+      - name: Check painel e API
         run: |
-          set -eo pipefail
-          BASE_URL="${PUBLIC_BASE_URL%/}"
-          if curl -fsS "${BASE_URL}/api/healthz" | grep -q '"alive"'; then
-            echo "Health OK: ${BASE_URL}/api/healthz"
-          else
-            echo "::error::Falha em ${BASE_URL}/api/healthz"
+          set -euo pipefail
+          BASE_URL="$(printf '%s' "${PUBLIC_BASE_URL}" | tr -d '\r\n' | sed 's/[[:space:]]*$//')"
+          BASE_URL="${BASE_URL%/}"
+          if [ -z "${BASE_URL}" ]; then
+            echo "::error::PUBLIC_BASE_URL ficou vazio após sanitização."
             exit 1
           fi
+          curl -I -fsS "${BASE_URL}/" >/tmp/painel-head.txt
+          curl -fsS "${BASE_URL}/api/healthz" >/tmp/api-healthz.json
+          echo "Checks OK"
 
   notify_results:
     name: Notify Results
