@@ -78,4 +78,4 @@ export type ApiResponse = {
   groqMetricas?: MetricasGroq;
 };
 
-export type PainelTab = "agendamentos" | "ajustes" | "equipe" | "metricas";
+export type PainelTab = "agendamentos" | "ajustes" | "whatsapp" | "equipe" | "metricas";

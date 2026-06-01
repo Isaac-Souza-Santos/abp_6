@@ -1,8 +1,16 @@
+import Alert from "@mui/material/Alert";
+import Button from "@mui/material/Button";
+import FormControl from "@mui/material/FormControl";
+import Grid from "@mui/material/Grid2";
+import InputLabel from "@mui/material/InputLabel";
+import MenuItem from "@mui/material/MenuItem";
+import Select from "@mui/material/Select";
+import Stack from "@mui/material/Stack";
+import TextField from "@mui/material/TextField";
 import { useCallback, useState } from "react";
 import { rotuloStatus, statusEditaveis } from "../constants/status";
+import { useMockData } from "../config/env";
 import type { Agendamento, StatusAgendamento } from "../types/painel";
-import { participantesFormFromServer, participantesPayloadEqual, participantesToPayload, type ParticipanteFormRow } from "../utils/participantes";
-import { ParticipantesAgendaFields } from "./ParticipantesAgendaFields";
 
 type Props = {
   ag: Agendamento;
@@ -17,17 +25,13 @@ export function AgendaCardEditor({ ag, apiBaseUrl, adminPanelToken, getAuthHeade
   const [status, setStatus] = useState<StatusAgendamento>(ag.status);
   const [atendidoPorNome, setAtendidoPorNome] = useState(ag.atendidoPorNome ?? "");
   const [observacao, setObservacao] = useState(ag.observacaoAtendente ?? "");
-  const [participantesRows, setParticipantesRows] = useState<ParticipanteFormRow[]>(() => participantesFormFromServer(ag.participantes));
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState("");
-
-  const payloadParticipantes = participantesToPayload(participantesRows);
 
   const dirty =
     status !== ag.status ||
     atendidoPorNome.trim() !== (ag.atendidoPorNome ?? "").trim() ||
-    observacao !== (ag.observacaoAtendente ?? "") ||
-    !participantesPayloadEqual(ag.participantes, payloadParticipantes);
+    observacao !== (ag.observacaoAtendente ?? "");
 
   const save = useCallback(async () => {
     setSaveError("");
@@ -38,6 +42,11 @@ export function AgendaCardEditor({ ag, apiBaseUrl, adminPanelToken, getAuthHeade
     }
     setSaving(true);
     try {
+      if (useMockData) {
+        await new Promise((r) => setTimeout(r, 400));
+        onSaved();
+        return;
+      }
       const url = new URL(`${apiBaseUrl}/admin/agendamentos/${encodeURIComponent(ag.id)}`);
       if (adminPanelToken) {
         url.searchParams.set("token", adminPanelToken);
@@ -49,10 +58,6 @@ export function AgendaCardEditor({ ag, apiBaseUrl, adminPanelToken, getAuthHeade
         body.atendidoPorNome = atendidoPorNome.trim().slice(0, 200) || null;
       }
       if (observacao !== (ag.observacaoAtendente ?? "")) body.observacaoAtendente = observacao;
-      const nextP = participantesToPayload(participantesRows);
-      if (!participantesPayloadEqual(ag.participantes, nextP)) {
-        body.participantes = nextP;
-      }
 
       const response = await fetch(url.toString(), {
         method: "PATCH",
@@ -76,82 +81,69 @@ export function AgendaCardEditor({ ag, apiBaseUrl, adminPanelToken, getAuthHeade
     } finally {
       setSaving(false);
     }
-  }, [
-    ag,
-    atendidoPorNome,
-    apiBaseUrl,
-    adminPanelToken,
-    getAuthHeaders,
-    observacao,
-    onSaved,
-    participantesRows,
-    status,
-  ]);
+  }, [ag, atendidoPorNome, apiBaseUrl, adminPanelToken, getAuthHeaders, observacao, onSaved, status]);
 
   return (
-    <div className="agendaControls">
-      <ParticipantesAgendaFields rows={participantesRows} onChange={setParticipantesRows} />
+    <Stack spacing={1.25}>
+      <Grid container spacing={1}>
+        <Grid size={{ xs: 12, sm: 6 }}>
+          <FormControl fullWidth size="small">
+            <InputLabel id={`status-${ag.id}`}>Status</InputLabel>
+            <Select
+              labelId={`status-${ag.id}`}
+              label="Status"
+              value={status}
+              onChange={(e) => setStatus(e.target.value as StatusAgendamento)}
+            >
+              {statusEditaveis.map((s) => (
+                <MenuItem key={s} value={s}>
+                  {rotuloStatus[s]}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        </Grid>
+        <Grid size={{ xs: 12, sm: 6 }}>
+          <TextField
+            fullWidth
+            label="Quem atendeu"
+            value={atendidoPorNome}
+            onChange={(e) => setAtendidoPorNome(e.target.value)}
+            inputProps={{ maxLength: 200 }}
+            placeholder="Nome do atendente…"
+            size="small"
+          />
+        </Grid>
+      </Grid>
 
-      <div className="agendaControlsRow">
-        <label className="agendaField">
-          <span className="agendaFieldLabel">Status</span>
-          <select
-            className="agendaSelect"
-            value={status}
-            onChange={(e) => setStatus(e.target.value as StatusAgendamento)}
-            aria-label="Status do agendamento"
-          >
-            {statusEditaveis.map((s) => (
-              <option key={s} value={s}>
-                {rotuloStatus[s]}
-              </option>
-            ))}
-          </select>
-        </label>
-      </div>
-      <label className="agendaField agendaFieldBlock">
-        <span className="agendaFieldLabel">Quem atendeu</span>
-        <input
-          type="text"
-          className="agendaInput"
-          value={atendidoPorNome}
-          onChange={(e) => setAtendidoPorNome(e.target.value)}
-          maxLength={200}
-          placeholder="Nome do atendente ou equipa…"
-          aria-label="Quem atendeu"
-        />
-        {nomeUtilizadorSessao ? (
-          <div className="agendaFieldActions">
-            <button type="button" className="btn btnSecondary btnSmall" onClick={() => setAtendidoPorNome(nomeUtilizadorSessao)}>
-              Usar o meu nome ({nomeUtilizadorSessao})
-            </button>
-          </div>
-        ) : null}
-        {ag.atendidoPorEm ? (
-          <span className="agendaFieldHint">Registrado em: {new Date(ag.atendidoPorEm).toLocaleString("pt-BR")}</span>
-        ) : null}
-      </label>
-      <label className="agendaField agendaFieldBlock">
-        <span className="agendaFieldLabel">Observação do atendente</span>
-        <textarea
-          className="agendaTextarea"
-          value={observacao}
-          onChange={(e) => setObservacao(e.target.value)}
-          rows={2}
-          maxLength={4000}
-          placeholder="Notas internas (opcional)…"
-        />
-      </label>
-      <div className="agendaControlsActions">
-        <button type="button" className="btn btnPrimary" disabled={!dirty || saving} onClick={() => void save()}>
-          {saving ? "A guardar…" : "Guardar alterações"}
-        </button>
+      {nomeUtilizadorSessao ? (
+        <Button variant="text" size="small" onClick={() => setAtendidoPorNome(nomeUtilizadorSessao)} sx={{ alignSelf: "flex-start", mt: -0.5 }}>
+          Usar o meu nome
+        </Button>
+      ) : null}
+
+      <TextField
+        fullWidth
+        label="Observação"
+        value={observacao}
+        onChange={(e) => setObservacao(e.target.value)}
+        multiline
+        minRows={2}
+        inputProps={{ maxLength: 4000 }}
+        placeholder="Notas internas (opcional)…"
+        size="small"
+      />
+
+      <Stack direction="row" flexWrap="wrap" alignItems="center" gap={1}>
+        <Button variant="contained" disabled={!dirty || saving} onClick={() => void save()}>
+          {saving ? "A guardar…" : "Guardar"}
+        </Button>
         {saveError ? (
-          <span className="agendaSaveError" role="alert">
+          <Alert severity="error" sx={{ py: 0, flex: 1, minWidth: 200 }}>
             {saveError}
-          </span>
+          </Alert>
         ) : null}
-      </div>
-    </div>
+      </Stack>
+    </Stack>
   );
 }

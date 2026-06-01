@@ -7,12 +7,12 @@
 }
 
 .container {
-  max-width: var(--content-max);
+  max-width: 1280px;
   margin: 0 auto;
-  padding: var(--space-section) 20px 40px;
+  padding: 16px 16px 32px;
   display: flex;
   flex-direction: column;
-  gap: var(--space-section);
+  gap: 12px;
 }
 
 /* —— Botões (padrão único) —— */
@@ -172,7 +172,11 @@
 .tabPanel {
   display: flex;
   flex-direction: column;
-  gap: var(--space-section);
+  gap: 10px;
+}
+
+.agendaGridMui {
+  width: 100%;
 }
 
 .tabIntro {

@@ -90,3 +90,11 @@ docker compose up -d --build
 
 - A sessão WhatsApp persiste em `security/.wwebjs_auth` (volume bind no serviço `bot`).
 - Em produção, preferir HTTPS com Nginx/Caddy no host apontando para o painel (porta 80) e API (porta 3000) conforme necessidade.
+
+## 8) Horário do bot e economia (VM desalocada fora do expediente)
+
+O bot opera das **17h às 23h** (horário de Brasília). Fora desse intervalo a VM é **desalocada** para reduzir custo.
+
+- Workflow: `.github/workflows/vm-schedule.yml` (start **16:50**, deallocate **23:05**)
+- Configuração GitHub + service principal: [VM-SCHEDULE-GITHUB.md](VM-SCHEDULE-GITHUB.md)
+- Manual: `infra/azure/set-vm-power.ps1`

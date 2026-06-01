@@ -1,3 +1,15 @@
+import DownloadIcon from "@mui/icons-material/Download";
+import Card from "@mui/material/Card";
+import CardContent from "@mui/material/CardContent";
+import FormControl from "@mui/material/FormControl";
+import Grid from "@mui/material/Grid2";
+import InputLabel from "@mui/material/InputLabel";
+import MenuItem from "@mui/material/MenuItem";
+import Select from "@mui/material/Select";
+import Stack from "@mui/material/Stack";
+import TextField from "@mui/material/TextField";
+import Button from "@mui/material/Button";
+import ButtonGroup from "@mui/material/ButtonGroup";
 import { statusOptions, rotuloStatus } from "../constants/status";
 import type { StatusAgendamento } from "../types/painel";
 
@@ -25,42 +37,60 @@ export function FiltersBar({
   onExportJson,
 }: Props) {
   return (
-    <section className="panelCard panelCard--filters" aria-label="Filtros da lista">
-      <div className="filters">
-        <input
-          type="search"
-          placeholder="Pesquisar por nome, telefone, protocolo ou motivo…"
-          value={searchTerm}
-          onChange={(e) => onSearchChange(e.target.value)}
-        />
-        <select value={statusFilter} onChange={(e) => onStatusChange(e.target.value as StatusAgendamento | "todos")}>
-          {statusOptions.map((status) => (
-            <option key={status} value={status}>
-              {rotuloStatus[status]}
-            </option>
-          ))}
-        </select>
-        <input
-          type="date"
-          value={dateFilter}
-          onChange={(e) => onDateChange(e.target.value)}
-          aria-label="Filtrar por data"
-          title="Filtrar por data"
-        />
-        <details className="exportMenu">
-          <summary className="btn btnSecondary btnSmall" aria-disabled={exportDisabled}>
-            Exportar
-          </summary>
-          <div className="exportMenuList" role="menu" aria-label="Opções de exportação">
-            <button type="button" className="exportMenuItem" onClick={onExportCsv} disabled={exportDisabled}>
-              CSV
-            </button>
-            <button type="button" className="exportMenuItem" onClick={onExportJson} disabled={exportDisabled}>
-              JSON
-            </button>
-          </div>
-        </details>
-      </div>
-    </section>
+    <Card aria-label="Filtros da lista">
+      <CardContent sx={{ py: 1.25, "&:last-child": { pb: 1.25 } }}>
+        <Grid container spacing={1.5} alignItems="center">
+          <Grid size={{ xs: 12, md: 5 }}>
+            <TextField
+              fullWidth
+              type="search"
+              label="Pesquisar"
+              placeholder="Nome, telefone, protocolo…"
+              value={searchTerm}
+              onChange={(e) => onSearchChange(e.target.value)}
+              size="small"
+            />
+          </Grid>
+          <Grid size={{ xs: 6, sm: 4, md: 2.5 }}>
+            <FormControl fullWidth size="small">
+              <InputLabel id="filtro-status">Status</InputLabel>
+              <Select
+                labelId="filtro-status"
+                label="Status"
+                value={statusFilter}
+                onChange={(e) => onStatusChange(e.target.value as StatusAgendamento | "todos")}
+              >
+                {statusOptions.map((status) => (
+                  <MenuItem key={status} value={status}>
+                    {rotuloStatus[status]}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Grid>
+          <Grid size={{ xs: 6, sm: 4, md: 2.5 }}>
+            <TextField
+              fullWidth
+              type="date"
+              label="Data"
+              value={dateFilter}
+              onChange={(e) => onDateChange(e.target.value)}
+              slotProps={{ inputLabel: { shrink: true } }}
+              size="small"
+            />
+          </Grid>
+          <Grid size={{ xs: 12, sm: 4, md: 2 }}>
+            <Stack direction="row" justifyContent={{ xs: "flex-start", md: "flex-end" }}>
+              <ButtonGroup size="small" variant="outlined" disabled={exportDisabled}>
+                <Button startIcon={<DownloadIcon fontSize="small" />} onClick={onExportCsv}>
+                  CSV
+                </Button>
+                <Button onClick={onExportJson}>JSON</Button>
+              </ButtonGroup>
+            </Stack>
+          </Grid>
+        </Grid>
+      </CardContent>
+    </Card>
   );
 }

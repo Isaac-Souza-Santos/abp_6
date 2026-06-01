@@ -1,12 +1,15 @@
+import Alert from "@mui/material/Alert";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { AgendaEquipeSection } from "./components/AgendaEquipeSection";
+import { WhatsappConfigSection } from "./components/WhatsappConfigSection";
 import { AjustesAgendaSection } from "./components/AjustesAgendaSection";
 import { AgendaConsultaList } from "./components/AgendaConsultaList";
 import { FiltersBar } from "./components/FiltersBar";
 import { MetricsTabPanel } from "./components/MetricsTabPanel";
 import { PanelHeader } from "./components/PanelHeader";
 import { PanelTabList } from "./components/PanelTabList";
-import { adminPanelToken, apiBaseUrl } from "./config/env";
+import { adminPanelToken, apiBaseUrl, useMockData } from "./config/env";
+import { mockApiResponse } from "./mocks/painelMockData";
 import type { Agendamento, ApiResponse, PainelTab, StatusAgendamento } from "./types/painel";
 import "./App.css";
 
@@ -41,6 +44,12 @@ export default function Dashboard({ getIdToken, nomeUtilizadorSessao, onSignOut 
   const loadData = useCallback(async () => {
     setLoading(true);
     setError("");
+    if (useMockData) {
+      await new Promise((r) => setTimeout(r, 350));
+      setData(mockApiResponse);
+      setLoading(false);
+      return;
+    }
     try {
       const url = new URL(`${apiBaseUrl}/admin/agendamentos`);
       if (adminPanelToken) {
@@ -177,9 +186,16 @@ export default function Dashboard({ getIdToken, nomeUtilizadorSessao, onSignOut 
       <main className="container">
         <PanelHeader loading={loading} onRefresh={() => void loadData()} onSignOut={onSignOut} />
 
+        {useMockData ? (
+          <Alert severity="warning" variant="outlined" sx={{ py: 0.25 }}>
+            Modo demonstração: dados fictícios (apenas desenvolvimento local). Para usar a API real, defina{" "}
+            <code>VITE_USE_MOCK_DATA=false</code> em <code>.env.local</code>.
+          </Alert>
+        ) : null}
+
         <PanelTabList active={tab} onChange={setTab} />
 
-        {error && <p className="error">{error}</p>}
+        {error ? <Alert severity="error">{error}</Alert> : null}
 
         {(tab === "agendamentos" || tab === "ajustes") && (
           <FiltersBar
@@ -206,6 +222,8 @@ export default function Dashboard({ getIdToken, nomeUtilizadorSessao, onSignOut 
             onSaved={() => void loadData()}
           />
         )}
+
+        {tab === "whatsapp" && <WhatsappConfigSection getAuthHeaders={buildAuthHeaders} />}
 
         {tab === "equipe" && <AgendaEquipeSection getAuthHeaders={buildAuthHeaders} />}
 

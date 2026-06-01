@@ -115,6 +115,7 @@ xychart-beta
 | [documentacao/AZURE-CONFIGURACAO.md](documentacao/AZURE-CONFIGURACAO.md) | Onde guardar guias Azure (fora do Git); pasta `local/`. |
 | [documentacao/DEPLOY-AZURE-ETAPAS.md](documentacao/DEPLOY-AZURE-ETAPAS.md) | Referência histórica do deploy Azure em App Service. |
 | [documentacao/DEPLOY-VM-DOCKER.md](documentacao/DEPLOY-VM-DOCKER.md) | Guia atual de deploy em Azure VM com Docker (bot + painel). |
+| [documentacao/VM-SCHEDULE-GITHUB.md](documentacao/VM-SCHEDULE-GITHUB.md) | Agendamento da VM (17h–23h): start/deallocate via GitHub Actions. |
 | [infra/azure/README.md](infra/azure/README.md) | Índice dos scripts/workflows Azure (backend e painel em App Service). |
 | [Apresentação Sprint 1 (YouTube)](https://www.youtube.com/watch?v=91aUjvrli_g) | Vídeo da apresentação / demo da Sprint 1.                           |
 

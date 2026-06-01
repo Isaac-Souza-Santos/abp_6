@@ -5,7 +5,10 @@
 AZURE_SUBSCRIPTION_NAME=
 AZURE_SUBSCRIPTION_ID=
 AZURE_TENANT_ID=
-RESOURCE_GROUP_BOT=rg-procon-bot-prod
+RESOURCE_GROUP_BOT=rg-procon-bot-vm
+AZURE_RESOURCE_GROUP=RG-PROCON-BOT-VM
+AZURE_VM_NAME=vm-procon-bot-docker
+PUBLIC_BASE_URL=https://proconbotdockcl0428.chilecentral.cloudapp.azure.com
 CONTAINER_APP_NAME=procon-bot
 STATIC_WEB_APP_NAME=
 STATIC_WEB_APP_REGION=westeurope

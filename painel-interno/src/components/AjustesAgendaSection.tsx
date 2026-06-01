@@ -1,6 +1,9 @@
+import Alert from "@mui/material/Alert";
+import Box from "@mui/material/Box";
+import Grid from "@mui/material/Grid2";
+import Typography from "@mui/material/Typography";
 import { AgendaCard } from "./AgendaCard";
 import { AgendaCardEditor } from "./AgendaCardEditor";
-import { LembreteConfirmacaoBlock } from "./LembreteConfirmacaoBlock";
 import { adminPanelToken, apiBaseUrl } from "../config/env";
 import type { Agendamento } from "../types/painel";
 
@@ -14,21 +17,20 @@ type Props = {
 
 export function AjustesAgendaSection({ items, loading, getAuthHeaders, nomeUtilizadorSessao, onSaved }: Props) {
   return (
-    <section className="tabPanel" role="tabpanel" aria-label="Ajustes da agenda">
-      <LembreteConfirmacaoBlock getAuthHeaders={getAuthHeaders} />
-      <p className="tabIntro">
-        Altere o <strong>status</strong>, registe <strong>quem atendeu</strong> quando passar a <em>atendido</em>, e escreva{" "}
-        <strong>observações</strong>. Use <em>Guardar alterações</em> em cada protocolo.
-      </p>
-      <div className="agendaList">
-        {items.length === 0 ? (
-          <div className="agendaEmpty">
-            {loading ? "Carregando agendamentos…" : "Nenhum agendamento encontrado com os filtros atuais."}
-          </div>
-        ) : (
-          <ul className="agendaGrid">
-            {items.map((ag) => (
-              <AgendaCard key={ag.id} ag={ag} variant="ajuste">
+    <Box className="tabPanel" role="tabpanel" aria-label="Ajustes da agenda">
+      <Alert severity="info" variant="outlined" sx={{ py: 0.5, bgcolor: "#ffffff" }}>
+        Altere o <strong>status</strong>, registe <strong>quem atendeu</strong> e as <strong>observações</strong>. Guarde em cada cartão.
+      </Alert>
+
+      {items.length === 0 ? (
+        <Typography variant="body2" color="text.secondary" align="center" sx={{ py: 4 }}>
+          {loading ? "Carregando agendamentos…" : "Nenhum agendamento com os filtros atuais."}
+        </Typography>
+      ) : (
+        <Grid container spacing={1.5} component="ul" className="agendaGridMui" sx={{ listStyle: "none", m: 0, p: 0 }}>
+          {items.map((ag) => (
+            <Grid key={ag.id} size={{ xs: 12, lg: 6 }} component="li">
+              <AgendaCard ag={ag} variant="ajuste">
                 <AgendaCardEditor
                   key={`${ag.id}-${ag.atualizadoEm}`}
                   ag={ag}
@@ -39,10 +41,10 @@ export function AjustesAgendaSection({ items, loading, getAuthHeaders, nomeUtili
                   onSaved={onSaved}
                 />
               </AgendaCard>
-            ))}
-          </ul>
-        )}
-      </div>
-    </section>
+            </Grid>
+          ))}
+        </Grid>
+      )}
+    </Box>
   );
 }

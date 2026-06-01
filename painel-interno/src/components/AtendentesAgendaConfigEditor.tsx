@@ -1,6 +1,29 @@
-import { useCallback, useEffect, useState } from "react";
-import { adminPanelToken, apiBaseUrl } from "../config/env";
+import AddIcon from "@mui/icons-material/Add";
+import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
+import Alert from "@mui/material/Alert";
+import Box from "@mui/material/Box";
+import Button from "@mui/material/Button";
+import Card from "@mui/material/Card";
+import CardContent from "@mui/material/CardContent";
+import CardHeader from "@mui/material/CardHeader";
+import Divider from "@mui/material/Divider";
+import FormControlLabel from "@mui/material/FormControlLabel";
+import Grid from "@mui/material/Grid2";
+import IconButton from "@mui/material/IconButton";
+import Stack from "@mui/material/Stack";
+import Switch from "@mui/material/Switch";
+import TextField from "@mui/material/TextField";
+import Typography from "@mui/material/Typography";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { adminPanelToken, apiBaseUrl, useMockData } from "../config/env";
+import { mockAtendentesConfig } from "../mocks/painelMockData";
 import type { AgendaAtendentesConfig, AtendenteAgendaConfig, HorarioBlocoAtendente } from "../types/painel";
+import { ConfirmDialog } from "./ConfirmDialog";
+
+type RemoveConfirm =
+  | { type: "atendente"; index: number; nome: string }
+  | { type: "bloco"; atendenteIndex: number; blocoIndex: number; atendenteNome: string }
+  | { type: "quantidade"; next: number };
 
 type Props = {
   getAuthHeaders: () => Promise<Record<string, string>>;
@@ -54,6 +77,57 @@ function novoAtendente(index: number): AtendenteAgendaConfig {
   };
 }
 
+function BlocoHorarioRow({
+  inicio,
+  fim,
+  onInicio,
+  onFim,
+  onRemove,
+  showRemove,
+  label,
+}: {
+  inicio: string;
+  fim: string;
+  onInicio: (v: string) => void;
+  onFim: (v: string) => void;
+  onRemove?: () => void;
+  showRemove?: boolean;
+  label?: string;
+}) {
+  return (
+    <Stack direction="row" alignItems="center" spacing={1} flexWrap="wrap">
+      {label ? (
+        <Typography variant="caption" color="text.secondary" sx={{ minWidth: 56, fontWeight: 600 }}>
+          {label}
+        </Typography>
+      ) : null}
+      <TextField
+        type="time"
+        label="Início"
+        size="small"
+        value={inicio}
+        onChange={(e) => onInicio(e.target.value)}
+        slotProps={{ inputLabel: { shrink: true } }}
+        sx={{ width: 118 }}
+      />
+      <TextField
+        type="time"
+        label="Fim"
+        size="small"
+        value={fim}
+        onChange={(e) => onFim(e.target.value)}
+        slotProps={{ inputLabel: { shrink: true } }}
+        sx={{ width: 118 }}
+      />
+      {showRemove && onRemove ? (
+        <IconButton size="small" color="error" onClick={onRemove} aria-label="Remover bloco">
+          <DeleteOutlineIcon fontSize="small" />
+        </IconButton>
+      ) : null}
+    </Stack>
+  );
+}
+
 export function AtendentesAgendaConfigEditor({ getAuthHeaders }: Props) {
   const [config, setConfig] = useState<AgendaAtendentesConfig | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -61,10 +135,17 @@ export function AtendentesAgendaConfigEditor({ getAuthHeaders }: Props) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [reloadTick, setReloadTick] = useState(0);
+  const [removeConfirm, setRemoveConfirm] = useState<RemoveConfirm | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
     setLoadError(null);
+    if (useMockData) {
+      await new Promise((r) => setTimeout(r, 200));
+      setConfig(structuredClone(mockAtendentesConfig));
+      setLoading(false);
+      return;
+    }
     try {
       const headers: Record<string, string> = {
         ...(await getAuthHeaders()),
@@ -99,6 +180,11 @@ export function AtendentesAgendaConfigEditor({ getAuthHeaders }: Props) {
     if (!config) return;
     setSaving(true);
     setSaveError(null);
+    if (useMockData) {
+      await new Promise((r) => setTimeout(r, 300));
+      setSaving(false);
+      return;
+    }
     try {
       const headers: Record<string, string> = {
         ...(await getAuthHeaders()),
@@ -151,6 +237,59 @@ export function AtendentesAgendaConfigEditor({ getAuthHeaders }: Props) {
     });
   };
 
+  const removerBloco = (atendenteIndex: number, blocoIndex: number) => {
+    setConfig((c) => {
+      if (!c) return c;
+      return {
+        atendentes: c.atendentes.map((at, i) =>
+          i === atendenteIndex ? { ...at, blocos: at.blocos.filter((_, bi) => bi !== blocoIndex) } : at,
+        ),
+      };
+    });
+  };
+
+  const solicitarQuantidade = (nextRaw: number) => {
+    const next = Math.max(1, Math.min(20, Number.isFinite(nextRaw) ? Math.floor(nextRaw) : 1));
+    if (!config) return;
+    if (next < config.atendentes.length) {
+      setRemoveConfirm({ type: "quantidade", next });
+      return;
+    }
+    ajustarQuantidadeAtendentes(nextRaw);
+  };
+
+  const applyRemoveConfirm = () => {
+    if (!removeConfirm) return;
+    if (removeConfirm.type === "atendente") {
+      removerAtendente(removeConfirm.index);
+    } else if (removeConfirm.type === "bloco") {
+      removerBloco(removeConfirm.atendenteIndex, removeConfirm.blocoIndex);
+    } else {
+      ajustarQuantidadeAtendentes(removeConfirm.next);
+    }
+  };
+
+  const confirmDialogCopy = useMemo(() => {
+    if (!removeConfirm || !config) return null;
+    if (removeConfirm.type === "atendente") {
+      return {
+        title: "Remover atendente?",
+        message: `Deseja desativar "${removeConfirm.nome}"? Os horários desta pessoa serão removidos da configuração (guarde para aplicar no bot).`,
+      };
+    }
+    if (removeConfirm.type === "bloco") {
+      return {
+        title: "Remover bloco de horário?",
+        message: `Remover este período de atendimento de "${removeConfirm.atendenteNome}"?`,
+      };
+    }
+    const removidos = config.atendentes.length - removeConfirm.next;
+    return {
+      title: "Reduzir atendentes ativos?",
+      message: `Isso remove ${removidos} atendente(s) do final da lista. Deseja continuar?`,
+    };
+  }, [removeConfirm, config]);
+
   const atualizarBloco = (
     atendenteIdx: number,
     blocoIdx: number,
@@ -176,212 +315,224 @@ export function AtendentesAgendaConfigEditor({ getAuthHeaders }: Props) {
 
   if (loading) {
     return (
-      <div className="agendaConfigCard">
-        <p className="agendaConfigLead">A carregar configuração da equipe…</p>
-      </div>
+      <Typography variant="body2" color="text.secondary" sx={{ py: 2 }}>
+        A carregar configuração da equipe…
+      </Typography>
     );
   }
 
   if (loadError || !config) {
     return (
-      <div className="agendaConfigCard">
-        <p className="agendaConfigError" role="alert">
-          {loadError || "Sem dados."}
-        </p>
-        <button type="button" className="btn btnSecondary" onClick={() => setReloadTick((v) => v + 1)}>
-          Tentar de novo
-        </button>
-      </div>
+      <Alert
+        severity="error"
+        action={
+          <Button color="inherit" size="small" onClick={() => setReloadTick((v) => v + 1)}>
+            Tentar de novo
+          </Button>
+        }
+      >
+        {loadError || "Sem dados."}
+      </Alert>
     );
   }
 
   return (
-    <div className="agendaConfigCard">
-      <h2 className="agendaConfigTitle">Atendentes ativos, quantidade e agenda por atendente</h2>
-      <p className="agendaConfigLead">
-        Nesta aba você controla quem está ativo para receber marcações. Para <strong>ativar</strong>, adicione atendentes;
-        para <strong>desativar</strong>, remova. Também pode ajustar intervalo, blocos de atendimento e almoço de cada um.
-      </p>
+    <Stack spacing={1.5}>
+      <Card variant="outlined">
+        <CardContent sx={{ py: 1.25, "&:last-child": { pb: 1.25 } }}>
+          <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5} alignItems={{ sm: "center" }}>
+            <TextField
+              type="number"
+              label="Atendentes ativos"
+              size="small"
+              inputProps={{ min: 1, max: 20 }}
+              value={config.atendentes.length}
+              onChange={(e) => solicitarQuantidade(Number(e.target.value))}
+              sx={{ width: { xs: "100%", sm: 140 } }}
+            />
+            <Button
+              variant="outlined"
+              size="small"
+              startIcon={<AddIcon />}
+              onClick={() => ajustarQuantidadeAtendentes(config.atendentes.length + 1)}
+            >
+              Novo atendente
+            </Button>
+          </Stack>
+        </CardContent>
+      </Card>
 
-      <div className="agendaConfigBlocoRow">
-        <label className="agendaField">
-          <span className="agendaFieldLabel">Quantidade de atendentes ativos</span>
-          <input
-            type="number"
-            min={1}
-            max={20}
-            className="agendaInput agendaIntervalInput"
-            value={config.atendentes.length}
-            onChange={(e) => ajustarQuantidadeAtendentes(Number(e.target.value))}
-          />
-        </label>
-        <button type="button" className="btn btnSecondary btnSmall" onClick={() => ajustarQuantidadeAtendentes(config.atendentes.length + 1)}>
-          + Ativar novo atendente
-        </button>
-      </div>
-
-      <div className="agendaConfigList">
+      <Grid container spacing={1.5}>
         {config.atendentes.map((at, ai) => {
           const temAlmoco = Boolean(at.almoco);
           const almoco = at.almoco ?? almocoPadrao();
-          return (
-            <div key={at.id} className="agendaConfigAtendente">
-              <p className="agendaConfigAtendenteNome">Atendente {ai + 1}</p>
-              <div className="agendaConfigBlocoRow">
-                <label className="agendaField">
-                  <span className="agendaFieldLabel">Nome do atendente</span>
-                  <input
-                    type="text"
-                    className="agendaInput"
-                    value={at.nome}
-                    maxLength={120}
-                    onChange={(e) => {
-                      const nome = e.target.value.slice(0, 120);
-                      atualizarAtendente(ai, { nome, id: toId(nome, ai) });
-                    }}
-                  />
-                </label>
-                <label className="agendaField">
-                  <span className="agendaFieldLabel">Intervalo dos slots (min)</span>
-                  <input
-                    type="number"
-                    className="agendaInput agendaIntervalInput"
-                    min={15}
-                    max={180}
-                    step={5}
-                    value={at.intervaloMinutos}
-                    onChange={(e) => {
-                      const n = Number(e.target.value);
-                      if (Number.isInteger(n) && n >= 15 && n <= 180) {
-                        atualizarAtendente(ai, { intervaloMinutos: n });
-                      }
-                    }}
-                  />
-                </label>
-                {config.atendentes.length > 1 ? (
-                  <button type="button" className="btnRemoveLine" onClick={() => removerAtendente(ai)}>
-                    Desativar este atendente
-                  </button>
-                ) : null}
-              </div>
 
-              <p className="agendaConfigSub">Agenda de atendimento</p>
-              <ul className="agendaConfigBlocos">
-                {at.blocos.map((bloco, bi) => (
-                  <li key={`${at.id}-bloco-${bi}`} className="agendaConfigBlocoRow agendaConfigBlocoItem">
-                    <label className="agendaField">
-                      <span className="agendaFieldLabel">Início</span>
-                      <input
-                        type="time"
-                        className="agendaInput agendaTimeInput"
-                        value={blocoToTime(bloco, "inicio")}
+          return (
+            <Grid key={at.id} size={{ xs: 12, lg: 6 }}>
+              <Card variant="outlined" sx={{ height: "100%" }}>
+                <CardHeader
+                  title={at.nome || `Atendente ${ai + 1}`}
+                  subheader={`Cada horário reservado: ${at.intervaloMinutos} min`}
+                  sx={{ py: 1, px: 1.5, "& .MuiCardHeader-title": { fontSize: "0.95rem" } }}
+                  action={
+                    config.atendentes.length > 1 ? (
+                      <IconButton
+                        size="small"
+                        color="error"
+                        onClick={() =>
+                          setRemoveConfirm({
+                            type: "atendente",
+                            index: ai,
+                            nome: at.nome || `Atendente ${ai + 1}`,
+                          })
+                        }
+                        aria-label="Desativar atendente"
+                      >
+                        <DeleteOutlineIcon fontSize="small" />
+                      </IconButton>
+                    ) : null
+                  }
+                />
+                <Divider />
+                <CardContent sx={{ pt: 1.25, pb: 1.25 }}>
+                  <Grid container spacing={1} sx={{ mb: 1.25 }}>
+                    <Grid size={{ xs: 12, sm: 7 }}>
+                      <TextField
+                        fullWidth
+                        label="Nome"
+                        size="small"
+                        value={at.nome}
+                        inputProps={{ maxLength: 120 }}
                         onChange={(e) => {
-                          const hm = timeToHm(e.target.value);
-                          if (hm) atualizarBloco(ai, bi, { inicioH: hm.h, inicioM: hm.m }, "blocos");
+                          const nome = e.target.value.slice(0, 120);
+                          atualizarAtendente(ai, { nome, id: toId(nome, ai) });
                         }}
                       />
-                    </label>
-                    <label className="agendaField">
-                      <span className="agendaFieldLabel">Fim</span>
-                      <input
-                        type="time"
-                        className="agendaInput agendaTimeInput"
-                        value={blocoToTime(bloco, "fim")}
+                    </Grid>
+                    <Grid size={{ xs: 12, sm: 5 }}>
+                      <TextField
+                        fullWidth
+                        type="number"
+                        label="Duração de cada horário (min)"
+                        size="small"
+                        helperText="Tempo de cada marcação na agenda (15 a 180 min)"
+                        inputProps={{ min: 15, max: 180, step: 5 }}
+                        value={at.intervaloMinutos}
                         onChange={(e) => {
-                          const hm = timeToHm(e.target.value);
+                          const n = Number(e.target.value);
+                          if (Number.isInteger(n) && n >= 15 && n <= 180) {
+                            atualizarAtendente(ai, { intervaloMinutos: n });
+                          }
+                        }}
+                      />
+                    </Grid>
+                  </Grid>
+
+                  <Typography variant="caption" color="text.secondary" fontWeight={700} display="block" sx={{ mb: 0.75 }}>
+                    Horários de atendimento
+                  </Typography>
+                  <Stack spacing={0.75} sx={{ mb: 1 }}>
+                    {at.blocos.map((bloco, bi) => (
+                      <BlocoHorarioRow
+                        key={`${at.id}-bloco-${bi}`}
+                        label={at.blocos.length > 1 ? `#${bi + 1}` : undefined}
+                        inicio={blocoToTime(bloco, "inicio")}
+                        fim={blocoToTime(bloco, "fim")}
+                        showRemove={at.blocos.length > 1}
+                        onRemove={() =>
+                          setRemoveConfirm({
+                            type: "bloco",
+                            atendenteIndex: ai,
+                            blocoIndex: bi,
+                            atendenteNome: at.nome || `Atendente ${ai + 1}`,
+                          })
+                        }
+                        onInicio={(v) => {
+                          const hm = timeToHm(v);
+                          if (hm) atualizarBloco(ai, bi, { inicioH: hm.h, inicioM: hm.m }, "blocos");
+                        }}
+                        onFim={(v) => {
+                          const hm = timeToHm(v);
                           if (hm) atualizarBloco(ai, bi, { fimH: hm.h, fimM: hm.m }, "blocos");
                         }}
                       />
-                    </label>
-                    {at.blocos.length > 1 ? (
-                      <button
-                        type="button"
-                        className="btnRemoveLine"
-                        onClick={() => {
-                          atualizarAtendente(ai, { blocos: at.blocos.filter((_, i) => i !== bi) });
-                        }}
-                      >
-                        Remover bloco
-                      </button>
-                    ) : null}
-                  </li>
-                ))}
-              </ul>
-              <button
-                type="button"
-                className="btn btnSecondary btnSmall agendaConfigAddButton"
-                onClick={() => {
-                  atualizarAtendente(ai, {
-                    blocos: [...at.blocos, { inicioH: 9, inicioM: 0, fimH: 12, fimM: 0 }],
-                  });
-                }}
-              >
-                + Adicionar bloco de agenda
-              </button>
-
-              <label className="agendaCheck agendaCheckBlock">
-                <input
-                  type="checkbox"
-                  checked={temAlmoco}
-                  onChange={(e) => {
-                    if (e.target.checked) {
-                      atualizarAtendente(ai, { almoco: almocoPadrao() });
-                    } else {
-                      const copia = { ...at };
-                      delete copia.almoco;
-                      atualizarAtendente(ai, copia);
+                    ))}
+                  </Stack>
+                  <Button
+                    size="small"
+                    startIcon={<AddIcon fontSize="small" />}
+                    onClick={() =>
+                      atualizarAtendente(ai, {
+                        blocos: [...at.blocos, { inicioH: 9, inicioM: 0, fimH: 12, fimM: 0 }],
+                      })
                     }
-                  }}
-                />
-                <span>Reservar horário de almoço (não oferecer slots neste intervalo)</span>
-              </label>
-              {temAlmoco ? (
-                <div className="agendaConfigBlocoRow">
-                  <label className="agendaField">
-                    <span className="agendaFieldLabel">Início do almoço</span>
-                    <input
-                      type="time"
-                      className="agendaInput agendaTimeInput"
-                      value={blocoToTime(almoco, "inicio")}
-                      onChange={(e) => {
-                        const hm = timeToHm(e.target.value);
-                        if (hm) {
-                          atualizarBloco(ai, 0, { inicioH: hm.h, inicioM: hm.m }, "almoco");
-                        }
-                      }}
-                    />
-                  </label>
-                  <label className="agendaField">
-                    <span className="agendaFieldLabel">Fim do almoço</span>
-                    <input
-                      type="time"
-                      className="agendaInput agendaTimeInput"
-                      value={blocoToTime(almoco, "fim")}
-                      onChange={(e) => {
-                        const hm = timeToHm(e.target.value);
-                        if (hm) {
-                          atualizarBloco(ai, 0, { fimH: hm.h, fimM: hm.m }, "almoco");
-                        }
-                      }}
-                    />
-                  </label>
-                </div>
-              ) : null}
-            </div>
+                    sx={{ mb: 1 }}
+                  >
+                    Bloco
+                  </Button>
+
+                  <FormControlLabel
+                    control={
+                      <Switch
+                        size="small"
+                        checked={temAlmoco}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            atualizarAtendente(ai, { almoco: almocoPadrao() });
+                          } else {
+                            const copia = { ...at };
+                            delete copia.almoco;
+                            atualizarAtendente(ai, copia);
+                          }
+                        }}
+                      />
+                    }
+                    label={<Typography variant="body2">Horário de almoço</Typography>}
+                    sx={{ m: 0, display: "flex" }}
+                  />
+                  {temAlmoco ? (
+                    <Box sx={{ mt: 0.75, pl: 0.5 }}>
+                      <BlocoHorarioRow
+                        label="Almoço"
+                        inicio={blocoToTime(almoco, "inicio")}
+                        fim={blocoToTime(almoco, "fim")}
+                        onInicio={(v) => {
+                          const hm = timeToHm(v);
+                          if (hm) atualizarBloco(ai, 0, { inicioH: hm.h, inicioM: hm.m }, "almoco");
+                        }}
+                        onFim={(v) => {
+                          const hm = timeToHm(v);
+                          if (hm) atualizarBloco(ai, 0, { fimH: hm.h, fimM: hm.m }, "almoco");
+                        }}
+                      />
+                    </Box>
+                  ) : null}
+                </CardContent>
+              </Card>
+            </Grid>
           );
         })}
-      </div>
+      </Grid>
 
-      <div className="agendaConfigActions">
-        <button type="button" className="btn btnPrimary" disabled={saving} onClick={() => void salvar()}>
-          {saving ? "A guardar…" : "Guardar horários de almoço"}
-        </button>
+      <Stack direction="row" flexWrap="wrap" alignItems="center" gap={1}>
+        <Button variant="contained" disabled={saving} onClick={() => void salvar()}>
+          {saving ? "A guardar…" : "Guardar equipe e horários"}
+        </Button>
         {saveError ? (
-          <span className="agendaSaveError" role="alert">
+          <Alert severity="error" sx={{ py: 0, flex: 1 }}>
             {saveError}
-          </span>
+          </Alert>
         ) : null}
-      </div>
-    </div>
+      </Stack>
+
+      <ConfirmDialog
+        open={removeConfirm !== null && confirmDialogCopy !== null}
+        title={confirmDialogCopy?.title ?? ""}
+        message={confirmDialogCopy?.message ?? ""}
+        confirmLabel="Remover"
+        onConfirm={applyRemoveConfirm}
+        onClose={() => setRemoveConfirm(null)}
+      />
+    </Stack>
   );
 }

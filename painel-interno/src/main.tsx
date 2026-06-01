@@ -1,5 +1,6 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
+import { PanelMuiProvider } from "./components/PanelMuiProvider.tsx";
 import "./index.css";
 import App from "./App.tsx";
 import { getMsalInstance, isAzureLoginConfigured } from "./authConfig.ts";
@@ -17,15 +18,19 @@ void (async () => {
     await instance.handleRedirectPromise();
     createRoot(rootEl).render(
       <StrictMode>
-        <MsalProvider instance={instance}>
-          <App mode="azure" />
-        </MsalProvider>
+        <PanelMuiProvider>
+          <MsalProvider instance={instance}>
+            <App mode="azure" />
+          </MsalProvider>
+        </PanelMuiProvider>
       </StrictMode>
     );
   } else {
     createRoot(rootEl).render(
       <StrictMode>
-        <App mode="legacy" />
+        <PanelMuiProvider>
+          <App mode="legacy" />
+        </PanelMuiProvider>
       </StrictMode>
     );
   }

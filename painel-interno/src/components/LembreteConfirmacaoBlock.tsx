@@ -1,5 +1,15 @@
+import Alert from "@mui/material/Alert";
+import Button from "@mui/material/Button";
+import Card from "@mui/material/Card";
+import CardContent from "@mui/material/CardContent";
+import FormControlLabel from "@mui/material/FormControlLabel";
+import Stack from "@mui/material/Stack";
+import Switch from "@mui/material/Switch";
+import TextField from "@mui/material/TextField";
+import Typography from "@mui/material/Typography";
 import { useCallback, useEffect, useState } from "react";
-import { adminPanelToken, apiBaseUrl } from "../config/env";
+import { adminPanelToken, apiBaseUrl, useMockData } from "../config/env";
+import { mockLembreteConfirmacao } from "../mocks/painelMockData";
 import type { AgendaLembreteConfirmacaoConfig } from "../types/painel";
 
 type Props = {
@@ -16,6 +26,12 @@ export function LembreteConfirmacaoBlock({ getAuthHeaders }: Props) {
   const load = useCallback(async () => {
     setLoading(true);
     setLoadError(null);
+    if (useMockData) {
+      await new Promise((r) => setTimeout(r, 200));
+      setConfig({ ...mockLembreteConfirmacao });
+      setLoading(false);
+      return;
+    }
     try {
       const headers: Record<string, string> = {
         ...(await getAuthHeaders()),
@@ -52,6 +68,11 @@ export function LembreteConfirmacaoBlock({ getAuthHeaders }: Props) {
     if (!config) return;
     setSaving(true);
     setSaveError(null);
+    if (useMockData) {
+      await new Promise((r) => setTimeout(r, 300));
+      setSaving(false);
+      return;
+    }
     try {
       const headers: Record<string, string> = {
         ...(await getAuthHeaders()),
@@ -79,89 +100,83 @@ export function LembreteConfirmacaoBlock({ getAuthHeaders }: Props) {
 
   if (loading && !config) {
     return (
-      <div className="agendaConfigCard panelStack">
-        <p className="agendaConfigLead" style={{ marginBottom: 0 }}>
-          A carregar lembrete por WhatsApp…
-        </p>
-      </div>
+      <Typography variant="body2" color="text.secondary" sx={{ py: 2 }}>
+        A carregar configuração WhatsApp…
+      </Typography>
     );
   }
 
   if (loadError && !config) {
     return (
-      <div className="agendaConfigCard panelStack">
-        <p className="agendaConfigError">{loadError}</p>
-        <button type="button" className="btn btnSecondary btnSmall" onClick={() => void load()}>
-          Tentar de novo
-        </button>
-      </div>
+      <Alert
+        severity="error"
+        action={
+          <Button color="inherit" size="small" onClick={() => void load()}>
+            Tentar de novo
+          </Button>
+        }
+      >
+        {loadError}
+      </Alert>
     );
   }
 
   if (!config) return null;
 
   return (
-    <div className="agendaConfigCard panelStack">
-      <h2 className="agendaConfigTitle">Confirmação por WhatsApp (automático)</h2>
-      <p className="agendaConfigLead">
-        O bot envia esta mensagem <strong>uma vez por agendamento</strong>, quando faltar o número de dias abaixo até o
-        horário reservado (<code>slot</code>), desde que o protocolo tenha horário na agenda, não esteja cancelado,
-        confirmado ou atendido e o WhatsApp do servidor esteja ligado. O padrão é <strong>1 dia antes</strong>. Inclua no
-        texto a pergunta com <strong>*1*</strong> (sim) e <strong>*2*</strong> (não): o cidadão responde e o sistema
-        atualiza o status para <em>confirmado</em> ou <em>cancelado</em>.
-      </p>
+    <Card variant="outlined">
+      <CardContent>
+        <Typography variant="subtitle1" fontWeight={700} gutterBottom>
+          Confirmação automática por WhatsApp
+        </Typography>
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 2, lineHeight: 1.5 }}>
+          Mensagem enviada uma vez por agendamento, com antecedência configurável. O cidadão responde{" "}
+          <strong>1</strong> ou <strong>2</strong> para confirmar ou cancelar o comparecimento.
+        </Typography>
 
-      <label className="agendaCheckBlock" style={{ display: "flex", gap: "10px", cursor: "pointer" }}>
-        <input
-          type="checkbox"
-          checked={config.ativo}
-          onChange={(e) => setConfig({ ...config, ativo: e.target.checked })}
-        />
-        <span>Enviar lembretes automáticos</span>
-      </label>
+        <Stack spacing={1.5}>
+          <FormControlLabel
+            control={<Switch checked={config.ativo} onChange={(e) => setConfig({ ...config, ativo: e.target.checked })} />}
+            label="Enviar lembretes automáticos"
+          />
 
-      <div style={{ marginTop: "14px" }}>
-        <label className="agendaConfigSub" htmlFor="antecedenciaDias" style={{ display: "block", marginBottom: "6px" }}>
-          Dias de antecedência (1 a 14)
-        </label>
-        <input
-          id="antecedenciaDias"
-          type="number"
-          min={1}
-          max={14}
-          className="agendaIntervalInput"
-          value={config.antecedenciaDias}
-          onChange={(e) => {
-            const n = Number(e.target.value);
-            if (!Number.isInteger(n) || n < 1 || n > 14) return;
-            setConfig({ ...config, antecedenciaDias: n });
-          }}
-        />
-      </div>
+          <TextField
+            type="number"
+            label="Dias de antecedência (1–14)"
+            value={config.antecedenciaDias}
+            onChange={(e) => {
+              const n = Number(e.target.value);
+              if (!Number.isInteger(n) || n < 1 || n > 14) return;
+              setConfig({ ...config, antecedenciaDias: n });
+            }}
+            inputProps={{ min: 1, max: 14 }}
+            size="small"
+            sx={{ maxWidth: 220 }}
+          />
 
-      <p className="agendaConfigSub" style={{ marginTop: "16px" }}>
-        Texto da mensagem (use os marcadores abaixo)
-      </p>
-      <textarea
-        className="lembreteTemplateTextarea"
-        value={config.mensagemTemplate}
-        onChange={(e) => setConfig({ ...config, mensagemTemplate: e.target.value })}
-        rows={14}
-        spellCheck={false}
-      />
-      <p className="agendaFieldHint" style={{ marginTop: "8px", fontSize: "0.82rem", color: "#64748b" }}>
-        Marcadores: <code>{"{nome}"}</code>, <code>{"{dataHora}"}</code>, <code>{"{motivo}"}</code>,{" "}
-        <code>{"{protocolo}"}</code>, <code>{"{guiche}"}</code>, <code>{"{endereco}"}</code>. O modelo padrão já pede{" "}
-        <em>1</em> / <em>2</em> para confirmar ou cancelar o comparecimento.
-      </p>
+          <TextField
+            fullWidth
+            multiline
+            minRows={8}
+            maxRows={16}
+            label="Texto da mensagem"
+            value={config.mensagemTemplate}
+            onChange={(e) => setConfig({ ...config, mensagemTemplate: e.target.value })}
+            size="small"
+            slotProps={{ input: { sx: { fontFamily: "monospace", fontSize: "0.82rem" } } }}
+          />
 
-      {saveError ? <p className="agendaConfigError">{saveError}</p> : null}
+          <Typography variant="caption" color="text.secondary">
+            Marcadores: {"{nome}"}, {"{dataHora}"}, {"{motivo}"}, {"{protocolo}"}, {"{guiche}"}, {"{endereco}"}
+          </Typography>
 
-      <div className="agendaConfigActions">
-        <button type="button" className="btn btnPrimary" disabled={saving} onClick={() => void salvar()}>
-          {saving ? "A guardar…" : "Guardar lembrete"}
-        </button>
-      </div>
-    </div>
+          {saveError ? <Alert severity="error">{saveError}</Alert> : null}
+
+          <Button variant="contained" disabled={saving} onClick={() => void salvar()} sx={{ alignSelf: "flex-start" }}>
+            {saving ? "A guardar…" : "Guardar configuração"}
+          </Button>
+        </Stack>
+      </CardContent>
+    </Card>
   );
 }
