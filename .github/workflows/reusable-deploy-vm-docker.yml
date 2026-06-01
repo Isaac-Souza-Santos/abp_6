@@ -97,11 +97,18 @@ jobs:
 
           scp -i ~/.ssh/id_vm_deploy -o StrictHostKeyChecking=accept-new /tmp/procon-deploy/vm-docker-deploy.tgz "$REMOTE:/tmp/vm-docker-deploy.tgz"
 
-          ssh -i ~/.ssh/id_vm_deploy -o StrictHostKeyChecking=accept-new "$REMOTE" <<EOF
+          # Heredoc entre aspas: evita que "exit" no script remoto encerre o runner do GitHub Actions.
+          ssh -i ~/.ssh/id_vm_deploy -o StrictHostKeyChecking=accept-new "$REMOTE" \
+            env \
+            "PAINEL_VITE_ADMIN_PANEL_TOKEN=${PAINEL_VITE_ADMIN_PANEL_TOKEN:-}" \
+            "PAINEL_VITE_AZURE_CLIENT_ID=${PAINEL_VITE_AZURE_CLIENT_ID:-}" \
+            "PAINEL_VITE_AZURE_TENANT_ID=${PAINEL_VITE_AZURE_TENANT_ID:-}" \
+            "PAINEL_VITE_AZURE_REDIRECT_URI=${PAINEL_VITE_AZURE_REDIRECT_URI:-}" \
+            bash -s <<'REMOTE_SCRIPT'
           set -euo pipefail
           sudo mkdir -p /opt/procon-bot
           sudo tar -xzf /tmp/vm-docker-deploy.tgz -C /opt/procon-bot
-          sudo chown -R \$USER:\$USER /opt/procon-bot
+          sudo chown -R "$USER:$USER" /opt/procon-bot
           cd /opt/procon-bot
           printf '%s\n' \
             "PAINEL_VITE_ADMIN_PANEL_TOKEN=${PAINEL_VITE_ADMIN_PANEL_TOKEN}" \
@@ -111,18 +118,34 @@ jobs:
             > .deploy.env
           sudo docker compose --env-file .deploy.env up -d --build
           sudo docker compose ps
-          for i in \$(seq 1 18); do
-            if curl -fsS http://127.0.0.1:3000/healthz >/dev/null 2>&1; then
-              echo "Bot respondeu /healthz na VM (localhost:3000)."
-              exit 0
+          REMOTE_SCRIPT
+
+      - name: Validar bot na VM (SSH)
+        env:
+          VM_HOST: ${{ secrets.AZURE_VM_HOST || vars.AZURE_VM_HOST }}
+          VM_USER: ${{ vars.AZURE_VM_USER || secrets.AZURE_VM_USER }}
+        run: |
+          set -euo pipefail
+          VM_USER="${VM_USER:-azureuser}"
+          REMOTE="${VM_USER}@${VM_HOST}"
+          bot_ok=0
+          for i in $(seq 1 18); do
+            body="$(ssh -i ~/.ssh/id_vm_deploy -o BatchMode=yes "$REMOTE" \
+              'curl -fsS http://127.0.0.1:3000/healthz' 2>/dev/null || true)"
+            if echo "$body" | grep -q '"alive"'; then
+              echo "Bot respondeu JSON em localhost:3000/healthz (tentativa ${i}/18): $body"
+              bot_ok=1
+              break
             fi
-            echo "Aguardando bot na VM (\$i/18)..."
+            echo "Aguardando bot na VM (${i}/18)..."
             sleep 10
           done
-          echo "::warning::Bot nao respondeu em localhost:3000 apos compose."
-          sudo docker compose logs --tail=80 bot || true
-          exit 1
-          EOF
+          if [ "$bot_ok" -ne 1 ]; then
+            echo "::error::Bot nao respondeu em localhost:3000 apos compose."
+            ssh -i ~/.ssh/id_vm_deploy "$REMOTE" \
+              "cd /opt/procon-bot && sudo docker compose logs --tail=80 bot && sudo docker compose ps" || true
+            exit 1
+          fi
 
       - name: Smoke test pos-deploy
         env:
@@ -136,39 +159,27 @@ jobs:
             exit 1
           fi
 
-          bot_health_ok() {
-            local url="$1"
-            local code
+          echo "Aguardando 15s para proxy/nginx estabilizar apos recreate dos containers..."
+          sleep 15
+
+          echo "Validando JSON do bot em ${BASE_URL}/api/healthz (/healthz publico pode ser HTML do painel)..."
+          ok_api=0
+          for i in $(seq 1 24); do
+            url="${BASE_URL}/api/healthz"
             code="$(curl -sS -o /tmp/api-healthz.json -w '%{http_code}' "$url" 2>/dev/null || echo "000")"
             if [ "$code" = "200" ] && grep -q '"alive"' /tmp/api-healthz.json 2>/dev/null; then
-              echo "$code"
-              return 0
+              echo "Health OK em ${url}"
+              cat /tmp/api-healthz.json
+              ok_api=1
+              break
             fi
-            echo "$code"
-            return 1
-          }
-
-          echo "Validando JSON do bot em ${BASE_URL}/api/healthz (nao usar /healthz — pode ser HTML do painel)..."
-          ok_api=0
-          last_code="000"
-          for i in $(seq 1 24); do
-            for path in /api/healthz /healthz; do
-              url="${BASE_URL}${path}"
-              if bot_health_ok "$url"; then
-                echo "Health OK em ${url}"
-                cat /tmp/api-healthz.json
-                ok_api=1
-                break 2
-              fi
-              last_code="$(cat /tmp/api-healthz.json 2>/dev/null | head -c 80 || echo "000")"
-            done
-            echo "Tentativa $i/24 — sem JSON do bot; aguardando 10s..."
+            echo "Tentativa ${i}/24 — HTTP ${code}; corpo: $(head -c 120 /tmp/api-healthz.json 2>/dev/null || echo vazio)"
             sleep 10
           done
           if [ "$ok_api" -ne 1 ]; then
-            echo "::error::Bot nao respondeu JSON com \"alive\" em /api/healthz (nem /healthz) em ${BASE_URL}."
-            echo "Se o passo 'Upload e deploy na VM' passou, o bot esta OK na VM — falha e rede publica (NSG, proxy, DNS ou PUBLIC_BASE_URL errado)."
-            curl -sS "${BASE_URL}/api/healthz" 2>&1 | tail -n 5 || true
+            echo "::error::Bot nao respondeu JSON com \"alive\" em ${BASE_URL}/api/healthz."
+            echo "Se 'Validar bot na VM' passou, o deploy esta OK — ajuste proxy/NSG ou PUBLIC_BASE_URL."
+            curl -sS "${BASE_URL}/api/healthz" 2>&1 | tail -n 10 || true
             exit 1
           fi
 

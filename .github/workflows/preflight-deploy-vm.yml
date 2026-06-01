@@ -56,17 +56,16 @@ jobs:
         run: |
           set -euo pipefail
           VM_USER="${VM_USER:-azureuser}"
-          ssh -i ~/.ssh/id_vm_deploy -o BatchMode=yes "${VM_USER}@${VM_HOST}" bash -s <<'REMOTE'
-          set -euo pipefail
-          if curl -fsS http://127.0.0.1:3000/healthz | grep -q '"alive"'; then
-            echo "OK — bot responde JSON em localhost:3000/healthz"
-            curl -fsS http://127.0.0.1:3000/healthz
-            exit 0
+          body="$(ssh -i ~/.ssh/id_vm_deploy -o BatchMode=yes "${VM_USER}@${VM_HOST}" \
+            'curl -fsS http://127.0.0.1:3000/healthz' 2>/dev/null || true)"
+          if echo "$body" | grep -q '"alive"'; then
+            echo "OK - bot responde JSON em localhost:3000/healthz: $body"
+          else
+            echo "::error::Bot nao responde em localhost:3000 (container parado?)"
+            ssh -i ~/.ssh/id_vm_deploy "${VM_USER}@${VM_HOST}" \
+              'cd /opt/procon-bot 2>/dev/null && sudo docker compose ps' || true
+            exit 1
           fi
-          echo "::error::Bot nao responde em localhost:3000 (container parado?)"
-          cd /opt/procon-bot 2>/dev/null && sudo docker compose ps || true
-          exit 1
-          REMOTE
 
       - name: Health publico (API via proxy)
         env:
