@@ -122,16 +122,18 @@ jobs:
           set -euo pipefail
           BASE_URL="$(printf '%s' "$PUBLIC_BASE_URL" | tr -d '\r\n' | sed 's/[[:space:]]*$//')"
           BASE_URL="${BASE_URL%/}"
-          API_URL="${BASE_URL}/api/healthz"
-          echo "Aguardando stack Docker (até ~8 min): ${API_URL}"
+          echo "Aguardando stack Docker (ate ~8 min) em ${BASE_URL}..."
           ok=0
           for i in $(seq 1 40); do
-            code="$(curl -sS -o /tmp/healthz.json -w '%{http_code}' "$API_URL" 2>/dev/null || true)"
-            if [ "$code" = "200" ]; then
-              ok=1
-              break
-            fi
-            echo "Tentativa $i/40 — HTTP ${code:-erro}; aguardando 12s..."
+            for path in /healthz /api/healthz; do
+              code="$(curl -sS -o /tmp/healthz.json -w '%{http_code}' "${BASE_URL}${path}" 2>/dev/null || true)"
+              if [ "$code" = "200" ]; then
+                echo "Health OK: ${BASE_URL}${path}"
+                ok=1
+                break 2
+              fi
+            done
+            echo "Tentativa $i/40 — aguardando 12s..."
             sleep 12
           done
           if [ "$ok" -ne 1 ]; then

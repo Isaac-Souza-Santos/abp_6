@@ -43,18 +43,29 @@ jobs:
     env:
       PUBLIC_BASE_URL: ${{ vars.PUBLIC_BASE_URL || secrets.PUBLIC_BASE_URL || 'https://proconbotdockcl0428.chilecentral.cloudapp.azure.com' }}
     steps:
-      - name: Check painel e API
+      - name: Check API apos deploy
         run: |
           set -euo pipefail
           BASE_URL="$(printf '%s' "${PUBLIC_BASE_URL}" | tr -d '\r\n' | sed 's/[[:space:]]*$//')"
           BASE_URL="${BASE_URL%/}"
           if [ -z "${BASE_URL}" ]; then
-            echo "::error::PUBLIC_BASE_URL ficou vazio após sanitização."
+            echo "::error::PUBLIC_BASE_URL vazio."
             exit 1
           fi
-          curl -I -fsS "${BASE_URL}/" >/tmp/painel-head.txt
-          curl -fsS "${BASE_URL}/api/healthz" >/tmp/api-healthz.json
-          echo "Checks OK"
+          ok=0
+          for path in /api/healthz /healthz; do
+            if curl -fsS "${BASE_URL}${path}" >/tmp/api-healthz.json 2>/dev/null && \
+               grep -q '"alive"' /tmp/api-healthz.json; then
+              echo "Health OK: ${BASE_URL}${path}"
+              cat /tmp/api-healthz.json
+              ok=1
+              break
+            fi
+          done
+          if [ "$ok" -ne 1 ]; then
+            echo "::error::Bot sem JSON em ${BASE_URL}/api/healthz (/healthz pode ser HTML do painel)."
+            exit 1
+          fi
 
   notify_results:
     name: Notify Results

@@ -1,0 +1,92 @@
+# Teste antes do deploy completo: secrets, SSH e health do bot (sem alterar a VM).
+name: Preflight VM (teste antes do deploy)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  preflight:
+    name: Preflight — secrets, SSH e API
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validar variaveis obrigatorias
+        env:
+          VM_HOST: ${{ secrets.AZURE_VM_HOST || vars.AZURE_VM_HOST }}
+          VM_USER: ${{ vars.AZURE_VM_USER || secrets.AZURE_VM_USER }}
+          VM_SSH_KEY: ${{ secrets.AZURE_VM_SSH_PRIVATE_KEY }}
+        run: |
+          set -euo pipefail
+          missing=0
+          if [ -z "${VM_HOST:-}" ]; then
+            echo "::error::Falta AZURE_VM_HOST."
+            missing=1
+          fi
+          if [ -z "${VM_SSH_KEY:-}" ]; then
+            echo "::error::Falta AZURE_VM_SSH_PRIVATE_KEY."
+            missing=1
+          fi
+          [ "$missing" -eq 0 ] || exit 1
+          echo "OK — host: ${VM_USER:-azureuser}@${VM_HOST}"
+
+      - name: Preparar chave SSH
+        env:
+          VM_HOST: ${{ secrets.AZURE_VM_HOST || vars.AZURE_VM_HOST }}
+          VM_SSH_KEY: ${{ secrets.AZURE_VM_SSH_PRIVATE_KEY }}
+        run: |
+          set -euo pipefail
+          mkdir -p ~/.ssh
+          printf '%s\n' "$VM_SSH_KEY" > ~/.ssh/id_vm_deploy
+          chmod 600 ~/.ssh/id_vm_deploy
+          ssh-keyscan -H "$VM_HOST" >> ~/.ssh/known_hosts
+
+      - name: Testar SSH na VM
+        env:
+          VM_HOST: ${{ secrets.AZURE_VM_HOST || vars.AZURE_VM_HOST }}
+          VM_USER: ${{ vars.AZURE_VM_USER || secrets.AZURE_VM_USER }}
+        run: |
+          set -euo pipefail
+          VM_USER="${VM_USER:-azureuser}"
+          ssh -i ~/.ssh/id_vm_deploy -o BatchMode=yes -o ConnectTimeout=20 \
+            "${VM_USER}@${VM_HOST}" 'echo "SSH OK"'
+
+      - name: Health do bot na VM (localhost)
+        env:
+          VM_HOST: ${{ secrets.AZURE_VM_HOST || vars.AZURE_VM_HOST }}
+          VM_USER: ${{ vars.AZURE_VM_USER || secrets.AZURE_VM_USER }}
+        run: |
+          set -euo pipefail
+          VM_USER="${VM_USER:-azureuser}"
+          ssh -i ~/.ssh/id_vm_deploy -o BatchMode=yes "${VM_USER}@${VM_HOST}" bash -s <<'REMOTE'
+          set -euo pipefail
+          if curl -fsS http://127.0.0.1:3000/healthz | grep -q '"alive"'; then
+            echo "OK — bot responde JSON em localhost:3000/healthz"
+            curl -fsS http://127.0.0.1:3000/healthz
+            exit 0
+          fi
+          echo "::error::Bot nao responde em localhost:3000 (container parado?)"
+          cd /opt/procon-bot 2>/dev/null && sudo docker compose ps || true
+          exit 1
+          REMOTE
+
+      - name: Health publico (API via proxy)
+        env:
+          PUBLIC_BASE_URL: ${{ vars.PUBLIC_BASE_URL || secrets.PUBLIC_BASE_URL || 'https://proconbotdockcl0428.chilecentral.cloudapp.azure.com' }}
+        run: |
+          set -euo pipefail
+          BASE_URL="$(printf '%s' "${PUBLIC_BASE_URL}" | tr -d '\r\n' | sed 's/[[:space:]]*$//')"
+          BASE_URL="${BASE_URL%/}"
+          url="${BASE_URL}/api/healthz"
+          body="$(curl -fsS "$url" 2>/dev/null || true)"
+          if echo "$body" | grep -q '"alive"'; then
+            echo "OK — ${url}"
+            echo "$body"
+            exit 0
+          fi
+          echo "::warning::${url} nao retornou JSON do bot."
+          echo "Nota: ${BASE_URL}/healthz pode ser HTML do painel (falso positivo)."
+          code="$(curl -sS -o /dev/null -w '%{http_code}' "${BASE_URL}/healthz" 2>/dev/null || echo "000")"
+          echo "/healthz publico: HTTP ${code} (ignorado se nao for JSON)"
+          exit 1
+
+      - name: Resumo
+        run: echo "Preflight concluido — pode rodar Deploy VM Docker com mais confianca."
