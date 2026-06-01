@@ -19,23 +19,18 @@ jobs:
           VM_USER: ${{ vars.AZURE_VM_USER || secrets.AZURE_VM_USER }}
           VM_SSH_KEY: ${{ secrets.AZURE_VM_SSH_PRIVATE_KEY }}
         run: |
-          set -euo pipefail
+          set -eo pipefail
           missing=0
           if [ -z "${VM_HOST:-}" ]; then
-            echo "::error::Falta AZURE_VM_HOST (Settings → Secrets and variables → Actions → Variables ou Secrets)."
+            echo "::error::Falta AZURE_VM_HOST (Settings -> Secrets and variables -> Actions)."
             missing=1
           fi
           if [ -z "${VM_SSH_KEY:-}" ]; then
-            echo "::error::Falta AZURE_VM_SSH_PRIVATE_KEY (secret) com a chave privada SSH (conteudo completo do ficheiro .pem)."
+            echo "::error::Falta AZURE_VM_SSH_PRIVATE_KEY (conteudo completo do .pem)."
             missing=1
           fi
           if [ "$missing" -ne 0 ]; then
-            echo ""
-            echo "Configure no GitHub: AZURE_VM_HOST (ex. DNS cloudapp.azure.com) e AZURE_VM_SSH_PRIVATE_KEY."
             exit 1
-          fi
-          if [ -z "${VM_USER:-}" ]; then
-            echo "AZURE_VM_USER nao informado; sera usado 'azureuser'."
           fi
           echo "Deploy alvo: ${VM_USER:-azureuser}@${VM_HOST}"
 
@@ -44,26 +39,28 @@ jobs:
           VM_HOST: ${{ secrets.AZURE_VM_HOST || vars.AZURE_VM_HOST }}
           VM_SSH_KEY: ${{ secrets.AZURE_VM_SSH_PRIVATE_KEY }}
         run: |
-          set -euo pipefail
+          set -eo pipefail
           mkdir -p ~/.ssh
           printf '%s\n' "$VM_SSH_KEY" > ~/.ssh/id_vm_deploy
           chmod 600 ~/.ssh/id_vm_deploy
-          ssh-keyscan -H "$VM_HOST" >> ~/.ssh/known_hosts
+          ssh-keyscan -H "$VM_HOST" >> ~/.ssh/known_hosts 2>/dev/null || {
+            echo "::error::ssh-keyscan falhou para host: $VM_HOST"
+            exit 1
+          }
 
       - name: Testar SSH na VM
         env:
           VM_HOST: ${{ secrets.AZURE_VM_HOST || vars.AZURE_VM_HOST }}
           VM_USER: ${{ vars.AZURE_VM_USER || secrets.AZURE_VM_USER }}
         run: |
-          set -euo pipefail
+          set -eo pipefail
           VM_USER="${VM_USER:-azureuser}"
           ssh -i ~/.ssh/id_vm_deploy -o BatchMode=yes -o ConnectTimeout=20 \
-            "${VM_USER}@${VM_HOST}" 'echo "SSH OK — VM acessivel."'
-          echo "Se o deploy falhar depois disto, o problema nao e chave SSH nem VM desligada."
+            "${VM_USER}@${VM_HOST}" 'echo SSH_OK'
 
       - name: Empacotar projeto para deploy
         run: |
-          set -euo pipefail
+          set -eo pipefail
           mkdir -p /tmp/procon-deploy
           rm -f /tmp/procon-deploy/vm-docker-deploy.tgz
           rm -f security/.wwebjs_auth/session/SingletonLock || true
@@ -91,41 +88,28 @@ jobs:
           PAINEL_VITE_AZURE_TENANT_ID: ${{ secrets.PAINEL_VITE_AZURE_TENANT_ID }}
           PAINEL_VITE_AZURE_REDIRECT_URI: ${{ secrets.PAINEL_VITE_AZURE_REDIRECT_URI }}
         run: |
-          set -euo pipefail
+          set -eo pipefail
           VM_USER="${VM_USER:-azureuser}"
           REMOTE="${VM_USER}@${VM_HOST}"
+          scp -i ~/.ssh/id_vm_deploy -o BatchMode=yes -o StrictHostKeyChecking=accept-new \
+            /tmp/procon-deploy/vm-docker-deploy.tgz \
+            infra/azure/remote-docker-deploy.sh \
+            "$REMOTE:/tmp/"
 
-          scp -i ~/.ssh/id_vm_deploy -o StrictHostKeyChecking=accept-new /tmp/procon-deploy/vm-docker-deploy.tgz "$REMOTE:/tmp/vm-docker-deploy.tgz"
-
-          # Heredoc entre aspas: evita que "exit" no script remoto encerre o runner do GitHub Actions.
-          ssh -i ~/.ssh/id_vm_deploy -o StrictHostKeyChecking=accept-new "$REMOTE" \
+          ssh -i ~/.ssh/id_vm_deploy -o BatchMode=yes -o StrictHostKeyChecking=accept-new "$REMOTE" \
             env \
-            "PAINEL_VITE_ADMIN_PANEL_TOKEN=${PAINEL_VITE_ADMIN_PANEL_TOKEN:-}" \
-            "PAINEL_VITE_AZURE_CLIENT_ID=${PAINEL_VITE_AZURE_CLIENT_ID:-}" \
-            "PAINEL_VITE_AZURE_TENANT_ID=${PAINEL_VITE_AZURE_TENANT_ID:-}" \
-            "PAINEL_VITE_AZURE_REDIRECT_URI=${PAINEL_VITE_AZURE_REDIRECT_URI:-}" \
-            bash -s <<'REMOTE_SCRIPT'
-          set -euo pipefail
-          sudo mkdir -p /opt/procon-bot
-          sudo tar -xzf /tmp/vm-docker-deploy.tgz -C /opt/procon-bot
-          sudo chown -R "$USER:$USER" /opt/procon-bot
-          cd /opt/procon-bot
-          printf '%s\n' \
-            "PAINEL_VITE_ADMIN_PANEL_TOKEN=${PAINEL_VITE_ADMIN_PANEL_TOKEN}" \
-            "PAINEL_VITE_AZURE_CLIENT_ID=${PAINEL_VITE_AZURE_CLIENT_ID}" \
-            "PAINEL_VITE_AZURE_TENANT_ID=${PAINEL_VITE_AZURE_TENANT_ID}" \
-            "PAINEL_VITE_AZURE_REDIRECT_URI=${PAINEL_VITE_AZURE_REDIRECT_URI}" \
-            > .deploy.env
-          sudo docker compose --env-file .deploy.env up -d --build
-          sudo docker compose ps
-          REMOTE_SCRIPT
+            PAINEL_VITE_ADMIN_PANEL_TOKEN="${PAINEL_VITE_ADMIN_PANEL_TOKEN:-}" \
+            PAINEL_VITE_AZURE_CLIENT_ID="${PAINEL_VITE_AZURE_CLIENT_ID:-}" \
+            PAINEL_VITE_AZURE_TENANT_ID="${PAINEL_VITE_AZURE_TENANT_ID:-}" \
+            PAINEL_VITE_AZURE_REDIRECT_URI="${PAINEL_VITE_AZURE_REDIRECT_URI:-}" \
+            bash /tmp/remote-docker-deploy.sh
 
       - name: Validar bot na VM (SSH)
         env:
           VM_HOST: ${{ secrets.AZURE_VM_HOST || vars.AZURE_VM_HOST }}
           VM_USER: ${{ vars.AZURE_VM_USER || secrets.AZURE_VM_USER }}
         run: |
-          set -euo pipefail
+          set -eo pipefail
           VM_USER="${VM_USER:-azureuser}"
           REMOTE="${VM_USER}@${VM_HOST}"
           bot_ok=0
@@ -133,17 +117,17 @@ jobs:
             body="$(ssh -i ~/.ssh/id_vm_deploy -o BatchMode=yes "$REMOTE" \
               'curl -fsS http://127.0.0.1:3000/healthz' 2>/dev/null || true)"
             if echo "$body" | grep -q '"alive"'; then
-              echo "Bot respondeu JSON em localhost:3000/healthz (tentativa ${i}/18): $body"
+              echo "Bot OK na VM (tentativa ${i}/18): $body"
               bot_ok=1
               break
             fi
-            echo "Aguardando bot na VM (${i}/18)..."
+            echo "Aguardando bot (${i}/18)..."
             sleep 10
           done
           if [ "$bot_ok" -ne 1 ]; then
-            echo "::error::Bot nao respondeu em localhost:3000 apos compose."
+            echo "::error::Bot nao respondeu em localhost:3000."
             ssh -i ~/.ssh/id_vm_deploy "$REMOTE" \
-              "cd /opt/procon-bot && sudo docker compose logs --tail=80 bot && sudo docker compose ps" || true
+              'cd /opt/procon-bot && sudo docker compose logs --tail=80 bot && sudo docker compose ps' || true
             exit 1
           fi
 
@@ -151,36 +135,27 @@ jobs:
         env:
           PUBLIC_BASE_URL: ${{ vars.PUBLIC_BASE_URL || secrets.PUBLIC_BASE_URL || 'https://proconbotdockcl0428.chilecentral.cloudapp.azure.com' }}
         run: |
-          set -euo pipefail
-          BASE_URL="$(printf '%s' "${PUBLIC_BASE_URL}" | tr -d '\r\n' | sed 's/[[:space:]]*$//')"
-          BASE_URL="${BASE_URL%/}"
-          if [ -z "${BASE_URL}" ]; then
-            echo "::error::PUBLIC_BASE_URL ficou vazio. Defina a variable PUBLIC_BASE_URL no GitHub."
-            exit 1
-          fi
-
-          echo "Aguardando 15s para proxy/nginx estabilizar apos recreate dos containers..."
+          set -eo pipefail
+          BASE_URL="${PUBLIC_BASE_URL%/}"
+          BASE_URL="${BASE_URL//$'\r'/}"
+          BASE_URL="${BASE_URL//$'\n'/}"
+          echo "URL publica: ${BASE_URL}/api/healthz"
           sleep 15
-
-          echo "Validando JSON do bot em ${BASE_URL}/api/healthz (/healthz publico pode ser HTML do painel)..."
           ok_api=0
           for i in $(seq 1 24); do
-            url="${BASE_URL}/api/healthz"
-            code="$(curl -sS -o /tmp/api-healthz.json -w '%{http_code}' "$url" 2>/dev/null || echo "000")"
+            code="$(curl -sS -o /tmp/api-healthz.json -w '%{http_code}' "${BASE_URL}/api/healthz" 2>/dev/null || echo 000)"
             if [ "$code" = "200" ] && grep -q '"alive"' /tmp/api-healthz.json 2>/dev/null; then
-              echo "Health OK em ${url}"
+              echo "Health OK:"
               cat /tmp/api-healthz.json
               ok_api=1
               break
             fi
-            echo "Tentativa ${i}/24 — HTTP ${code}; corpo: $(head -c 120 /tmp/api-healthz.json 2>/dev/null || echo vazio)"
+            echo "Tentativa ${i}/24 HTTP ${code}"
             sleep 10
           done
           if [ "$ok_api" -ne 1 ]; then
-            echo "::error::Bot nao respondeu JSON com \"alive\" em ${BASE_URL}/api/healthz."
-            echo "Se 'Validar bot na VM' passou, o deploy esta OK — ajuste proxy/NSG ou PUBLIC_BASE_URL."
-            curl -sS "${BASE_URL}/api/healthz" 2>&1 | tail -n 10 || true
+            echo "::error::Falha em ${BASE_URL}/api/healthz"
+            cat /tmp/api-healthz.json 2>/dev/null || true
             exit 1
           fi
-
-          echo "Deploy '${{ inputs.deploy_scope }}' finalizado com sucesso."
+          echo "Deploy '${{ inputs.deploy_scope }}' concluido."

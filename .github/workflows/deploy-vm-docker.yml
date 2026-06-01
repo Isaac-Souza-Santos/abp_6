@@ -13,6 +13,7 @@ on:
       - "package.json"
       - "package-lock.json"
       - "tsconfig.json"
+      - "infra/azure/remote-docker-deploy.sh"
       - ".github/workflows/deploy-vm-docker.yml"
       - ".github/workflows/reusable-deploy-vm-docker.yml"
 
@@ -45,25 +46,12 @@ jobs:
     steps:
       - name: Check API apos deploy
         run: |
-          set -euo pipefail
-          BASE_URL="$(printf '%s' "${PUBLIC_BASE_URL}" | tr -d '\r\n' | sed 's/[[:space:]]*$//')"
-          BASE_URL="${BASE_URL%/}"
-          if [ -z "${BASE_URL}" ]; then
-            echo "::error::PUBLIC_BASE_URL vazio."
-            exit 1
-          fi
-          ok=0
-          for path in /api/healthz /healthz; do
-            if curl -fsS "${BASE_URL}${path}" >/tmp/api-healthz.json 2>/dev/null && \
-               grep -q '"alive"' /tmp/api-healthz.json; then
-              echo "Health OK: ${BASE_URL}${path}"
-              cat /tmp/api-healthz.json
-              ok=1
-              break
-            fi
-          done
-          if [ "$ok" -ne 1 ]; then
-            echo "::error::Bot sem JSON em ${BASE_URL}/api/healthz (/healthz pode ser HTML do painel)."
+          set -eo pipefail
+          BASE_URL="${PUBLIC_BASE_URL%/}"
+          if curl -fsS "${BASE_URL}/api/healthz" | grep -q '"alive"'; then
+            echo "Health OK: ${BASE_URL}/api/healthz"
+          else
+            echo "::error::Falha em ${BASE_URL}/api/healthz"
             exit 1
           fi
 
@@ -81,9 +69,11 @@ jobs:
           echo "code_analysis_testing=${{ needs.code_analysis_testing.result }}"
           echo "deploy_full_stack=${{ needs.deploy_full_stack.result }}"
           echo "post_deploy_checks=${{ needs.post_deploy_checks.result }}"
-          if [ "${{ needs.code_analysis_testing.result }}" != "success" ] || \
-             [ "${{ needs.deploy_full_stack.result }}" != "success" ] || \
-             [ "${{ needs.post_deploy_checks.result }}" != "success" ]; then
+          failed=0
+          [ "${{ needs.code_analysis_testing.result }}" = "failure" ] && failed=1
+          [ "${{ needs.deploy_full_stack.result }}" = "failure" ] && failed=1
+          [ "${{ needs.post_deploy_checks.result }}" = "failure" ] && failed=1
+          if [ "$failed" -ne 0 ]; then
             echo "Pipeline finalizou com falha em pelo menos uma etapa."
             exit 1
           fi

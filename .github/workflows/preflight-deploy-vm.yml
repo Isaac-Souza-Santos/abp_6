@@ -15,7 +15,7 @@ jobs:
           VM_USER: ${{ vars.AZURE_VM_USER || secrets.AZURE_VM_USER }}
           VM_SSH_KEY: ${{ secrets.AZURE_VM_SSH_PRIVATE_KEY }}
         run: |
-          set -euo pipefail
+          set -eo pipefail
           missing=0
           if [ -z "${VM_HOST:-}" ]; then
             echo "::error::Falta AZURE_VM_HOST."
@@ -33,7 +33,7 @@ jobs:
           VM_HOST: ${{ secrets.AZURE_VM_HOST || vars.AZURE_VM_HOST }}
           VM_SSH_KEY: ${{ secrets.AZURE_VM_SSH_PRIVATE_KEY }}
         run: |
-          set -euo pipefail
+          set -eo pipefail
           mkdir -p ~/.ssh
           printf '%s\n' "$VM_SSH_KEY" > ~/.ssh/id_vm_deploy
           chmod 600 ~/.ssh/id_vm_deploy
@@ -44,7 +44,7 @@ jobs:
           VM_HOST: ${{ secrets.AZURE_VM_HOST || vars.AZURE_VM_HOST }}
           VM_USER: ${{ vars.AZURE_VM_USER || secrets.AZURE_VM_USER }}
         run: |
-          set -euo pipefail
+          set -eo pipefail
           VM_USER="${VM_USER:-azureuser}"
           ssh -i ~/.ssh/id_vm_deploy -o BatchMode=yes -o ConnectTimeout=20 \
             "${VM_USER}@${VM_HOST}" 'echo "SSH OK"'
@@ -54,7 +54,7 @@ jobs:
           VM_HOST: ${{ secrets.AZURE_VM_HOST || vars.AZURE_VM_HOST }}
           VM_USER: ${{ vars.AZURE_VM_USER || secrets.AZURE_VM_USER }}
         run: |
-          set -euo pipefail
+          set -eo pipefail
           VM_USER="${VM_USER:-azureuser}"
           body="$(ssh -i ~/.ssh/id_vm_deploy -o BatchMode=yes "${VM_USER}@${VM_HOST}" \
             'curl -fsS http://127.0.0.1:3000/healthz' 2>/dev/null || true)"
@@ -71,7 +71,7 @@ jobs:
         env:
           PUBLIC_BASE_URL: ${{ vars.PUBLIC_BASE_URL || secrets.PUBLIC_BASE_URL || 'https://proconbotdockcl0428.chilecentral.cloudapp.azure.com' }}
         run: |
-          set -euo pipefail
+          set -eo pipefail
           BASE_URL="$(printf '%s' "${PUBLIC_BASE_URL}" | tr -d '\r\n' | sed 's/[[:space:]]*$//')"
           BASE_URL="${BASE_URL%/}"
           url="${BASE_URL}/api/healthz"
