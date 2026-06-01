@@ -37,11 +37,35 @@ jobs:
           VM_HOST: ${{ secrets.AZURE_VM_HOST || vars.AZURE_VM_HOST }}
           VM_SSH_KEY: ${{ secrets.AZURE_VM_SSH_PRIVATE_KEY }}
         run: |
-          set -euo pipefail
+          set -eo pipefail
           mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
           printf '%s\n' "$VM_SSH_KEY" > ~/.ssh/id_vm_deploy
           chmod 600 ~/.ssh/id_vm_deploy
-          ssh-keyscan -H "$VM_HOST" >> ~/.ssh/known_hosts
+          touch ~/.ssh/known_hosts
+          # ssh-keyscan falha se a VM estiver desligada (vm-schedule 23h). Nao abortar aqui.
+          if ! ssh-keyscan -T 20 -H "$VM_HOST" >> ~/.ssh/known_hosts 2>/dev/null; then
+            echo "::warning::ssh-keyscan nao alcançou $VM_HOST (VM desligada ou DNS errado). Tentando SSH com accept-new."
+          fi
+
+      - name: Verificar VM ligada (SSH)
+        env:
+          VM_HOST: ${{ secrets.AZURE_VM_HOST || vars.AZURE_VM_HOST }}
+          VM_USER: ${{ vars.AZURE_VM_USER || secrets.AZURE_VM_USER }}
+        run: |
+          set -eo pipefail
+          VM_USER="${VM_USER:-azureuser}"
+          if ssh -i ~/.ssh/id_vm_deploy -o BatchMode=yes -o ConnectTimeout=25 \
+            -o StrictHostKeyChecking=accept-new \
+            "${VM_USER}@${VM_HOST}" 'echo VM_SSH_OK'; then
+            echo "VM acessivel em ${VM_USER}@${VM_HOST}"
+          else
+            echo "::error::Nao foi possivel SSH na VM (${VM_HOST})."
+            echo "A VM pode estar desligada (workflow vm-schedule desliga ~23h BRT)."
+            echo "Ligue a VM: Actions -> VM schedule -> Run workflow -> start"
+            echo "Ou: infra/azure/set-vm-power.ps1 -Action start"
+            exit 1
+          fi
 
       - name: Empacotar projeto para deploy
         run: |
@@ -77,9 +101,10 @@ jobs:
           VM_USER="${VM_USER:-azureuser}"
           REMOTE="${VM_USER}@${VM_HOST}"
 
-          scp -i ~/.ssh/id_vm_deploy -o StrictHostKeyChecking=accept-new /tmp/procon-deploy/vm-docker-deploy.tgz "$REMOTE:/tmp/vm-docker-deploy.tgz"
+          scp -i ~/.ssh/id_vm_deploy -o BatchMode=yes -o StrictHostKeyChecking=accept-new \
+            /tmp/procon-deploy/vm-docker-deploy.tgz "$REMOTE:/tmp/vm-docker-deploy.tgz"
 
-          ssh -i ~/.ssh/id_vm_deploy -o StrictHostKeyChecking=accept-new "$REMOTE" <<EOF
+          ssh -i ~/.ssh/id_vm_deploy -o BatchMode=yes -o StrictHostKeyChecking=accept-new "$REMOTE" <<EOF
           set -euo pipefail
           sudo mkdir -p /opt/procon-bot
           sudo tar -xzf /tmp/vm-docker-deploy.tgz -C /opt/procon-bot
