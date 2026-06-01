@@ -10,6 +10,12 @@ on:
 jobs:
   deploy_vm_docker:
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    env:
+      AZURE_RESOURCE_GROUP: ${{ vars.AZURE_RESOURCE_GROUP || secrets.AZURE_RESOURCE_GROUP }}
+      AZURE_VM_NAME: ${{ vars.AZURE_VM_NAME || secrets.AZURE_VM_NAME }}
     steps:
       - uses: actions/checkout@v5
 
@@ -32,6 +38,77 @@ jobs:
             echo "AZURE_VM_USER nao informado; usando 'azureuser'."
           fi
 
+      - name: Validar Azure (ligar VM automaticamente)
+        env:
+          AZURE_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID || secrets.AZURE_CLIENT_ID }}
+          AZURE_TENANT_ID: ${{ vars.AZURE_TENANT_ID || secrets.AZURE_TENANT_ID }}
+          AZURE_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID || secrets.AZURE_SUBSCRIPTION_ID }}
+        run: |
+          set -eo pipefail
+          if [ -z "${AZURE_RESOURCE_GROUP:-}" ] || [ -z "${AZURE_VM_NAME:-}" ]; then
+            echo "::warning::AZURE_RESOURCE_GROUP ou AZURE_VM_NAME ausentes; deploy nao liga a VM sozinho."
+            echo "auto_start_vm=false" >> "$GITHUB_ENV"
+            exit 0
+          fi
+          if [ -n "${AZURE_CLIENT_ID:-}" ] && [ -n "${AZURE_TENANT_ID:-}" ] && [ -n "${AZURE_SUBSCRIPTION_ID:-}" ]; then
+            echo "auth=oidc" >> "$GITHUB_ENV"
+          elif [ -n "${{ secrets.AZURE_CREDENTIALS }}" ]; then
+            echo "auth=credentials" >> "$GITHUB_ENV"
+          else
+            echo "::warning::Sem OIDC nem AZURE_CREDENTIALS; ligue a VM manualmente (VM schedule -> start)."
+            echo "auto_start_vm=false" >> "$GITHUB_ENV"
+            exit 0
+          fi
+          echo "auto_start_vm=true" >> "$GITHUB_ENV"
+
+      - name: Azure login (OIDC)
+        if: env.auto_start_vm == 'true' && env.auth == 'oidc'
+        uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID || secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID || secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID || secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Azure login (service principal JSON)
+        if: env.auto_start_vm == 'true' && env.auth == 'credentials'
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Ligar VM se estiver desligada
+        if: env.auto_start_vm == 'true'
+        run: |
+          set -eo pipefail
+          power="$(az vm get-instance-view \
+            --resource-group "$AZURE_RESOURCE_GROUP" \
+            --name "$AZURE_VM_NAME" \
+            --query "instanceView.statuses[?starts_with(code, 'PowerState/')].code | [0]" -o tsv 2>/dev/null || true)"
+          echo "Estado atual: ${power:-desconhecido}"
+          if [ "$power" = "PowerState/running" ]; then
+            echo "VM ja esta ligada."
+            exit 0
+          fi
+          echo "Iniciando VM ${AZURE_VM_NAME}..."
+          az vm start --resource-group "$AZURE_RESOURCE_GROUP" --name "$AZURE_VM_NAME"
+          ok=0
+          for i in $(seq 1 36); do
+            power="$(az vm get-instance-view \
+              --resource-group "$AZURE_RESOURCE_GROUP" \
+              --name "$AZURE_VM_NAME" \
+              --query "instanceView.statuses[?starts_with(code, 'PowerState/')].code | [0]" -o tsv)"
+            echo "Aguardando running (${i}/36): ${power}"
+            if [ "$power" = "PowerState/running" ]; then
+              ok=1
+              break
+            fi
+            sleep 10
+          done
+          if [ "$ok" -ne 1 ]; then
+            echo "::error::VM nao chegou a running apos az vm start."
+            exit 1
+          fi
+          echo "VM running. Aguardando SSH (ate ~4 min)..."
+
       - name: Preparar chave SSH
         env:
           VM_HOST: ${{ secrets.AZURE_VM_HOST || vars.AZURE_VM_HOST }}
@@ -48,22 +125,28 @@ jobs:
             echo "::warning::ssh-keyscan nao alcançou $VM_HOST (VM desligada ou DNS errado). Tentando SSH com accept-new."
           fi
 
-      - name: Verificar VM ligada (SSH)
+      - name: Aguardar SSH na VM
         env:
           VM_HOST: ${{ secrets.AZURE_VM_HOST || vars.AZURE_VM_HOST }}
           VM_USER: ${{ vars.AZURE_VM_USER || secrets.AZURE_VM_USER }}
         run: |
           set -eo pipefail
           VM_USER="${VM_USER:-azureuser}"
-          if ssh -i ~/.ssh/id_vm_deploy -o BatchMode=yes -o ConnectTimeout=25 \
-            -o StrictHostKeyChecking=accept-new \
-            "${VM_USER}@${VM_HOST}" 'echo VM_SSH_OK'; then
-            echo "VM acessivel em ${VM_USER}@${VM_HOST}"
-          else
-            echo "::error::Nao foi possivel SSH na VM (${VM_HOST})."
-            echo "A VM pode estar desligada (workflow vm-schedule desliga ~23h BRT)."
-            echo "Ligue a VM: Actions -> VM schedule -> Run workflow -> start"
-            echo "Ou: infra/azure/set-vm-power.ps1 -Action start"
+          ok=0
+          for i in $(seq 1 24); do
+            if ssh -i ~/.ssh/id_vm_deploy -o BatchMode=yes -o ConnectTimeout=20 \
+              -o StrictHostKeyChecking=accept-new \
+              "${VM_USER}@${VM_HOST}" 'echo VM_SSH_OK' 2>/dev/null; then
+              echo "SSH OK em ${VM_USER}@${VM_HOST} (tentativa ${i}/24)"
+              ok=1
+              break
+            fi
+            echo "SSH tentativa ${i}/24 — aguardando 10s..."
+            sleep 10
+          done
+          if [ "$ok" -ne 1 ]; then
+            echo "::error::SSH indisponivel em ${VM_HOST}."
+            echo "Confira AZURE_VM_HOST, NSG porta 22 e se a VM esta running."
             exit 1
           fi
 

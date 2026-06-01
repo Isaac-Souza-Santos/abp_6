@@ -69,7 +69,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File infra/azure/set-vm-power.ps1
 
 - **Deallocate** para a cobrança de **compute**; discos e IP associados continuam.
 - Ao **start**, o Docker na VM sobe os containers (`restart: unless-stopped` no `docker-compose.yml`).
-- Deploys em `deploy-vm-docker.yml` **não** são afetados; podem ligar a VM manualmente se necessário.
+- Deploys em `deploy-vm-docker.yml` **ligam a VM automaticamente** via Azure (`az vm start`) se estiver desligada, desde que `AZURE_RESOURCE_GROUP`, `AZURE_VM_NAME` e OIDC estejam configurados.
 
 ## 6) Economia estimada
 

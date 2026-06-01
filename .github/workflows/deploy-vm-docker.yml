@@ -31,6 +31,9 @@ jobs:
   deploy_full_stack:
     name: Deploy VM Docker
     needs: code_analysis_testing
+    permissions:
+      id-token: write
+      contents: read
     uses: ./.github/workflows/reusable-deploy-vm-docker.yml
     secrets: inherit
     with:
