@@ -20,6 +20,7 @@ Thumbs.db
 !.cursor/rules/azure-local-context.mdc
 # Dados Azure só na máquina (não versionar)
 local/azure-contexto.txt
+local/vm-power-comandos.txt
 local/azure-credentials-gh.json
 # Guias Azure com nomes de recursos / passos de produção (não versionar)
 documentacao/PAINEL-AZURE-SWA.md

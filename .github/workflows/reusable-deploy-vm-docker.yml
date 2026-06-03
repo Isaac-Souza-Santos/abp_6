@@ -120,7 +120,7 @@ jobs:
           printf '%s\n' "$VM_SSH_KEY" > ~/.ssh/id_vm_deploy
           chmod 600 ~/.ssh/id_vm_deploy
           touch ~/.ssh/known_hosts
-          # ssh-keyscan falha se a VM estiver desligada (vm-schedule 23h). Nao abortar aqui.
+          # ssh-keyscan falha se a VM estiver desligada. Nao abortar aqui.
           if ! ssh-keyscan -T 20 -H "$VM_HOST" >> ~/.ssh/known_hosts 2>/dev/null; then
             echo "::warning::ssh-keyscan nao alcançou $VM_HOST (VM desligada ou DNS errado). Tentando SSH com accept-new."
           fi
