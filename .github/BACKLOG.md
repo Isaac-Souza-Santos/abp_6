@@ -26,6 +26,26 @@ O que o sistema **deve fazer** – funcionalidades e fluxos para o usuário.
 
 ---
 
+
+## User Stories
+
+| ID US | Ref. Requisito | História de Usuário  |
+|-------|----------------|----------------------------------------------------------------------------------|
+| US01  | RF01 | **Como** administrador do sistema, **quero** exibir o QR Code de autenticação ao iniciar, **para** conectar o sistema à conta oficial do WhatsApp do Procon. |
+| US02  | RF02 | **Como** administrador do sistema, **quero** que a sessão seja mantida (LocalAuth) após o primeiro login, **para** evitar a necessidade de ler o QR Code a cada reinicialização do servidor. |
+| US03  | RF03 | **Como** cidadão, **quero** receber uma mensagem de boas-vindas e um menu de opções (1 a 5) ao enviar "oi" ou "menu", **para** navegar facilmente pelas opções de autoatendimento. |
+| US04  | RF04 | **Como** cidadão, **quero** acessar textos oficiais com orientações, direitos e formas de reclamação, **para** esclarecer minhas dúvidas com base no Código de Defesa do Consumidor (CDC). |
+| US05  | RF05 | **Como** cidadão, **quero** visualizar o contato e o endereço atualizado do Procon Jacareí (opções 3 e 4), **para** saber como me comunicar ou chegar ao local físico de atendimento. |
+| US06  | RF06 | **Como** cidadão, **quero** receber uma resposta amigável sugerindo digitar "menu" ou "início" ao enviar uma mensagem não reconhecida, **para** não ficar perdido no fluxo de atendimento. |
+| US07  | RF07 | **Como** cidadão, **quero** realizar um agendamento informando meu nome, motivo e data preferida, **para** garantir que serei atendido presencialmente de forma organizada. |
+| US08  | RF08 | **Como** cidadão, **quero** ser questionado se aceito a coleta dos meus dados (LGPD) antes do agendamento, **para** ter minha privacidade respeitada e meus dados protegidos. |
+| US09  | RF09 | **Como** cidadão, **quero** poder visualizar e reservar horários livres (blocos de 30 minutos), **para** escolher um momento em que a equipe do Procon realmente tenha disponibilidade. |
+| US10  | RF10 | **Como** atendente do Procon, **quero** acessar um painel administrativo via comandos no WhatsApp (ex: *atendente*, *historico*, *metricas*), **para** acompanhar os chamados e gerenciar o volume de atendimentos. |
+| US11  | RF11 | **Como** atendente do Procon, **quero** atualizar as métricas do ciclo de vida de um protocolo (vira dado, vira processo, gestão) usando comandos específicos, **para** manter os dados do órgão precisos e embasar tomadas de decisão. |
+| US12  | RF12 | **Como** atendente do Procon, **quero** que um evento seja criado automaticamente no calendário do Outlook ao confirmar um agendamento, **para** facilitar o controle da agenda da equipe de atendimento. |
+| US13  | RF13 | **Como** cidadão, **quero** enviar dúvidas em texto livre e receber respostas da Inteligência Artificial baseadas no CDC, **para** obter respostas rápidas, podendo ao final avaliar a resposta como satisfatória ou não. |
+---
+
 ## Requisitos não funcionais (RNF)
 
 Como o sistema **deve se comportar** – qualidade, segurança, documentação e operação.
