@@ -119,10 +119,66 @@ xychart-beta
 | [infra/azure/README.md](infra/azure/README.md) | Índice dos scripts/workflows Azure (backend e painel em App Service). |
 | [Apresentação Sprint 1 (YouTube)](https://www.youtube.com/watch?v=91aUjvrli_g) | Vídeo da apresentação / demo da Sprint 1.                           |
 
+## 👩‍💻 Equipe
+<table>
+  <thead>
+    <tr>
+      <th>Função</th>
+      <th>Integrante</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Product Owner</td>
+      <td>
+        <a href="https://github.com/FPBueno">
+          <img src="https://github.com/FPBueno.png" width="50" height="50" style="border-radius: 50%;" alt="FPBueno">
+        </a>
+      </td>
+    </tr>
+    <tr>
+      <td>Dev Team</td>
+      <td>
+        <a href="https://github.com/Marcelly-cris">
+          <img src="https://github.com/Marcelly-cris.png" width="50" height="50" style="border-radius: 50%;" alt="Marcelly-cris">
+        </a>
+      </td>
+    </tr>
+    <tr>
+      <td>Dev Team</td>
+      <td>
+        <a href="https://github.com/MingRenan">
+          <img src="https://github.com/MingRenan.png" width="50" height="50" style="border-radius: 50%;" alt="MingRenan">
+        </a>
+      </td>
+    </tr>
+    <tr>
+      <td>Scrum Master</td>
+      <td>
+        <a href="https://github.com/Isaac-Souza-Santos">
+          <img src="https://github.com/Isaac-Souza-Santos.png" width="50" height="50" style="border-radius: 50%;" alt="Isaac-Exon">
+        </a>
+      </td>
+    </tr>
+    <tr>
+      <td>Dev team</td>
+      <td>
+        <a href="https://github.com/AnaBarbancho">
+          <img src="https://github.com/AnaBarbancho.png" width="50" height="50" style="border-radius: 50%;" alt="AnaBarbancho">
+        </a>
+      </td>
+    </tr>
+  </tbody>
+</table>
+
 ## Apresentações
 
-- [Apresentação Sprint 1 (YouTube)](https://www.youtube.com/watch?v=91aUjvrli_g)
-- [Apresentação Sprint 2 (YouTube)](https://www.youtube.com/watch?v=t9qXJUcBCzI)
+**Sprint**  | **Inicio / Fim** | **Status**         | **Link**
+:---------: | :------:    | :-------:          | :-------:
+01          | 26/03 - 13/04   | ✅                | <a href="https://www.youtube.com/watch?v=91aUjvrli_g">Sprint 1</a>
+02          | 14/04 - 18/05   | ✅                | <a href="https://www.youtube.com/watch?v=t9qXJUcBCzI">Sprint 2</a>
+03          | 19/05 - 15/06   | ⚠️               | <a href="#">Sprint 3</a>
+
 
 ## Licença
 
