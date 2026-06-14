@@ -113,6 +113,17 @@ xychart-beta
 | **Demonstração do incremento** | O bot foi inicializado sem erros, gerou o QR Code no terminal, o número de WhatsApp de teste e respondeu de forma autônoma às interações enviando o menu de opções. |
 | **Feedback (Produto)** | O projeto atendeu aos requisitos básicos de conexão e execução. A documentação inicial demonstrou compreensão da arquitetura. |
 
+
+### 2. Sprint Retrospective 
+
+| Categoria | Pontos Levantados |
+| :--- | :--- |
+| **Feedback (Processo)** | **A melhorar:** O projeto apresentou forte foco técnico, mas poucas evidências do processo ágil utilizado. A documentação carecia de estruturação. |
+| **O que funcionou bem** |  O alicerce do projeto (Node + TS + whatsapp-web.js) foi muito bem estruturado e sem falhas. Entrega do escopo funcional a tempo da apresentação.|
+| **O que pode melhorar** |  Falta de transparência na gestão e no fluxo de trabalho e estruturação da documentação. |
+| **Plano de Ação (Sprint 2)** | Melhorar a tranparencia no fluxo de trabalho e estruturação da documentação e reestruturar a documentação focando nos artefatos ágeis.
+<br>
+
 ---
 
 
@@ -127,6 +138,15 @@ xychart-beta
 | **Funcionalidades entregues** | • Fluxos de atendimento com orientações completas (CDC e contatos).<br>• Sistema de agendamento presencial com listagem de horários livres.<br>• Termo de consentimento e conformidade com a LGPD.<br>• Evoluções do painel interno (correções, testes automatizados e exportação).<br>• Estruturação de métricas administrativas. |
 | **Demonstração do incremento** | O bot conduz o usuário por todo o fluxo de agendamento de forma autônoma, garantindo a coleta de aceite da LGPD, e integra esses dados ao painel interno para monitoramento e gestão. |
 | **Feedback do Avaliador (Produto)** | O projeto apresenta uma proposta consistente. A preocupação com LGPD, métricas e integração futura com sistemas externos. Evolução funcional sólida. |
+
+### 2. Sprint Retrospective 
+
+| Categoria | Pontos Levantados |
+| :--- | :--- |
+| **Feedback (Processo)** | **A melhorar:** Aderência mais completa à rubrica da disciplina, especialmente na formalização de User Stories, papéis SCRUM, Sprint Review, Retrospective e detalhamento do Sprint Backlog com responsáveis e estimativas. |
+| **O que funcionou bem** | O acompanhamento das tarefas pelo GitHub Projects foi efetivo até a conclusão. A clareza no arquivo README, nos guias de deploy e a visão de produto focada na LGPD. |
+| **O que pode melhorar** | Formalização das cerimônias, papéis da equipe e datas das Sprints. Incluir histórias de usuário e burndown da Sprint 2. |
+| **Plano de Ação (Sprint 3)** | Formalizar papéis SCRUM da equipe, incluir datas de início e fim das Sprints, formalizar User Stories no padrão solicitado, registrar Burndown específico da Sprint 2, formalizar Sprint Review e  Retrospective. |
 
 ---
 
