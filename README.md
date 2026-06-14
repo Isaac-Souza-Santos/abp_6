@@ -100,6 +100,37 @@ xychart-beta
   line [20, 18, 17, 15, 13, 10, 8, 6, 3, 0]
 ```
 
+## 🏁 Sprint Review e Retrospective
+
+## Sprint 1
+
+### 1. Sprint Review
+
+| Categoria | Detalhes |
+| :--- | :--- |
+| **Objetivo da Sprint 1** | Fundação técnica do projeto, conexão com a API do WhatsApp e implementação do menu inicial de autoatendimento. |
+| **Funcionalidades entregues** | • Configuração do ambiente de desenvolvimento em Node.js com TypeScript.<br>• Integração da biblioteca `whatsapp-web.js` com exibição de QR Code.<br>• Implementação de persistência de sessão (LocalAuth) para evitar reconexões manuais.<br>• Criação do fluxo inicial de boas-vindas e resposta ao comando "menu".<br>• Documentação técnica inicial com instruções. |
+| **Demonstração do incremento** | O bot foi inicializado sem erros, gerou o QR Code no terminal, o número de WhatsApp de teste e respondeu de forma autônoma às interações enviando o menu de opções. |
+| **Feedback (Produto)** | O projeto atendeu aos requisitos básicos de conexão e execução. A documentação inicial demonstrou compreensão da arquitetura. |
+
+---
+
+
+## Sprint 2
+
+
+### 1. Sprint Review 
+
+| Categoria | Detalhes |
+| :--- | :--- |
+| **Objetivo da Sprint 2** | Conteúdo útil ao cidadão, fluxos claros e agendamento com LGPD e horários livres. |
+| **Funcionalidades entregues** | • Fluxos de atendimento com orientações completas (CDC e contatos).<br>• Sistema de agendamento presencial com listagem de horários livres.<br>• Termo de consentimento e conformidade com a LGPD.<br>• Evoluções do painel interno (correções, testes automatizados e exportação).<br>• Estruturação de métricas administrativas. |
+| **Demonstração do incremento** | O bot conduz o usuário por todo o fluxo de agendamento de forma autônoma, garantindo a coleta de aceite da LGPD, e integra esses dados ao painel interno para monitoramento e gestão. |
+| **Feedback do Avaliador (Produto)** | O projeto apresenta uma proposta consistente. A preocupação com LGPD, métricas e integração futura com sistemas externos. Evolução funcional sólida. |
+
+---
+
+
 ## Documentação das funcionalidades implementadas:
 
 | Documento                                                      | Conteúdo                                                             |
