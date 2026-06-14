@@ -46,12 +46,10 @@ describe('parseAgendaLembreteConfirmacaoConfig', () => {
   });
 
   test('limita template em 3500 caracteres', () => {
-    const mensagemTemplate = 'x'.repeat(3600);
-
     const result = parseAgendaLembreteConfirmacaoConfig({
       ativo: true,
       antecedenciaDias: 1,
-      mensagemTemplate,
+      mensagemTemplate: 'x'.repeat(3600),
     });
 
     expect(result?.mensagemTemplate).toHaveLength(3500);
