@@ -11,6 +11,19 @@ if (!rootEl) {
 }
 
 void (async () => {
+  // If VITE_TEST_AUTH is set, start in test mode to bypass interactive login for E2E.
+  const isTestAuth = Boolean((process.env as any).VITE_TEST_AUTH || import.meta.env.VITE_TEST_AUTH);
+  if (isTestAuth) {
+    createRoot(rootEl).render(
+      <StrictMode>
+        <PanelMuiProvider>
+          <App mode="test" />
+        </PanelMuiProvider>
+      </StrictMode>
+    );
+    return;
+  }
+
   if (isAzureLoginConfigured()) {
     const { MsalProvider } = await import("@azure/msal-react");
     const instance = getMsalInstance();

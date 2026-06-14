@@ -5,7 +5,7 @@ import Dashboard from "./Dashboard";
 import { LoginScreen } from "./LoginScreen";
 import { loginRequest } from "./authConfig";
 
-export type AppMode = "azure" | "legacy";
+export type AppMode = "azure" | "legacy" | "test";
 
 export type AppProps = {
   mode: AppMode;
@@ -66,6 +66,16 @@ function legacySignOut(): void {
 export default function App({ mode }: AppProps) {
   if (mode === "legacy") {
     return <Dashboard getIdToken={async () => null} nomeUtilizadorSessao={undefined} onSignOut={legacySignOut} />;
+  }
+  if (mode === "test") {
+    // Provide a fake authenticated session for E2E tests: no interactive login required.
+    return (
+      <Dashboard
+        getIdToken={async () => 'test-id-token'}
+        nomeUtilizadorSessao={'Test User'}
+        onSignOut={legacySignOut}
+      />
+    );
   }
   return <AzureShell />;
 }
