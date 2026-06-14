@@ -5,7 +5,7 @@ test.describe('Dashboard filters', () => {
     await page.goto('/');
 
     // preencher campo de busca por nome (ajuste o seletor conforme o app)
-    const nomeInput = page.locator('input[placeholder="Buscar por nome"]');
+    const nomeInput = page.locator('input[placeholder="Nome, telefone, protocolo…"]');
     await nomeInput.fill('Maria');
     await nomeInput.press('Enter');
 
