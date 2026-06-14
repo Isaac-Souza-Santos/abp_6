@@ -23,13 +23,23 @@ describe('parseAgendaAtendentesConfig', () => {
       ],
     });
 
-    expect(result?.atendentes).toHaveLength(2);
-    expect(result?.atendentes[0]).toMatchObject({
-      id: 'linha-1',
-      nome: 'Guichê 1',
-      almoco: { inicioH: 12, inicioM: 0, fimH: 13, fimM: 0 },
+    expect(result).toEqual({
+      atendentes: [
+        {
+          id: 'linha-1',
+          nome: 'Guichê 1',
+          intervaloMinutos: 30,
+          blocos: [{ inicioH: 9, inicioM: 0, fimH: 12, fimM: 0 }],
+          almoco: { inicioH: 12, inicioM: 0, fimH: 13, fimM: 0 },
+        },
+        {
+          id: 'linha-2',
+          nome: 'Guichê 2',
+          intervaloMinutos: 45,
+          blocos: [{ inicioH: 13, inicioM: 30, fimH: 17, fimM: 0 }],
+        },
+      ],
     });
-    expect(result?.atendentes[1].intervaloMinutos).toBe(45);
   });
 
   test('gera id seguro quando id informado é inválido', () => {
