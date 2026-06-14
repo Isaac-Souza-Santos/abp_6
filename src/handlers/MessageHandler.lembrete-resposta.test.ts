@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-var-requires */
 import type { Client, Message } from 'whatsapp-web.js';
 
 jest.mock('../services/GroqService', () => ({
