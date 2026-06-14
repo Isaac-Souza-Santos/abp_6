@@ -178,8 +178,8 @@ async function isAdminRequestAuthorized(req: http.IncomingMessage, url: URL): Pr
   return false;
 }
 
-function startHealthServer(bot: ProconBot): Promise<void> {
-  const server = http.createServer((req, res) => {
+export function createHealthServer(bot: ProconBot): http.Server {
+  return http.createServer((req, res) => {
     void (async () => {
       const url = new URL(req.url || "/", `http://${req.headers.host || "localhost"}`);
 
@@ -374,7 +374,10 @@ function startHealthServer(bot: ProconBot): Promise<void> {
       res.end(JSON.stringify({ error: "Internal server error" }));
     });
   });
+}
 
+export function startHealthServer(bot: ProconBot): Promise<void> {
+  const server = createHealthServer(bot);
   const maxPortTries = Math.max(1, Number(process.env.HEALTH_PORT_TRIES || 10));
   return new Promise((resolve, reject) => {
     const tryListen = (attempt: number): void => {
@@ -417,7 +420,9 @@ async function main(): Promise<void> {
   }
 }
 
-main().catch((err) => {
-  console.error("Erro ao iniciar bot:", err);
-  process.exitCode = 1;
-});
+if (require.main === module) {
+  main().catch((err) => {
+    console.error("Erro ao iniciar bot:", err);
+    process.exitCode = 1;
+  });
+}
