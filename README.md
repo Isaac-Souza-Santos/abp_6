@@ -100,6 +100,57 @@ xychart-beta
   line [20, 18, 17, 15, 13, 10, 8, 6, 3, 0]
 ```
 
+## 🏁 Sprint Review e Retrospective
+
+## Sprint 1
+
+### 1. Sprint Review
+
+| Categoria | Detalhes |
+| :--- | :--- |
+| **Objetivo da Sprint 1** | Fundação técnica do projeto, conexão com a API do WhatsApp e implementação do menu inicial de autoatendimento. |
+| **Funcionalidades entregues** | • Configuração do ambiente de desenvolvimento em Node.js com TypeScript.<br>• Integração da biblioteca `whatsapp-web.js` com exibição de QR Code.<br>• Implementação de persistência de sessão (LocalAuth) para evitar reconexões manuais.<br>• Criação do fluxo inicial de boas-vindas e resposta ao comando "menu".<br>• Documentação técnica inicial com instruções. |
+| **Demonstração do incremento** | O bot foi inicializado sem erros, gerou o QR Code no terminal, o número de WhatsApp de teste e respondeu de forma autônoma às interações enviando o menu de opções. |
+| **Feedback (Produto)** | O projeto atendeu aos requisitos básicos de conexão e execução. A documentação inicial demonstrou compreensão da arquitetura. |
+
+
+### 2. Sprint Retrospective 
+
+| Categoria | Pontos Levantados |
+| :--- | :--- |
+| **Feedback (Processo)** | **A melhorar:** O projeto apresentou forte foco técnico, mas poucas evidências do processo ágil utilizado. A documentação carecia de estruturação. |
+| **O que funcionou bem** |  O alicerce do projeto (Node + TS + whatsapp-web.js) foi muito bem estruturado e sem falhas. Entrega do escopo funcional a tempo da apresentação.|
+| **O que pode melhorar** |  Falta de transparência na gestão e no fluxo de trabalho e estruturação da documentação. |
+| **Plano de Ação (Sprint 2)** | Melhorar a tranparencia no fluxo de trabalho e estruturação da documentação e reestruturar a documentação focando nos artefatos ágeis.
+<br>
+
+---
+
+
+## Sprint 2
+
+
+### 1. Sprint Review 
+
+| Categoria | Detalhes |
+| :--- | :--- |
+| **Objetivo da Sprint 2** | Conteúdo útil ao cidadão, fluxos claros e agendamento com LGPD e horários livres. |
+| **Funcionalidades entregues** | • Fluxos de atendimento com orientações completas (CDC e contatos).<br>• Sistema de agendamento presencial com listagem de horários livres.<br>• Termo de consentimento e conformidade com a LGPD.<br>• Evoluções do painel interno (correções, testes automatizados e exportação).<br>• Estruturação de métricas administrativas. |
+| **Demonstração do incremento** | O bot conduz o usuário por todo o fluxo de agendamento de forma autônoma, garantindo a coleta de aceite da LGPD, e integra esses dados ao painel interno para monitoramento e gestão. |
+| **Feedback do Avaliador (Produto)** | O projeto apresenta uma proposta consistente. A preocupação com LGPD, métricas e integração futura com sistemas externos. Evolução funcional sólida. |
+
+### 2. Sprint Retrospective 
+
+| Categoria | Pontos Levantados |
+| :--- | :--- |
+| **Feedback (Processo)** | **A melhorar:** Aderência mais completa à rubrica da disciplina, especialmente na formalização de User Stories, papéis SCRUM, Sprint Review, Retrospective e detalhamento do Sprint Backlog com responsáveis e estimativas. |
+| **O que funcionou bem** | O acompanhamento das tarefas pelo GitHub Projects foi efetivo até a conclusão. A clareza no arquivo README, nos guias de deploy e a visão de produto focada na LGPD. |
+| **O que pode melhorar** | Formalização das cerimônias, papéis da equipe e datas das Sprints. Incluir histórias de usuário e burndown da Sprint 2. |
+| **Plano de Ação (Sprint 3)** | Formalizar papéis SCRUM da equipe, incluir datas de início e fim das Sprints, formalizar User Stories no padrão solicitado, registrar Burndown específico da Sprint 2, formalizar Sprint Review e  Retrospective. |
+
+---
+
+
 ## Documentação das funcionalidades implementadas:
 
 | Documento                                                      | Conteúdo                                                             |
@@ -119,11 +170,65 @@ xychart-beta
 | [infra/azure/README.md](infra/azure/README.md) | Índice dos scripts/workflows Azure (backend e painel em App Service). |
 | [Apresentação Sprint 1 (YouTube)](https://www.youtube.com/watch?v=91aUjvrli_g) | Vídeo da apresentação / demo da Sprint 1.                           |
 
+## 👩‍💻 Equipe
+<table>
+  <thead>
+    <tr>
+      <th>Função</th>
+      <th>Integrante</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Product Owner</td>
+      <td>
+        <a href="https://github.com/FPBueno">
+          <img src="https://github.com/FPBueno.png" width="50" height="50" style="border-radius: 50%;" alt="FPBueno">
+        </a>
+      </td>
+    </tr>
+    <tr>
+      <td>Dev Team</td>
+      <td>
+        <a href="https://github.com/Marcelly-cris">
+          <img src="https://github.com/Marcelly-cris.png" width="50" height="50" style="border-radius: 50%;" alt="Marcelly-cris">
+        </a>
+      </td>
+    </tr>
+    <tr>
+      <td>Dev Team</td>
+      <td>
+        <a href="https://github.com/MingRenan">
+          <img src="https://github.com/MingRenan.png" width="50" height="50" style="border-radius: 50%;" alt="MingRenan">
+        </a>
+      </td>
+    </tr>
+    <tr>
+      <td>Scrum Master</td>
+      <td>
+        <a href="https://github.com/Isaac-Souza-Santos">
+          <img src="https://github.com/Isaac-Souza-Santos.png" width="50" height="50" style="border-radius: 50%;" alt="Isaac-Exon">
+        </a>
+      </td>
+    </tr>
+    <tr>
+      <td>Dev team</td>
+      <td>
+        <a href="https://github.com/AnaBarbancho">
+          <img src="https://github.com/AnaBarbancho.png" width="50" height="50" style="border-radius: 50%;" alt="AnaBarbancho">
+        </a>
+      </td>
+    </tr>
+  </tbody>
+</table>
+
 ## Apresentações
 
-- [Apresentação Sprint 1 (YouTube)](https://www.youtube.com/watch?v=91aUjvrli_g)
-- [Apresentação Sprint 2 (YouTube)](https://www.youtube.com/watch?v=t9qXJUcBCzI)
-- [Apresentação Sprint 3 (YouTube)](https://youtu.be/bfby2rcHH-0)
+| **Sprint** | **Inicio / Fim** | **Status** | **Link** |
+| :---------: | :------: | :-------: | :-------: |
+| 01 | 26/03 - 13/04 | ✅ | [Sprint 1](https://www.youtube.com/watch?v=91aUjvrli_g) |
+| 02 | 14/04 - 18/05 | ✅ | [Sprint 2](https://www.youtube.com/watch?v=t9qXJUcBCzI) |
+| 03 | 19/05 - 15/06 | ✅ | [Sprint 3](https://youtu.be/bfby2rcHH-0) |
 
 ## Licença
 
