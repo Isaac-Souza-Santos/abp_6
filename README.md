@@ -123,6 +123,7 @@ xychart-beta
 
 - [Apresentação Sprint 1 (YouTube)](https://www.youtube.com/watch?v=91aUjvrli_g)
 - [Apresentação Sprint 2 (YouTube)](https://www.youtube.com/watch?v=t9qXJUcBCzI)
+- [Apresentação Sprint 3 (YouTube)](https://youtu.be/bfby2rcHH-0)
 
 ## Licença
 
